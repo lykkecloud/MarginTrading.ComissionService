@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <LangVersion>7.2</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="AsyncFriendlyStackTrace, Version=1.5.0.0, Culture=neutral, PublicKeyToken=f5fdf019656607c4">
+      <HintPath>..\..\..\.nuget\packages\asyncfriendlystacktrace\1.5.0\lib\netstandard1.3\AsyncFriendlyStackTrace.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+      <HintPath>..\..\..\.nuget\packages\newtonsoft.json\10.0.3\lib\netstandard1.3\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Refit, Version=4.3.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\..\.nuget\packages\refit\4.3.0\lib\netstandard1.4\Refit.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\MarginTrading.OvernightSwapService.Contracts\MarginTrading.OvernightSwapService.Contracts.csproj" />
+  </ItemGroup>
+</Project>

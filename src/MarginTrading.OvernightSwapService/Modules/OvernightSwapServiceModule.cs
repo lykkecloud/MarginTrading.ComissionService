@@ -1,10 +1,16 @@
 ﻿using System.Linq;
 using Autofac;
 using Common.Log;
+using Lykke.Common;
 using Lykke.SettingsReader;
+using MarginTrading.OvernightSwapService.Caches;
+using MarginTrading.OvernightSwapService.Caches.Implementation;
 using MarginTrading.OvernightSwapService.Infrastructure;
 using MarginTrading.OvernightSwapService.Infrastructure.Implementation;
+using MarginTrading.OvernightSwapService.Services;
+using MarginTrading.OvernightSwapService.Services.Implementation;
 using MarginTrading.OvernightSwapService.Settings;
+using MarginTrading.OvernightSwapService.Storage;
 using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.OvernightSwapService.Modules
@@ -28,8 +34,29 @@ namespace MarginTrading.OvernightSwapService.Modules
             builder.RegisterInstance(_log).As<ILog>().SingleInstance();
             builder.RegisterType<SystemClock>().As<ISystemClock>().SingleInstance();
 
+            builder.RegisterType<AssetPairsCache>().As<IAssetPairsCache>().SingleInstance();
+            builder.RegisterType<AssetsCache>().As<IAssetsCache>().SingleInstance();
+            builder.RegisterType<OvernightSwapCache>().As<IOvernightSwapCache>().SingleInstance();
+
             builder.RegisterInstance(new RabbitMqService(_log))
                 .As<IRabbitMqService>().SingleInstance();
+
+            builder.RegisterType<AccountAssetsCacheService>()
+                .AsSelf().SingleInstance();
+            
+            builder.RegisterType<ThreadSwitcherToNewTask>()
+                .As<IThreadSwitcher>()
+                .SingleInstance();
+            
+            builder.RegisterType<FakeAccountManager>()
+                .As<IAccountManager>()
+                .SingleInstance();
+            
+            builder.RegisterType<FakeEmailService>()
+                .As<IEmailService>()
+                .SingleInstance();
+
+            RegisterStorages(builder);
         }
 
         /// <summary>
@@ -45,7 +72,7 @@ namespace MarginTrading.OvernightSwapService.Modules
         {
             var assembly = GetType().Assembly;
             var implementations = assembly.GetTypes()
-                .Where(t => !t.IsInterface && !t.IsGenericType && (t.Name.EndsWith("Service") || t.Name.EndsWith("Repository")))
+                .Where(t => !t.IsInterface && !t.IsGenericType && (t.Name.EndsWith("Service") ))//|| t.Name.EndsWith("Repository")))
                 .SelectMany(t =>
                     t.GetInterfaces()
                         .Where(i => i.Name.StartsWith('I') && i.Assembly == assembly)
@@ -60,6 +87,28 @@ namespace MarginTrading.OvernightSwapService.Modules
                 if (typeof(IStartable).IsAssignableFrom(t.Implementation))
                     registrationBuilder.OnActivated(args => ((IStartable) args.Instance).Start()).AutoActivate();
             }
+        }
+
+        private void RegisterStorages(ContainerBuilder builder)
+        {
+            builder.Register<IMarginTradingBlobRepository>(ctx =>
+                AzureRepoFactories.MarginTrading.CreateBlobRepository(_settings.Nested(s =>
+                    s.MarginTradingOvernightSwapService.Db.StateConnString))).SingleInstance();
+
+            builder.Register<IOvernightSwapStateRepository>(ctx =>
+                    AzureRepoFactories.MarginTrading.CreateOvernightSwapStateRepository(
+                        _settings.Nested(s => s.MarginTradingOvernightSwapService.Db.MarginTradingConnString), _log))
+                .SingleInstance();
+
+            builder.Register<IOvernightSwapHistoryRepository>(ctx =>
+                    AzureRepoFactories.MarginTrading.CreateOvernightSwapHistoryRepository(
+                        _settings.Nested(s => s.MarginTradingOvernightSwapService.Db.MarginTradingConnString), _log))
+                .SingleInstance();
+            
+            builder.Register<IAccountAssetPairsRepository>(ctx =>
+                    AzureRepoFactories.MarginTrading.CreateAccountAssetsRepository(
+                        _settings.Nested(s => s.MarginTradingOvernightSwapService.Db.MarginTradingConnString), _log))
+                .SingleInstance();
         }
     }
 }
