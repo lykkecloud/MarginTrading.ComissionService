@@ -38,6 +38,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.0.0" />
     <PackageReference Include="morelinq" Version="2.10.0" />
+    <PackageReference Include="Nustache" Version="1.16.0.8" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MarginTrading.OvernightSwapService.Contracts\MarginTrading.OvernightSwapService.Contracts.csproj" />
