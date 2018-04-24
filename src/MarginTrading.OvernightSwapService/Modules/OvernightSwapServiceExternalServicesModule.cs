@@ -1,6 +1,8 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Lykke.Service.ClientAccount.Client;
 using Lykke.SettingsReader;
+using MarginTrading.Backend.Contracts.DataReaderClient;
 using MarginTrading.OvernightSwapService.Settings;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,7 +20,9 @@ namespace MarginTrading.OvernightSwapService.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
-            // todo register external services here
+            builder.RegisterLykkeServiceClient(_settings.CurrentValue.MarginTradingOvernightSwapService.Services.
+                ClientAccount.Url);
+            
             builder.Populate(_services);
         }
     }
