@@ -1,0 +1,37 @@
+﻿using System;
+using System.Net;
+using Lykke.MarginTrading.CommissionService.Contracts.Api;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.PlatformAbstractions;
+using Swashbuckle.AspNetCore.SwaggerGen;
+
+namespace Lykke.MarginTrading.CommissionService.Controllers
+{
+    // NOTE: See https://lykkex.atlassian.net/wiki/spaces/LKEWALLET/pages/35755585/Add+your+app+to+Monitoring
+    [Route("api/[controller]")]
+    public class IsAliveController : Controller
+    {
+        /// <summary>
+        ///     Checks service is alive
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        [SwaggerOperation("IsAlive")]
+        [ProducesResponseType(typeof(IsAliveResponse), (int) HttpStatusCode.OK)]
+        public IActionResult Get()
+        {
+            // NOTE: Feel free to extend IsAliveResponse, to display job-specific indicators
+            return Ok(new IsAliveResponse
+            {
+                Version = PlatformServices.Default.Application.ApplicationVersion,
+                Env = Environment.GetEnvironmentVariable("ENV_INFO"),
+#if DEBUG
+                IsDebug = true,
+#else
+                IsDebug = false,
+#endif
+                Name = Startup.ServiceName,
+            });
+        }
+    }
+}

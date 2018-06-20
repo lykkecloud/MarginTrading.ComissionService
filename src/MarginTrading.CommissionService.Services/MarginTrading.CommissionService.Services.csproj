@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MarginTrading.CommissionService.Core\MarginTrading.CommissionService.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Lykke.Common, Version=6.3.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\..\..\.nuget\packages\lykke.common\6.3.0\lib\netstandard2.0\Lykke.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="MoreLinq, Version=2.10.21623.0, Culture=neutral, PublicKeyToken=384d532d7e88985d">
+      <HintPath>..\..\..\..\.nuget\packages\morelinq\2.10.0\lib\netstandard2.0\MoreLinq.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+  </ItemGroup>
+</Project>
