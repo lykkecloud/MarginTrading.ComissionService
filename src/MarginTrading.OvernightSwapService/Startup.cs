@@ -1,17 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Common.Log;
+using FluentScheduler;
 using JetBrains.Annotations;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.SettingsReader;
+using MarginTrading.Backend.Contracts.DataReaderClient;
 using MarginTrading.OvernightSwapService.Infrastructure.Implementation;
 using MarginTrading.OvernightSwapService.Modules;
+using MarginTrading.OvernightSwapService.Scheduling;
+using MarginTrading.OvernightSwapService.Services;
+using MarginTrading.OvernightSwapService.Services.Implementation;
 using MarginTrading.OvernightSwapService.Settings;
+using MarginTrading.OvernightSwapService.Storage;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -68,6 +75,11 @@ namespace MarginTrading.OvernightSwapService
                 builder.RegisterModule(new OvernightSwapServiceModule(appSettings, Log));
                 builder.RegisterModule(new OvernightSwapServiceExternalServicesModule(appSettings));
 
+                services.RegisterMtDataReaderClient(
+                    appSettings.Nested(x => x.MarginTradingOvernightSwapService.Services.DataReader.Url).CurrentValue,
+                    appSettings.Nested(x => x.MarginTradingOvernightSwapService.Services.DataReader.ApiKey).CurrentValue,
+                    nameof(OvernightSwapService));
+                
                 builder.Populate(services);
 
                 ApplicationContainer = builder.Build();
@@ -111,18 +123,30 @@ namespace MarginTrading.OvernightSwapService
             }
         }
 
-
         private async Task StartApplication()
         {
             try
             {
+                //TODO thats only to get swap comission values - EOD keeper will provide interest rates
+                var accountAssets = (await ApplicationContainer.Resolve<IAccountAssetPairsRepository>().GetAllAsync()).ToList();
+                ApplicationContainer.Resolve<IAccountAssetsCacheService>().InitAccountAssetsCache(accountAssets);
+                
                 // NOTE: Service not yet recieves and processes requests here
+                var settingsCalcTime = ApplicationContainer.Resolve<IReloadingManager<MarginTradingOvernightSwapServiceSettings>>()
+                    .CurrentValue.OvernightSwapCalculationTime;
+                var registry = new Registry();
+                registry.Schedule<OvernightSwapJob>().ToRunEvery(0).Days().At(settingsCalcTime.Hours, 
+                    settingsCalcTime.Minutes);
+                JobManager.Initialize(registry);
+                JobManager.JobException += info => Log.WriteError(ServiceName, nameof(JobManager), info.Exception);
 
-                await Log.WriteMonitorAsync("", "", "Started");
+                ApplicationContainer.Resolve<IOvernightSwapService>().Start();
+                
+                Log?.WriteMonitorAsync("", "", "Started").Wait();
             }
             catch (Exception ex)
             {
-                await Log.WriteFatalErrorAsync(nameof(Startup), nameof(StartApplication), "", ex);
+                Log?.WriteFatalErrorAsync(nameof(Startup), nameof(StartApplication), "", ex).Wait();
                 throw;
             }
         }
@@ -175,8 +199,6 @@ namespace MarginTrading.OvernightSwapService
             var aggregateLogger = new AggregateLogger();
 
             aggregateLogger.AddLog(consoleLogger);
-            
-            // todo: add some more loggers, ex db?
 
             return aggregateLogger;
         }
