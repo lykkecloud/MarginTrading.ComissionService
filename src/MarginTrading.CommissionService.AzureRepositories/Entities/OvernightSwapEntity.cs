@@ -9,12 +9,11 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
 {
     public class OvernightSwapEntity : AzureTableEntity, IOvernightSwap
     {
-        public string ClientId { get; set; }
         public string AccountId { get; set; }
         public string Instrument { get; set; }
         public string Direction { get; set; }
-        OrderDirection? IOvernightSwap.Direction => 
-            Enum.TryParse<OrderDirection>(Direction, out var direction) ? direction : (OrderDirection?)null;
+        PositionDirection? IOvernightSwap.Direction => 
+            Enum.TryParse<PositionDirection>(Direction, out var direction) ? direction : (PositionDirection?)null;
         public DateTime Time { get; set; }
         public decimal Volume { get; set; }
         public string OpenOrderIds { get; set; }
@@ -32,7 +31,6 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
             {
                 PartitionKey = obj.AccountId,
                 RowKey = $"{obj.Time:O}",
-                ClientId = obj.ClientId,
                 AccountId = obj.AccountId,
                 Instrument = obj.Instrument,
                 Direction = obj.Direction?.ToString(),

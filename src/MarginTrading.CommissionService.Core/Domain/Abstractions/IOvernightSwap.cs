@@ -5,10 +5,9 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
 {
     public interface IOvernightSwap
     {
-        string ClientId { get; }
         string AccountId { get; }
         string Instrument { get; }
-        OrderDirection? Direction { get; }
+        PositionDirection? Direction { get; }
         DateTime Time { get; }
         decimal Volume { get; }
         decimal Value { get; }

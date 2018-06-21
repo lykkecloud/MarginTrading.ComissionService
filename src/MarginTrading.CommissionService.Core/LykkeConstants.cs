@@ -1,4 +1,4 @@
-﻿namespace MarginTrading.CommissionService.Core.Domain
+﻿namespace MarginTrading.CommissionService.Core
 {
     public class LykkeConstants
     {

@@ -231,7 +231,7 @@ namespace MarginTrading.CommissionService.Services
 			string instrument, Exception exception)
 		{
 			var volume = orders.Select(x => Math.Abs(x.CurrentVolume)).Sum();
-			var failedCalculation = OvernightSwapCalculation.Create(clientId, accountId, instrument, 
+			var failedCalculation = OvernightSwapCalculation.Create(accountId, instrument, 
 				orders.Select(o => o.Id).ToList(), _currentStartTimestamp, false, exception, volume);
 			
 			await _log.WriteErrorAsync(nameof(OvernightSwapService), nameof(ProcessFailedOrders), 
