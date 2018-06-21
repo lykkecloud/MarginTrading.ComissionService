@@ -2,7 +2,7 @@
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Lykke.MarginTrading.CommissionService.Infrastructure
+namespace MarginTrading.CommissionService.Infrastructure
 {
     public class CustomOperationIdOperationFilter : IOperationFilter
     {

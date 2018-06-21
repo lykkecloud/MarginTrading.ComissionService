@@ -6,17 +6,19 @@ using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Common.Log;
-using FluentScheduler;
 using JetBrains.Annotations;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
-using Lykke.MarginTrading.CommissionService.Infrastructure;
-using Lykke.MarginTrading.CommissionService.Modules;
+using Lykke.Logs;
 using Lykke.SettingsReader;
-using MarginTrading.Backend.Contracts.DataReaderClient;
+using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
+using MarginTrading.CommissionService.Infrastructure;
+using MarginTrading.CommissionService.Modules;
+using MarginTrading.CommissionService.Services;
+using MarginTrading.CommissionService.SqlRepositories.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -25,7 +27,7 @@ using Microsoft.Extensions.PlatformAbstractions;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 
-namespace Lykke.MarginTrading.CommissionService
+namespace MarginTrading.CommissionService
 {
     public class Startup
     {
@@ -73,11 +75,6 @@ namespace Lykke.MarginTrading.CommissionService
                 builder.RegisterModule(new CommissionServiceModule(appSettings, Log));
                 builder.RegisterModule(new CommissionServiceExternalModule(appSettings));
 
-                services.RegisterMtDataReaderClient(
-                    appSettings.Nested(x => x.CommissionService.Services.DataReader.Url).CurrentValue,
-                    appSettings.Nested(x => x.CommissionService.Services.DataReader.ApiKey).CurrentValue,
-                    nameof(CommissionService));
-                
                 builder.Populate(services);
 
                 ApplicationContainer = builder.Build();
@@ -126,19 +123,9 @@ namespace Lykke.MarginTrading.CommissionService
             try
             {
                 //TODO thats only to get swap comission values - EOD keeper will provide interest rates
-                var accountAssets = (await ApplicationContainer.Resolve<IAccountAssetPairsRepository>().GetAllAsync()).ToList();
-                ApplicationContainer.Resolve<IAccountAssetsCacheService>().InitAccountAssetsCache(accountAssets);
                 
                 // NOTE: Service not yet recieves and processes requests here
-                /*var settingsCalcTime = ApplicationContainer.Resolve<IReloadingManager<CommissionServiceSettings>>()
-                    .CurrentValue.OvernightSwapCalculationTime;
-                var registry = new Registry();
-                registry.Schedule<OvernightSwapJob>().ToRunEvery(0).Days().At(settingsCalcTime.Hours, 
-                    settingsCalcTime.Minutes);
-                JobManager.Initialize(registry);
-                JobManager.JobException += info => Log.WriteError(ServiceName, nameof(JobManager), info.Exception);
-*/
-                ApplicationContainer.Resolve<IOvernightSwapService>().Start();
+                
                 
                 Log?.WriteMonitorAsync("", "", "Started").Wait();
             }
@@ -198,6 +185,17 @@ namespace Lykke.MarginTrading.CommissionService
 
             aggregateLogger.AddLog(consoleLogger);
 
+            if (settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.SqlServer)
+            {
+                aggregateLogger.AddLog(new LogToSql(new SqlLogRepository("CommissionServiceLog",
+                    settings.CurrentValue.CommissionService.Db.LogsConnString)));
+            }
+            else if (settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.Azure)
+            {
+                aggregateLogger.AddLog(services.UseLogToAzureStorage(settings.Nested(s => s.CommissionService.Db.LogsConnString),
+                    null, "CommissionServiceLog", consoleLogger));
+            }
+            
             return aggregateLogger;
         }
     }

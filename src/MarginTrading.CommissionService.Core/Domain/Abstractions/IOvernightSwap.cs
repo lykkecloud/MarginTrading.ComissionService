@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace MarginTrading.CommissionService.Core.Domain.Abstractions
 {
-    public interface IOvernightSwapState
+    public interface IOvernightSwap
     {
         string ClientId { get; }
         string AccountId { get; }
@@ -14,5 +14,7 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
         decimal Value { get; }
         decimal SwapRate { get; }
         List<string> OpenOrderIds { get; }
+        bool IsSuccess { get; }
+        Exception Exception { get; }
     }
 }

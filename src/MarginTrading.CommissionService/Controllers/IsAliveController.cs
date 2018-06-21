@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.PlatformAbstractions;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Lykke.MarginTrading.CommissionService.Controllers
+namespace MarginTrading.CommissionService.Controllers
 {
     // NOTE: See https://lykkex.atlassian.net/wiki/spaces/LKEWALLET/pages/35755585/Add+your+app+to+Monitoring
     [Route("api/[controller]")]

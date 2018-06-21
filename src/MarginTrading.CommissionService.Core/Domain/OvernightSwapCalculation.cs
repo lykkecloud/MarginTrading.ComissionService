@@ -5,7 +5,7 @@ using MarginTrading.CommissionService.Core.Domain.Abstractions;
 
 namespace MarginTrading.CommissionService.Core.Domain
 {
-    public class OvernightSwapCalculation : IOvernightSwapHistory, IOvernightSwapState
+    public class OvernightSwapCalculation : IOvernightSwap
 	{
 		public string Key => GetKey(AccountId, Instrument, Direction);
 		
@@ -25,7 +25,7 @@ namespace MarginTrading.CommissionService.Core.Domain
 		public static string GetKey(string accountId, string instrument, OrderDirection? direction) =>
 			$"{accountId}_{instrument ?? ""}_{direction?.ToString() ?? ""}";
 
-		public static OvernightSwapCalculation Create(IOvernightSwapState state)
+		public static OvernightSwapCalculation Create(IOvernightSwap state)
 		{
 			return new OvernightSwapCalculation
 			{

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.PlatformAbstractions;
 
-namespace Lykke.MarginTrading.CommissionService
+namespace MarginTrading.CommissionService
 {
     class Program
     {

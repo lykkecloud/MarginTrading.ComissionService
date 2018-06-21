@@ -7,16 +7,16 @@ namespace MarginTrading.CommissionService.Core.Repositories
 {
     public interface IOvernightSwapHistoryRepository
     {
-        Task AddAsync(IOvernightSwapHistory obj);
-        Task<IEnumerable<IOvernightSwapHistory>> GetAsync();
-        Task<IReadOnlyList<IOvernightSwapHistory>> GetAsync(DateTime? @from, DateTime? to);
-        Task<IReadOnlyList<IOvernightSwapHistory>> GetAsync(string accountId, DateTime? from, DateTime? to);
+        Task AddAsync(IOvernightSwap obj);
+        Task<IEnumerable<IOvernightSwap>> GetAsync();
+        Task<IReadOnlyList<IOvernightSwap>> GetAsync(DateTime? @from, DateTime? to);
+        Task<IReadOnlyList<IOvernightSwap>> GetAsync(string accountId, DateTime? from, DateTime? to);
 
         /// <summary>
         /// For testing purposes
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        Task DeleteAsync(IOvernightSwapHistory obj);
+        Task DeleteAsync(IOvernightSwap obj);
     }
 }

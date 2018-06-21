@@ -15,22 +15,10 @@ namespace MarginTrading.CommissionService.AzureRepositories
                 return new MarginTradingBlobRepository(connString);
             }
 
-            public static OvernightSwapStateRepository CreateOvernightSwapStateRepository(IReloadingManager<string> connString, ILog log)
-            {
-                return new OvernightSwapStateRepository(AzureTableStorage<OvernightSwapStateEntity>.Create(connString,
-                    "OvernightSwapState", log));
-            }
-
             public static OvernightSwapHistoryRepository CreateOvernightSwapHistoryRepository(IReloadingManager<string> connString, ILog log)
             {
-                return new OvernightSwapHistoryRepository(AzureTableStorage<OvernightSwapHistoryEntity>.Create(connString,
+                return new OvernightSwapHistoryRepository(AzureTableStorage<OvernightSwapEntity>.Create(connString,
                     "OvernightSwapHistory", log));
-            }
-
-            public static AccountAssetPairsRepository CreateAccountAssetsRepository(IReloadingManager<string> connString, ILog log)
-            {
-                return new AccountAssetPairsRepository(AzureTableStorage<AccountAssetPairEntity>.Create(connString,
-                    "MarginTradingAccountAssets", log));
             }
         }
     }

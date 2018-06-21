@@ -26,16 +26,12 @@ namespace MarginTrading.CommissionService.Services
 	{
 		private readonly IOvernightSwapCache _overnightSwapCache;
 		private readonly IAssetPairsCache _assetPairsCache;
-		private readonly IAccountAssetsCacheService _accountAssetsCacheService;
-		private readonly ICommissionService _commissionService;
-		private readonly IOvernightSwapNotificationService _overnightSwapNotificationService;
+		private readonly ICommissionCalcService _commissionCalcService;
 		
-		private readonly IOvernightSwapStateRepository _overnightSwapStateRepository;
 		private readonly IOvernightSwapHistoryRepository _overnightSwapHistoryRepository;
-		private readonly IOrderReceiveService _orderReceiveService;
+		private readonly IPositionReceiveService _positionReceiveService;
 		private readonly IThreadSwitcher _threadSwitcher;
 		private readonly IDateService _dateService;
-		private readonly IAccountManager _accountManager;//just to update an account
 		private readonly IReloadingManager<CommissionServiceSettings> _marginSettings;
 		private readonly ILog _log;
 
@@ -46,36 +42,28 @@ namespace MarginTrading.CommissionService.Services
 		public OvernightSwapService(
 			IOvernightSwapCache overnightSwapCache,
 			IAssetPairsCache assetPairsCache,
-			IAccountAssetsCacheService accountAssetsCacheService,
-			ICommissionService commissionService,
-			IOvernightSwapNotificationService overnightSwapNotificationService,
+			ICommissionCalcService commissionCalcService,
 			
-			IOvernightSwapStateRepository overnightSwapStateRepository,
 			IOvernightSwapHistoryRepository overnightSwapHistoryRepository,
-			IOrderReceiveService orderReceiveService,
+			IPositionReceiveService positionReceiveService,
 			IThreadSwitcher threadSwitcher,
 			IDateService dateService,
-			IAccountManager accountManager,
 			IReloadingManager<CommissionServiceSettings> marginSettings,
 			ILog log)
 		{
 			_overnightSwapCache = overnightSwapCache;
 			_assetPairsCache = assetPairsCache;
-			_accountAssetsCacheService = accountAssetsCacheService;
-			_commissionService = commissionService;
-			_overnightSwapNotificationService = overnightSwapNotificationService;
+			_commissionCalcService = commissionCalcService;
 			
-			_overnightSwapStateRepository = overnightSwapStateRepository;
 			_overnightSwapHistoryRepository = overnightSwapHistoryRepository;
-			_orderReceiveService = orderReceiveService;
+			_positionReceiveService = positionReceiveService;
 			_threadSwitcher = threadSwitcher;
 			_dateService = dateService;
-			_accountManager = accountManager;
 			_marginSettings = marginSettings;
 			_log = log;
 		}
 
-		public void Start()
+		/*public void Start()
 		{
 			//initialize cache from storage
 			var savedState = _overnightSwapStateRepository.GetAsync().GetAwaiter().GetResult().ToList();
@@ -83,18 +71,16 @@ namespace MarginTrading.CommissionService.Services
 
 			//start calculation
 			CalculateAndChargeSwaps();
-			
-			//TODO if server was down more that a day.. calc N days
-		}
+		}*/
 
 		/// <summary>
 		/// Filter orders that are already calculated
 		/// </summary>
 		/// <returns></returns>
-		private IEnumerable<Order> GetOrdersForCalculation()
+		private async Task<IReadOnlyList<OpenPosition>> GetOrdersForCalculationAsync()
 		{
 			//read orders syncronously
-			var openOrders = _orderReceiveService.GetActive().ToList();
+			var openOrders = await _positionReceiveService.GetActive();
 			
 			//prepare the list of orders
 			var lastInvocationTime = CalcLastInvocationTime();
@@ -110,19 +96,22 @@ namespace MarginTrading.CommissionService.Services
 				.Except(openOrders.Select(y => y.Id)).ToList();
 			if (failedClosedOrders.Any())
 			{
-				_log.WriteErrorAsync(nameof(OvernightSwapService), nameof(GetOrdersForCalculation), new Exception(
+				await _log.WriteErrorAsync(nameof(OvernightSwapService), nameof(GetOrdersForCalculationAsync), new Exception(
 						$"Overnight swap calculation failed for some orders and they were closed before recalculation: {string.Join(", ", failedClosedOrders)}."),
-					DateTime.UtcNow).GetAwaiter().GetResult();
+					DateTime.UtcNow);
 			}
 			
-			return filteredOrders;
+			return filteredOrders.ToList();
 		}
 
-		public void CalculateAndChargeSwaps()
+		public async Task CalculateAndChargeSwaps()
 		{
 			_currentStartTimestamp = _dateService.Now();
 
-			var filteredOrders = GetOrdersForCalculation().ToList();
+			var filteredPositions = (await GetOrdersForCalculationAsync())
+				.OrderBy(x => x.AccountId)
+				.ThenBy(x => x.AssetPairId)
+				.ToList();
 			
 			//start calculation in a separate thread
 			_threadSwitcher.SwitchThread(async () =>
@@ -132,47 +121,33 @@ namespace MarginTrading.CommissionService.Services
 				try
 				{
 					await _log.WriteInfoAsync(nameof(OvernightSwapService), nameof(CalculateAndChargeSwaps),
-						$"Started, # of orders: {filteredOrders.Count}.", DateTime.UtcNow);
+						$"Started, # of positions: {filteredPositions.Count}.", DateTime.UtcNow);
 					
-					foreach (var accountOrders in filteredOrders.GroupBy(x => x.AccountId))
-					{
-						var clientId = accountOrders.First().ClientId;
-
-						foreach (var ordersByInstrument in accountOrders.GroupBy(x => x.Instrument))
-						{
-							var firstOrder = ordersByInstrument.FirstOrDefault();
-							IAccountAssetPair accountAssetPair;
-							try
-							{
-								accountAssetPair = _accountAssetsCacheService.GetAccountAsset(
-									firstOrder?.TradingConditionId, firstOrder?.AccountAssetId, firstOrder?.Instrument);
-							}
-							catch (Exception ex)
-							{
-								await ProcessFailedOrders(ordersByInstrument.ToList(), clientId, accountOrders.Key, ordersByInstrument.Key, ex);
-								continue;
-							}
-
-							foreach (OrderDirection direction in Enum.GetValues(typeof(OrderDirection)))
-							{
-								var orders = ordersByInstrument.Where(order => order.GetOrderType() == direction).ToList();
-								if (orders.Count == 0)
-									continue;
-
-								try
-								{
-									await ProcessOrders(orders, ordersByInstrument.Key, clientId, accountOrders.Key,
-										accountAssetPair, direction);
-								}
-								catch (Exception ex)
-								{
-									await ProcessFailedOrders(orders, clientId, accountOrders.Key, ordersByInstrument.Key, ex);
-								}
-							}
-						}
-					}
-
-					await ClearOldState();
+//					foreach (var position in filteredPositions)
+//					{						
+//						IAccountAssetPair accountAssetPair;
+//						try
+//						{
+//							accountAssetPair = _accountAssetsCacheService.GetAccountAsset(
+//								firstOrder?.TradingConditionId, firstOrder?.AccountAssetId, firstOrder?.Instrument);
+//						}
+//						catch (Exception ex)
+//						{
+//							await ProcessFailedOrders(ordersByInstrument.ToList(), clientId, accountOrders.Key, ordersByInstrument.Key, ex);
+//							continue;
+//						}
+//						
+//						try
+//						{
+//							await ProcessOrders(orders);
+//						}
+//						catch (Exception ex)
+//						{
+//							await ProcessFailedOrders(orders, clientId, accountOrders.Key, ordersByInstrument.Key, ex);
+//						}
+//					}
+//
+//					await ClearOldState();
 					
 					await _log.WriteInfoAsync(nameof(OvernightSwapService), nameof(CalculateAndChargeSwaps),
 						$"Finished, # of calculations: {_overnightSwapCache.GetAll().Count(x => x.Time >= _currentStartTimestamp)}.", DateTime.UtcNow);
@@ -181,25 +156,17 @@ namespace MarginTrading.CommissionService.Services
 				{
 					_semaphore.Release();
 				}
-
-				if (_marginSettings.CurrentValue.SendOvernightSwapEmails)
-					_overnightSwapNotificationService.PerformEmailNotification(_currentStartTimestamp);
 			});
 		}
 
 		/// <summary>
 		/// Calculate overnight swaps for account/instrument/direction order package.
 		/// </summary>
-		/// <param name="instrument"></param>
-		/// <param name="accountAssetPair"></param>
-		/// <param name="direction"></param>
 		/// <param name="orders"></param>
-		/// <param name="clientId"></param>
 		/// <returns></returns>
-		private async Task ProcessOrders(IReadOnlyList<Order> orders, string instrument, 
-			string clientId, string accountId, IAccountAssetPair accountAssetPair, OrderDirection direction)
+		private async Task ProcessOrders(OpenPosition orders)
 		{
-			IReadOnlyList<Order> filteredOrders = orders.ToList();
+			/*IReadOnlyList<OpenPosition> filteredOrders = orders.ToList();
 			
 			//check if swaps had already been taken
 			var lastCalcExists = _overnightSwapCache.TryGet(OvernightSwapCalculation.GetKey(accountId, instrument, direction),
@@ -211,44 +178,44 @@ namespace MarginTrading.CommissionService.Services
 					new Exception($"Overnight swaps had already been taken, filtering: {JsonConvert.SerializeObject(lastCalc)}"), DateTime.UtcNow);
 				
 				filteredOrders = orders.Where(x => !lastCalc.OpenOrderIds.Contains(x.Id)).ToList();
-			}
+			}*/
 
 			//calc swaps
-			var swapRate = direction == OrderDirection.Buy ? accountAssetPair.OvernightSwapLong : accountAssetPair.OvernightSwapShort;
-			if (swapRate == 0)
-				return;
-			
-			var total = filteredOrders.Sum(order => _commissionService.GetOvernightSwap(order, swapRate));
-			if (total == 0)
-				return;
-			
-			//create calculation obj
-			var volume = filteredOrders.Select(x => Math.Abs(x.Volume)).Sum();
-			var calculation = OvernightSwapCalculation.Create(clientId, accountId, instrument,
-				filteredOrders.Select(order => order.Id).ToList(), _currentStartTimestamp, true, null, volume, total, swapRate, direction);
-	
-			//charge comission
-			var instrumentName = _assetPairsCache.GetAssetPairByIdOrDefault(accountAssetPair.Instrument)?.Name 
-			                     ?? accountAssetPair.Instrument;
-			await _accountManager.UpdateBalanceAsync(
-				clientId: clientId,
-				accountId: accountId, 
-				amount: - total, 
-				historyType: AccountHistoryType.Swap,
-				comment : $"{instrumentName} {(direction == OrderDirection.Buy ? "long" : "short")} swaps. Volume: {volume}. Positions count: {filteredOrders.Count}. Rate: {swapRate}. Time: {_currentStartTimestamp:u}.",
-				auditLog: calculation.ToJson());
-			
-			//update calculation state if previous existed
-			var newCalcState = lastCalcExists
-				? OvernightSwapCalculation.Update(calculation, lastCalc)
-				: OvernightSwapCalculation.Create(calculation);
+//			var swapRate = direction == OrderDirection.Buy ? accountAssetPair.OvernightSwapLong : accountAssetPair.OvernightSwapShort;
+//			if (swapRate == 0)
+//				return;
+//			
+//			var total = filteredOrders.Sum(order => _commissionService.GetOvernightSwap(order, swapRate));
+//			if (total == 0)
+//				return;
+//			
+//			//create calculation obj
+//			var volume = filteredOrders.Select(x => Math.Abs(x.Volume)).Sum();
+//			var calculation = OvernightSwapCalculation.Create(clientId, accountId, instrument,
+//				filteredOrders.Select(order => order.Id).ToList(), _currentStartTimestamp, true, null, volume, total, swapRate, direction);
+//	
+//			//charge comission
+//			var instrumentName = _assetPairsCache.GetAssetPairByIdOrDefault(accountAssetPair.Instrument)?.Name 
+//			                     ?? accountAssetPair.Instrument;
+//			await _accountManager.UpdateBalanceAsync(
+//				clientId: clientId,
+//				accountId: accountId, 
+//				amount: - total, 
+//				historyType: AccountHistoryType.Swap,
+//				comment : $"{instrumentName} {(direction == OrderDirection.Buy ? "long" : "short")} swaps. Volume: {volume}. Positions count: {filteredOrders.Count}. Rate: {swapRate}. Time: {_currentStartTimestamp:u}.",
+//				auditLog: calculation.ToJson());
+//			
+//			//update calculation state if previous existed
+//			var newCalcState = lastCalcExists
+//				? OvernightSwapCalculation.Update(calculation, lastCalc)
+//				: OvernightSwapCalculation.Create(calculation);
 
 			//add to cache
-			_overnightSwapCache.AddOrReplace(newCalcState);
-			
-			//write state and log
-			await _overnightSwapStateRepository.AddOrReplaceAsync(newCalcState);
-			await _overnightSwapHistoryRepository.AddAsync(calculation);
+//			_overnightSwapCache.AddOrReplace(newCalcState);
+//			
+//			//write state and log
+//			await _overnightSwapStateRepository.AddOrReplaceAsync(newCalcState);
+//			await _overnightSwapHistoryRepository.AddAsync(calculation);
 		}
 
 		/// <summary>
@@ -260,10 +227,10 @@ namespace MarginTrading.CommissionService.Services
 		/// <param name="instrument"></param>
 		/// <param name="exception"></param>
 		/// <returns></returns>
-		private async Task ProcessFailedOrders(IReadOnlyList<Order> orders, string clientId, string accountId, 
+		private async Task ProcessFailedOrders(IReadOnlyList<OpenPosition> orders, string clientId, string accountId, 
 			string instrument, Exception exception)
 		{
-			var volume = orders.Select(x => Math.Abs(x.Volume)).Sum();
+			var volume = orders.Select(x => Math.Abs(x.CurrentVolume)).Sum();
 			var failedCalculation = OvernightSwapCalculation.Create(clientId, accountId, instrument, 
 				orders.Select(o => o.Id).ToList(), _currentStartTimestamp, false, exception, volume);
 			
@@ -287,7 +254,7 @@ namespace MarginTrading.CommissionService.Services
 					? 0 : -1);
 			return result;
 		}
-
+/*
 		private async Task ClearOldState()
 		{
 			var oldEntries = _overnightSwapCache.GetAll().Where(x => x.Time < DateTime.UtcNow.AddDays(-2));
@@ -297,6 +264,6 @@ namespace MarginTrading.CommissionService.Services
 				_overnightSwapCache.Remove(obj);
 				await _overnightSwapStateRepository.DeleteAsync(obj);
 			};
-		}
+		}*/
 	}
 }

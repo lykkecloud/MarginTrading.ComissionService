@@ -1,16 +1,14 @@
 ﻿using Lykke.SettingsReader.Attributes;
+using MarginTrading.CommissionService.Core.Domain;
 
 namespace MarginTrading.CommissionService.Core.Settings
 {
     public class DbSettings
     {
-        [AzureBlobCheck]
+        public StorageMode StorageMode { get; set; }
+        
         public string StateConnString { get; set; }
-        
-        [AzureTableCheck]
         public string LogsConnString { get; set; }
-        
-        [AzureTableCheck]
         public string MarginTradingConnString { get; set; }
     }
 }

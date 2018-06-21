@@ -6,7 +6,7 @@ using MarginTrading.CommissionService.Core.Services;
 namespace MarginTrading.CommissionService.Services
 {
     [UsedImplicitly]
-    internal class ConvertService : IConvertService
+    public class ConvertService : IConvertService
     {
         private readonly IMapper _mapper = CreateMapper();
 

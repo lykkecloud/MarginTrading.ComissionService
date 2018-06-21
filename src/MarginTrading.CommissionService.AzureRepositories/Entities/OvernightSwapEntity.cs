@@ -7,31 +7,28 @@ using Newtonsoft.Json;
 
 namespace MarginTrading.CommissionService.AzureRepositories.Entities
 {
-    public class OvernightSwapHistoryEntity : AzureTableEntity, IOvernightSwapHistory
+    public class OvernightSwapEntity : AzureTableEntity, IOvernightSwap
     {
         public string ClientId { get; set; }
         public string AccountId { get; set; }
         public string Instrument { get; set; }
         public string Direction { get; set; }
-        OrderDirection? IOvernightSwapState.Direction => 
+        OrderDirection? IOvernightSwap.Direction => 
             Enum.TryParse<OrderDirection>(Direction, out var direction) ? direction : (OrderDirection?)null;
         public DateTime Time { get; set; }
-        public double Volume { get; set; }
-        decimal IOvernightSwapState.Volume => (decimal) Volume;
+        public decimal Volume { get; set; }
         public string OpenOrderIds { get; set; }
-        List<string> IOvernightSwapState.OpenOrderIds => JsonConvert.DeserializeObject<List<string>>(OpenOrderIds);
-        public double Value { get; set; }
-        decimal IOvernightSwapState.Value => (decimal) Value;
-        public double SwapRate { get; set; }
-        decimal IOvernightSwapState.SwapRate => (decimal) SwapRate;
+        List<string> IOvernightSwap.OpenOrderIds => JsonConvert.DeserializeObject<List<string>>(OpenOrderIds);
+        public decimal Value { get; set; }
+        public decimal SwapRate { get; set; }
 		
         public bool IsSuccess { get; set; }
         public string Exception { get; set; }
-        Exception IOvernightSwapHistory.Exception => JsonConvert.DeserializeObject<Exception>(Exception);
+        Exception IOvernightSwap.Exception => JsonConvert.DeserializeObject<Exception>(Exception);
 		
-        public static OvernightSwapHistoryEntity Create(IOvernightSwapHistory obj)
+        public static OvernightSwapEntity Create(IOvernightSwap obj)
         {
-            return new OvernightSwapHistoryEntity
+            return new OvernightSwapEntity
             {
                 PartitionKey = obj.AccountId,
                 RowKey = $"{obj.Time:O}",
@@ -40,9 +37,9 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
                 Instrument = obj.Instrument,
                 Direction = obj.Direction?.ToString(),
                 Time = obj.Time,
-                Volume = (double) obj.Volume,
-                Value = (double) obj.Value,
-                SwapRate = (double) obj.SwapRate,
+                Volume = obj.Volume,
+                Value = obj.Value,
+                SwapRate = obj.SwapRate,
                 OpenOrderIds = JsonConvert.SerializeObject(obj.OpenOrderIds),
                 IsSuccess = obj.IsSuccess,
                 Exception = JsonConvert.SerializeObject(obj.Exception)

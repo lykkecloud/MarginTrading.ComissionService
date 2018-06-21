@@ -2,7 +2,9 @@
 {
     public class ServicesSettings
     {
-        public ServiceSettings DataReader { get; set; }
-        public ServiceSettings ClientAccount { get; set; }
+        public ServiceSettings Backend { get; set; }
+        public ServiceSettings TradingHistory { get; set; }
+        public ServiceSettings AccountManagement { get; set; }
+        public ServiceSettings SettingsService { get; set; }
     }
 }

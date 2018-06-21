@@ -6,7 +6,6 @@ using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Exceptions;
 using MarginTrading.CommissionService.Core.Services;
-using AssetPairKey = System.ValueTuple<string, string, string>;
 
 namespace MarginTrading.CommissionService.Services.Caches
 {
@@ -23,15 +22,6 @@ namespace MarginTrading.CommissionService.Services.Caches
     {
         private IReadOnlyDictionary<string, IAssetPair> _assetPairs = 
             ImmutableSortedDictionary<string, IAssetPair>.Empty;
-
-        private readonly ICachedCalculation<IReadOnlyDictionary<AssetPairKey, IAssetPair>> _assetPairsByAssets;
-        private readonly ICachedCalculation<ImmutableHashSet<string>> _assetPairsIds;
-
-        public AssetPairsCache()
-        {
-            _assetPairsByAssets = GetAssetPairsByAssetsCache();
-            _assetPairsIds = Calculate.Cached(() => _assetPairs, ReferenceEquals, p => p.Keys.ToImmutableHashSet());
-        }
 
         public IAssetPair GetAssetPairById(string assetPairId)
         {
@@ -53,15 +43,18 @@ namespace MarginTrading.CommissionService.Services.Caches
 
         public ImmutableHashSet<string> GetAllIds()
         {
-            return _assetPairsIds.Get();
+            return Enumerable.ToHashSet(_assetPairs.Select(x => x.Key)).ToImmutableHashSet();
         }
 
         public IAssetPair FindAssetPair(string asset1, string asset2, string legalEntity)
         {
             var key = GetAssetPairKey(asset1, asset2, legalEntity);
-            
-            if (_assetPairsByAssets.Get().TryGetValue(key, out var result))
-                return result;
+
+            var assetPair = _assetPairs.Values.FirstOrDefault(x => x.BaseAssetId == asset1
+                                                                   && x.QuoteAssetId == asset2
+                                                                   && x.LegalEntity == legalEntity);
+            if (assetPair != null)
+                return assetPair;
 
             throw new InstrumentByAssetsNotFoundException(asset1, asset2,
                 string.Format("There is no instrument with assets {0} and {1}", asset1, asset2));
@@ -72,17 +65,7 @@ namespace MarginTrading.CommissionService.Services.Caches
             _assetPairs = instruments;
         }
 
-        private ICachedCalculation<IReadOnlyDictionary<AssetPairKey, IAssetPair>> GetAssetPairsByAssetsCache()
-        {
-            return Calculate.Cached(() => _assetPairs, ReferenceEquals,
-                pairs => pairs.Values.SelectMany(p => new []
-                {
-                    (GetAssetPairKey(p.BaseAssetId, p.QuoteAssetId, p.LegalEntity), p),
-                    (GetAssetPairKey(p.QuoteAssetId, p.BaseAssetId, p.LegalEntity), p),
-                }).ToDictionary());
-        }
-
-        private static AssetPairKey GetAssetPairKey(string asset1, string asset2, string legalEntity)
+        private static (string, string, string) GetAssetPairKey(string asset1, string asset2, string legalEntity)
         {
             return (asset1, asset2, legalEntity);
         }

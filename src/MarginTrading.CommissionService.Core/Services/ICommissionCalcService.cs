@@ -2,8 +2,8 @@
 
 namespace MarginTrading.CommissionService.Core.Services
 {
-    public interface ICommissionService
+    public interface ICommissionCalcService
     {
-        decimal GetOvernightSwap(IOrder order, decimal swapRate);
+        decimal GetOvernightSwap(IOpenPosition openPosition, decimal swapRate);
     }
 }

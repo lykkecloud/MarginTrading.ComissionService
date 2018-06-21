@@ -5,16 +5,25 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\MarginTrading.CommissionService.Core\MarginTrading.CommissionService.Core.csproj" />
+    <ProjectReference Include="..\MarginTrading.CommissionService.SqlRepositories\MarginTrading.CommissionService.SqlRepositories.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Lykke.Common, Version=6.3.0.0, Culture=neutral, PublicKeyToken=null">
       <HintPath>..\..\..\..\.nuget\packages\lykke.common\6.3.0\lib\netstandard2.0\Lykke.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Lykke.Logs, Version=3.6.2.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\..\..\.nuget\packages\lykke.logs\3.6.2\lib\netstandard2.0\Lykke.Logs.dll</HintPath>
+    </Reference>
+    <Reference Include="MarginTrading.Backend.Contracts, Version=1.1.1.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\..\..\.nuget\packages\lykke.margintrading.backendsnow.contracts\1.1.1\lib\netstandard2.0\MarginTrading.Backend.Contracts.dll</HintPath>
     </Reference>
     <Reference Include="MoreLinq, Version=2.10.21623.0, Culture=neutral, PublicKeyToken=384d532d7e88985d">
       <HintPath>..\..\..\..\.nuget\packages\morelinq\2.10.0\lib\netstandard2.0\MoreLinq.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Lykke.MarginTrading.AccountsManagement.Contracts" Version="1.0.9" />
+    <PackageReference Include="Lykke.MarginTrading.SettingsService.Contracts" Version="1.0.1" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 </Project>
