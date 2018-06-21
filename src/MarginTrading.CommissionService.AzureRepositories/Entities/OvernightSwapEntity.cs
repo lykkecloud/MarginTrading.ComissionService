@@ -13,8 +13,8 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
         public string AccountId { get; set; }
         public string Instrument { get; set; }
         public string Direction { get; set; }
-        OrderDirection? IOvernightSwap.Direction => 
-            Enum.TryParse<OrderDirection>(Direction, out var direction) ? direction : (OrderDirection?)null;
+        PositionDirection? IOvernightSwap.Direction => 
+            Enum.TryParse<PositionDirection>(Direction, out var direction) ? direction : (PositionDirection?)null;
         public DateTime Time { get; set; }
         public decimal Volume { get; set; }
         public string OpenOrderIds { get; set; }

@@ -12,7 +12,7 @@ namespace MarginTrading.CommissionService.Core.Domain
 		public string ClientId { get; set; }
 		public string AccountId { get; set; }
 		public string Instrument { get; set; }
-		public OrderDirection? Direction { get; set; }
+		public PositionDirection? Direction { get; set; }
 		public DateTime Time { get; set; }
 		public decimal Volume { get; set; }
 		public decimal Value { get; set; }
@@ -22,7 +22,7 @@ namespace MarginTrading.CommissionService.Core.Domain
 		public bool IsSuccess { get; set; }
 		public Exception Exception { get; set; }
 		
-		public static string GetKey(string accountId, string instrument, OrderDirection? direction) =>
+		public static string GetKey(string accountId, string instrument, PositionDirection? direction) =>
 			$"{accountId}_{instrument ?? ""}_{direction?.ToString() ?? ""}";
 
 		public static OvernightSwapCalculation Create(IOvernightSwap state)
@@ -44,7 +44,7 @@ namespace MarginTrading.CommissionService.Core.Domain
 		
 		public static OvernightSwapCalculation Create(string clientId, string accountId, string instrument,
 			List<string> orderIds, DateTime timestamp, bool isSuccess, Exception exception = null, decimal volume = default(decimal),
-			decimal value = default(decimal), decimal swapRate = default(decimal), OrderDirection? direction = null)
+			decimal value = default(decimal), decimal swapRate = default(decimal), PositionDirection? direction = null)
 		{
 			return new OvernightSwapCalculation
 			{

@@ -4,6 +4,7 @@
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\MarginTrading.CommissionService.Contracts\MarginTrading.CommissionService.Contracts.csproj" />
     <ProjectReference Include="..\MarginTrading.CommissionService.Core\MarginTrading.CommissionService.Core.csproj" />
     <ProjectReference Include="..\MarginTrading.CommissionService.SqlRepositories\MarginTrading.CommissionService.SqlRepositories.csproj" />
   </ItemGroup>

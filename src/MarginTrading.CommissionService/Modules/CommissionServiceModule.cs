@@ -33,6 +33,15 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<OvernightSwapCache>().As<IOvernightSwapCache>().SingleInstance();
             
+            builder.RegisterType<RabbitMqService>().As<IRabbitMqService>().SingleInstance();
+            
+            builder.RegisterType<EventSender>().As<IEventSender>()
+                .WithParameters(new[]
+                {
+                    new TypedParameter(typeof(RabbitMqSettings), _settings.CurrentValue.CommissionService.RabbitMq), 
+                })
+                .SingleInstance();
+            
             builder.RegisterType<ThreadSwitcherToNewTask>()
                 .As<IThreadSwitcher>()
                 .SingleInstance();

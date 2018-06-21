@@ -11,4 +11,7 @@
     <PackageReference Include="Lykke.RabbitMqBroker" Version="7.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Domain\CommissionRates" />
+  </ItemGroup>
 </Project>

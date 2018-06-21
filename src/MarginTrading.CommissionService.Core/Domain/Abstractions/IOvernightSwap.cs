@@ -8,7 +8,7 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
         string ClientId { get; }
         string AccountId { get; }
         string Instrument { get; }
-        OrderDirection? Direction { get; }
+        PositionDirection? Direction { get; }
         DateTime Time { get; }
         decimal Volume { get; }
         decimal Value { get; }
