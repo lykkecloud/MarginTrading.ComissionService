@@ -11,7 +11,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
     /// Manages overnight swaps.
     /// </summary>
     [PublicAPI]
-    public interface ICommissionApi
+    public interface ICommissionHistoryApi
     {
         /// <summary>
         /// Retrieve overnight swap calculation history from storage between selected dates.
@@ -23,10 +23,10 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         Task<IEnumerable<OvernightSwapHistoryContract>> GetOvernightSwapHistory(
             [Query] DateTime from, [Query] DateTime to);
 
-        /// <summary>
-        /// Invoke recalculation of account/instrument/direction order packages that were not calculated successfully last time.
-        /// </summary>
-        [Post("api/overnightswap/recalc.failed.orders")]
-        Task RecalculateFailedOrders();
+//        /// <summary>
+//        /// Invoke recalculation of account/instrument/direction order packages that were not calculated successfully last time.
+//        /// </summary>
+//        [Post("api/overnightswap/recalc.failed.orders")]
+//        Task RecalculateFailedOrders();
     }
 }

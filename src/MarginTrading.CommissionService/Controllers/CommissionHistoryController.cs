@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Lykke.MarginTrading.CommissionService.Contracts;
 using Lykke.MarginTrading.CommissionService.Contracts.Models;
 using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
@@ -14,13 +15,13 @@ namespace MarginTrading.CommissionService.Controllers
 {
 	[Authorize]
 	[Route("api/commission")]
-	public class CommissionController : Controller
+	public class CommissionHistoryController : Controller, ICommissionHistoryApi
 	{
 		private readonly IConvertService _convertService;
 		
 		private readonly IOvernightSwapHistoryRepository _overnightSwapHistoryRepository;
 		
-		public CommissionController(
+		public CommissionHistoryController(
 			IConvertService convertService,
 			IOvernightSwapHistoryRepository overnightSwapHistoryRepository)
 		{
@@ -50,18 +51,18 @@ namespace MarginTrading.CommissionService.Controllers
 			return data.Select(x => _convertService.Convert<IOvernightSwap, OvernightSwapHistoryContract>(x));
 		}
 
-		/// <summary>
-		/// Invoke recalculation of account/instrument/direction order packages that were not calculated successfully last time.
-		/// </summary>
-		/// <returns></returns>
-		[Route("recalc.failed.orders")]
-		[ProducesResponseType(200)]
-		[ProducesResponseType(400)]
-		[HttpPost]
-		public Task RecalculateFailedOrders()
-		{
-			MtServiceLocator.OvernightSwapService.CalculateAndChargeSwaps();
-			return Task.CompletedTask;
-		}
+//		/// <summary>
+//		/// Invoke recalculation of account/instrument/direction order packages that were not calculated successfully last time.
+//		/// </summary>
+//		/// <returns></returns>
+//		[Route("recalc.failed.orders")]
+//		[ProducesResponseType(200)]
+//		[ProducesResponseType(400)]
+//		[HttpPost]
+//		public Task RecalculateFailedOrders()
+//		{
+//			MtServiceLocator.OvernightSwapService.CalculateAndChargeSwaps();
+//			return Task.CompletedTask;
+//		}
 	}
 }
