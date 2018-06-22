@@ -5,6 +5,8 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.MarginTrading.CommissionService.Contracts.Messages;
 using Lykke.MarginTrading.CommissionService.Contracts.Models;
+using MarginTrading.AccountsManagement.Contracts.Commands;
+using MarginTrading.AccountsManagement.Contracts.Models;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
@@ -21,7 +23,7 @@ namespace MarginTrading.CommissionService.Services
         private readonly ILog _log;
         private readonly ISystemClock _systemClock;
 
-        private readonly IMessageProducer<ChargeCommissionMessageContract> _chargeCommissionMessageProducer;
+        private readonly IMessageProducer<ChangeBalanceCommand> _chargeCommissionMessageProducer;
 
         public EventSender(
             IRabbitMqService rabbitMqService,
@@ -37,20 +39,14 @@ namespace MarginTrading.CommissionService.Services
             _chargeCommissionMessageProducer =
                 rabbitMqService.GetProducer(rabbitMqSettings.Publishers.ChargeCommission.ConnectionString, 
                     rabbitMqSettings.Publishers.ChargeCommission.ExchangeName, true,
-                    rabbitMqService.GetJsonSerializer<ChargeCommissionMessageContract>());
+                    rabbitMqService.GetJsonSerializer<ChangeBalanceCommand>());
         }
 
-        public async Task SendChargeCommissionMessage(string operationId, string accountId, 
+        public async Task SendChargeCommissionMessage(string operationId, string clientId, string accountId,
             CommissionType commissionType, decimal amount)
         {
-            var message = new ChargeCommissionMessageContract
-            {
-                OperationId = operationId,
-                CalculationTime = _systemClock.UtcNow.UtcDateTime,
-                AccountId = accountId,
-                CommissionType = _convertService.Convert<CommissionType, CommissionTypeContract>(commissionType),
-                Amount = amount,
-            };
+            var message = new ChangeBalanceCommand(operationId, clientId, accountId, amount,
+                GetAccountBalanceChangeReasonType(commissionType), $"{commissionType} charge", null);
 
             try
             {
@@ -59,6 +55,23 @@ namespace MarginTrading.CommissionService.Services
             catch (Exception ex)
             {
                 _log.WriteError(nameof(EventSender), message.ToJson(), ex);
+            }
+        }
+
+        private AccountBalanceChangeReasonTypeContract GetAccountBalanceChangeReasonType(CommissionType commissionType)
+        {
+            switch (commissionType)
+            {
+                case CommissionType.OrderExecution:
+                    return AccountBalanceChangeReasonTypeContract.RealizedPnL;
+                case CommissionType.OnBehalf:
+                    return AccountBalanceChangeReasonTypeContract.OnBehalf;
+                case CommissionType.OvernightSwap:
+                    return AccountBalanceChangeReasonTypeContract.Swap;
+                case CommissionType.UnrealizedDailyPnl:
+                    return AccountBalanceChangeReasonTypeContract.UnrealizedDailyPnL;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(commissionType), commissionType, null);
             }
         }
     }

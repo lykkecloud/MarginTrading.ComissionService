@@ -5,7 +5,7 @@ namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IEventSender
     {
-        Task SendChargeCommissionMessage(string operationId, string accountId,
+        Task SendChargeCommissionMessage(string operationId, string clientId, string accountId,
             CommissionType commissionType, decimal amount);
     }
 }

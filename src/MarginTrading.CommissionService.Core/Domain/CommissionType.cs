@@ -5,6 +5,6 @@
         OrderExecution = 1,
         OnBehalf = 2,
         OvernightSwap = 3,
-        UnrealizedPnl = 4,
+        UnrealizedDailyPnl = 4,
     }
 }
