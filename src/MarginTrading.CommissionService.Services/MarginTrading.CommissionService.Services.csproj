@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <Version>1.0.0</Version>
     <LangVersion>7.3</LangVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -17,10 +18,6 @@
     <PackageReference Include="Lykke.MarginTrading.SettingsService.Contracts" Version="1.0.1" />
     <PackageReference Include="morelinq" Version="2.10.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="Lykke.Cqrs, Version=4.6.1.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\..\..\..\.nuget\packages\lykke.cqrs\4.6.1\lib\netstandard2.0\Lykke.Cqrs.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Lykke.Cqrs" Version="4.6.1" />
   </ItemGroup>
 </Project>

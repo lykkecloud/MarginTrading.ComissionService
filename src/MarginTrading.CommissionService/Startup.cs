@@ -10,6 +10,7 @@ using JetBrains.Annotations;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Logs;
+using Lykke.MarginTrading.CommissionService.Contracts.Api;
 using Lykke.SettingsReader;
 using MarginTrading.Backend.Contracts.Events;
 using MarginTrading.CommissionService.Core.Caches;
@@ -107,7 +108,7 @@ namespace MarginTrading.CommissionService
                 app.UseLykkeMiddleware(ServiceName, ex => new ErrorResponse {ErrorMessage = "Technical problem", Details
  = ex.Message});
 #endif
-
+                
                 app.UseMvc();
                 app.UseSwagger();
                 app.UseSwaggerUI(a => a.SwaggerEndpoint("/swagger/v1/swagger.json", "Main Swagger"));
