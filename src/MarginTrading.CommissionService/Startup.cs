@@ -11,6 +11,8 @@ using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Logs;
 using Lykke.SettingsReader;
+using MarginTrading.Backend.Contracts.Events;
+using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
@@ -18,7 +20,9 @@ using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Infrastructure;
 using MarginTrading.CommissionService.Modules;
 using MarginTrading.CommissionService.Services;
+using MarginTrading.CommissionService.Services.Caches;
 using MarginTrading.CommissionService.SqlRepositories.Repositories;
+using MarginTrading.OrderbookAggregator.Contracts.Messages;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -74,6 +78,7 @@ namespace MarginTrading.CommissionService
 
                 builder.RegisterModule(new CommissionServiceModule(appSettings, Log));
                 builder.RegisterModule(new CommissionServiceExternalModule(appSettings));
+                builder.RegisterModule(new CqrsModule(appSettings.CurrentValue.CommissionService.Cqrs, Log));
 
                 builder.Populate(services);
 
@@ -125,7 +130,22 @@ namespace MarginTrading.CommissionService
                 //TODO thats only to get swap comission values - EOD keeper will provide interest rates
                 
                 // NOTE: Service not yet recieves and processes requests here
+                var settings = ApplicationContainer.Resolve<CommissionServiceSettings>();
+                var rabbitMqService = ApplicationContainer.Resolve<IRabbitMqService>();
+                var fxRateCacheService = ApplicationContainer.Resolve<IFxRateCacheService>();
+                var executedOrdersHandlingService = ApplicationContainer.Resolve<IExecutedOrdersHandlingService>();
                 
+                if (settings.RabbitMq.Consumers.FxRateRabbitMqSettings != null)
+                {
+                    rabbitMqService.Subscribe(settings.RabbitMq.Consumers.FxRateRabbitMqSettings, false,
+                        fxRateCacheService.SetQuote, rabbitMqService.GetMsgPackDeserializer<ExternalExchangeOrderbookMessage>());
+                }
+                
+                if (settings.RabbitMq.Consumers.OrderExecutedSettings != null)
+                {
+                    rabbitMqService.Subscribe(settings.RabbitMq.Consumers.OrderExecutedSettings, true,
+                        executedOrdersHandlingService.Handle, rabbitMqService.GetJsonDeserializer<OrderHistoryEvent>());
+                }
                 
                 Log?.WriteMonitorAsync("", "", "Started").Wait();
             }

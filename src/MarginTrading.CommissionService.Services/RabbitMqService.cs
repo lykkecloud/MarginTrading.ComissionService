@@ -5,10 +5,15 @@ using System.Text;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
+using JetBrains.Annotations;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Publisher;
 using Lykke.RabbitMqBroker.Subscriber;
+using Lykke.SettingsReader;
+using MarginTrading.CommissionService.Core;
+using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Services;
+using MarginTrading.CommissionService.Core.Settings;
 using Microsoft.Extensions.PlatformAbstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -17,23 +22,34 @@ namespace MarginTrading.CommissionService.Services
 {
     public class RabbitMqService : IRabbitMqService, IDisposable
     {
-        private static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings
-        {
-            Converters = {new StringEnumConverter()}
-        };
-
         private readonly ILog _logger;
+        private readonly IConsole _consoleWriter;
 
-        private readonly ConcurrentDictionary<string, IStopable> _subscribers =
-            new ConcurrentDictionary<string, IStopable>();
+        private readonly ConcurrentDictionary<RabbitMqSubscriptionSettings, IStopable> _subscribers =
+            new ConcurrentDictionary<RabbitMqSubscriptionSettings, IStopable>(new SubscriptionSettingsEqualityComparer());
 
         private readonly ConcurrentDictionary<RabbitMqSubscriptionSettings, Lazy<IStopable>> _producers =
             new ConcurrentDictionary<RabbitMqSubscriptionSettings, Lazy<IStopable>>(
                 new SubscriptionSettingsEqualityComparer());
 
-        public RabbitMqService(ILog logger)
+        //[ItemCanBeNull] private readonly Lazy<MessagePackBlobPublishingQueueRepository> _queueRepository;
+
+        public RabbitMqService(ILog logger, IConsole consoleWriter)
         {
             _logger = logger;
+            _consoleWriter = consoleWriter;
+            //_queueRepository = new Lazy<MessagePackBlobPublishingQueueRepository>(() =>
+//            {
+//                if (string.IsNullOrWhiteSpace(queueRepositoryConnectionString?.CurrentValue))
+//                {
+//                    _logger.WriteWarning(nameof(RabbitMqService), "",
+//                        "QueueRepositoryConnectionString is not configured");
+//                    return null;
+//                }
+
+                //var blob = AzureBlobStorage.Create(queueRepositoryConnectionString);
+                //return new MessagePackBlobPublishingQueueRepository(blob);
+            //});
         }
 
         public void Dispose()
@@ -46,21 +62,33 @@ namespace MarginTrading.CommissionService.Services
 
         public IRabbitMqSerializer<TMessage> GetJsonSerializer<TMessage>()
         {
-            return new JsonMessageSerializer<TMessage>(Encoding.UTF8, JsonSerializerSettings);
+            return new JsonMessageSerializer<TMessage>();
         }
 
         public IRabbitMqSerializer<TMessage> GetMsgPackSerializer<TMessage>()
         {
             return new MessagePackMessageSerializer<TMessage>();
         }
+        
+        public IMessageDeserializer<TMessage> GetJsonDeserializer<TMessage>()
+        {
+            return new DeserializerWithErrorLogging<TMessage>(_logger);
+        }
 
-        public IMessageProducer<TMessage> GetProducer<TMessage>(string connectionString, string exchangeName,
+        public IMessageDeserializer<TMessage> GetMsgPackDeserializer<TMessage>()
+        {
+            return new MessagePackMessageDeserializer<TMessage>();
+        }
+
+        public IMessageProducer<TMessage> GetProducer<TMessage>(RabbitConnectionSettings settings,
             bool isDurable, IRabbitMqSerializer<TMessage> serializer)
         {
+            // on-the fly connection strings switch is not supported currently for rabbitMq
             var subscriptionSettings = new RabbitMqSubscriptionSettings
             {
-                ConnectionString = connectionString,
-                ExchangeName = exchangeName,
+                ConnectionString = settings.ConnectionString,
+                ExchangeName = settings.ExchangeName,
+                RoutingKey = settings.RoutingKey ?? string.Empty,
                 IsDurable = isDurable,
             };
 
@@ -70,33 +98,43 @@ namespace MarginTrading.CommissionService.Services
             {
                 // Lazy ensures RabbitMqPublisher will be created and started only once
                 // https://andrewlock.net/making-getoradd-on-concurrentdictionary-thread-safe-using-lazy/
-                return new Lazy<IStopable>(() => new RabbitMqPublisher<TMessage>(s).DisableInMemoryQueuePersistence()
-                    .SetSerializer(serializer)
-                    .SetLogger(_logger)
-                    .Start());
+                return new Lazy<IStopable>(() =>
+                {
+                    var publisher = new RabbitMqPublisher<TMessage>(s);
+
+                    //if (isDurable && _queueRepository.Value != null)
+                    //    publisher.SetQueueRepository(_queueRepository.Value);
+                    //else
+                        publisher.DisableInMemoryQueuePersistence();
+
+                    return publisher
+                        .SetSerializer(serializer)
+                        .SetLogger(_logger)
+                        .SetConsole(_consoleWriter)
+                        .Start();
+                });
             }
         }
 
-        public void Subscribe<TMessage>(string connectionString, string exchangeName, bool isDurable,
-            Func<TMessage, Task> handler)
+        public void Subscribe<TMessage>(RabbitConnectionSettings settings, bool isDurable,
+            Func<TMessage, Task> handler, IMessageDeserializer<TMessage> deserializer)
         {
-            // on-the fly connection strings switch is not supported currently for rabbitMq
             var subscriptionSettings = new RabbitMqSubscriptionSettings
             {
-                ConnectionString = connectionString,
-                QueueName =
-                    $"{exchangeName}.{PlatformServices.Default.Application.ApplicationName}",
-                ExchangeName = exchangeName,
+                ConnectionString = settings.ConnectionString,
+                QueueName = QueueHelper.BuildQueueName(settings.ExchangeName, null),
+                ExchangeName = settings.ExchangeName,
                 IsDurable = isDurable,
             };
 
             var rabbitMqSubscriber = new RabbitMqSubscriber<TMessage>(subscriptionSettings,
                     new DefaultErrorHandlingStrategy(_logger, subscriptionSettings))
-                .SetMessageDeserializer(new JsonMessageDeserializer<TMessage>(JsonSerializerSettings))
+                .SetMessageDeserializer(deserializer)
                 .Subscribe(handler)
-                .SetLogger(_logger);
+                .SetLogger(_logger)
+                .SetConsole(_consoleWriter);
 
-            if (!_subscribers.TryAdd(subscriptionSettings.QueueName, rabbitMqSubscriber))
+            if (!_subscribers.TryAdd(subscriptionSettings, rabbitMqSubscriber))
             {
                 throw new InvalidOperationException(
                     $"A subscriber for queue {subscriptionSettings.QueueName} was already initialized");

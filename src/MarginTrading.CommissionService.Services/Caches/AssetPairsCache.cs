@@ -18,7 +18,7 @@ namespace MarginTrading.CommissionService.Services.Caches
     /// is used as read-only: never updated, only reference-assigned.
     /// Their contents are also readonly.
     /// </remarks>
-    public class AssetPairsCache : IAssetPairsCache
+    public class AssetPairsCache : IAssetPairsInitializableCache
     {
         private IReadOnlyDictionary<string, IAssetPair> _assetPairs = 
             ImmutableSortedDictionary<string, IAssetPair>.Empty;
@@ -60,7 +60,7 @@ namespace MarginTrading.CommissionService.Services.Caches
                 string.Format("There is no instrument with assets {0} and {1}", asset1, asset2));
         }
 
-        void IAssetPairsCache.InitPairsCache(Dictionary<string, IAssetPair> instruments)
+        public void InitPairsCache(Dictionary<string, IAssetPair> instruments)
         {
             _assetPairs = instruments;
         }

@@ -83,25 +83,26 @@ namespace MarginTrading.CommissionService.Services
 			var openOrders = await _positionReceiveService.GetActive();
 			
 			//prepare the list of orders
-			var lastInvocationTime = CalcLastInvocationTime();
-			var calculatedIds = _overnightSwapCache.GetAll().Where(x => x.IsSuccess && x.Time >= lastInvocationTime)
-				.SelectMany(x => x.OpenOrderIds).ToHashSet();
+//			var lastInvocationTime = CalcLastInvocationTime();
+//			var calculatedIds = _overnightSwapCache.GetAll().Where(x => x.IsSuccess && x.Time >= lastInvocationTime)
+//				.SelectMany(x => x.OpenOrderIds).ToHashSet();
 			//select only non-calculated orders, changed before current invocation time
-			var filteredOrders = openOrders.Where(x => !calculatedIds.Contains(x.Id));
-
-			//detect orders for which last calculation failed and it was closed
-			var failedClosedOrders = _overnightSwapHistoryRepository.GetAsync(lastInvocationTime, _currentStartTimestamp)
-				.GetAwaiter().GetResult()
-				.Where(x => !x.IsSuccess).SelectMany(x => x.OpenOrderIds)
-				.Except(openOrders.Select(y => y.Id)).ToList();
-			if (failedClosedOrders.Any())
-			{
-				await _log.WriteErrorAsync(nameof(OvernightSwapService), nameof(GetOrdersForCalculationAsync), new Exception(
-						$"Overnight swap calculation failed for some orders and they were closed before recalculation: {string.Join(", ", failedClosedOrders)}."),
-					DateTime.UtcNow);
-			}
-			
-			return filteredOrders.ToList();
+//			var filteredOrders = openOrders.Where(x => !calculatedIds.Contains(x.Id));
+//
+//			//detect orders for which last calculation failed and it was closed
+//			var failedClosedOrders = _overnightSwapHistoryRepository.GetAsync(lastInvocationTime, _currentStartTimestamp)
+//				.GetAwaiter().GetResult()
+//				.Where(x => !x.IsSuccess).SelectMany(x => x.OpenOrderIds)
+//				.Except(openOrders.Select(y => y.Id)).ToList();
+//			if (failedClosedOrders.Any())
+//			{
+//				await _log.WriteErrorAsync(nameof(OvernightSwapService), nameof(GetOrdersForCalculationAsync), new Exception(
+//						$"Overnight swap calculation failed for some orders and they were closed before recalculation: {string.Join(", ", failedClosedOrders)}."),
+//					DateTime.UtcNow);
+//			}
+//			
+//			return filteredOrders.ToList();
+			return new List<OpenPosition>();
 		}
 
 		public async Task CalculateAndChargeSwaps()
@@ -243,17 +244,17 @@ namespace MarginTrading.CommissionService.Services
 		/// <summary>
 		/// Return last invocation time.
 		/// </summary>
-		private DateTime CalcLastInvocationTime()
-		{
-			var dt = _currentStartTimestamp;
-			(int Hours, int Minutes) settingsCalcTime = (_marginSettings.CurrentValue.OvernightSwapCalculationTime.Hours,
-				_marginSettings.CurrentValue.OvernightSwapCalculationTime.Minutes);
-			
-			var result = new DateTime(dt.Year, dt.Month, dt.Day, settingsCalcTime.Hours, settingsCalcTime.Minutes, 0)
-				.AddDays(dt.Hour > settingsCalcTime.Hours || (dt.Hour == settingsCalcTime.Hours && dt.Minute >= settingsCalcTime.Minutes) 
-					? 0 : -1);
-			return result;
-		}
+//		private DateTime CalcLastInvocationTime()
+//		{
+//			var dt = _currentStartTimestamp;
+//			(int Hours, int Minutes) settingsCalcTime = (_marginSettings.CurrentValue.OvernightSwapCalculationTime.Hours,
+//				_marginSettings.CurrentValue.OvernightSwapCalculationTime.Minutes);
+//			
+//			var result = new DateTime(dt.Year, dt.Month, dt.Day, settingsCalcTime.Hours, settingsCalcTime.Minutes, 0)
+//				.AddDays(dt.Hour > settingsCalcTime.Hours || (dt.Hour == settingsCalcTime.Hours && dt.Minute >= settingsCalcTime.Minutes) 
+//					? 0 : -1);
+//			return result;
+//		}
 /*
 		private async Task ClearOldState()
 		{
