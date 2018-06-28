@@ -41,7 +41,9 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 amount: - evt.Amount,
                 reasonType: GetReasonType(evt.CommissionType), 
                 reason: evt.Reason, 
-                auditLog: null),
+                auditLog: null,
+                eventSourceId: evt.OrderId,
+                assetPairId: string.Empty),//TODO: implement
                 _contextNames.AccountsManagement);
         }
 
