@@ -132,6 +132,10 @@ namespace MarginTrading.CommissionService.Modules
                         new SqlBlobRepository(_settings.CurrentValue.CommissionService.Db.StateConnString))
                     .SingleInstance();
                 
+                builder.RegisterType<OvernightSwapHistoryRepository>()
+                    .As<IOvernightSwapHistoryRepository>()
+                    .SingleInstance();
+                
             }
         }
     }

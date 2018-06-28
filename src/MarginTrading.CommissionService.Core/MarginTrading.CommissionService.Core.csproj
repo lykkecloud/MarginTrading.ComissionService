@@ -15,4 +15,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="Lykke.Cqrs" Version="4.6.1" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Workflow\OvernightSwap\Commands" />
+  </ItemGroup>
 </Project>

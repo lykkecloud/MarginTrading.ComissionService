@@ -9,7 +9,8 @@ using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
-    
+using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
+
 namespace MarginTrading.CommissionService.Workflow.ChargeCommission
 {
     internal class ChargeCommissionSaga
@@ -35,15 +36,37 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             //evt.OperationId
             
             sender.SendCommand(new ChangeBalanceCommand(
-                operationId: evt.OperationId,
-                clientId: null,
-                accountId: evt.AccountId, 
-                amount: - evt.Amount,
-                reasonType: GetReasonType(evt.CommissionType), 
-                reason: evt.Reason, 
-                auditLog: null,
-                eventSourceId: evt.OrderId,
-                assetPairId: string.Empty),//TODO: implement
+                    operationId: evt.OperationId,
+                    clientId: null,
+                    accountId: evt.AccountId, 
+                    amount: - evt.Amount,
+                    reasonType: GetReasonType(evt.CommissionType), 
+                    reason: evt.Reason, 
+                    auditLog: null,
+                    eventSourceId: evt.OrderId,
+                    assetPairId: string.Empty),//TODO: implement
+                _contextNames.AccountsManagement);
+        }
+
+        /// <summary>
+        /// Send charge command to AccountManagement service
+        /// </summary>
+        [UsedImplicitly]
+        private void Handle(OvernightSwapCalculatedInternalEvent evt, ICommandSender sender)
+        {
+            //todo ensure operation idempotency
+            //evt.OperationId
+            
+            sender.SendCommand(new ChangeBalanceCommand(
+                    operationId: evt.OperationId,
+                    clientId: null,
+                    accountId: evt.AccountId, 
+                    amount: evt.SwapAmount,
+                    reasonType: AccountBalanceChangeReasonTypeContract.Swap, 
+                    reason: nameof(OvernightSwapCalculatedInternalEvent), 
+                    auditLog: null,
+                    eventSourceId: evt.PositionId,
+                    assetPairId: evt.AssetPairId),
                 _contextNames.AccountsManagement);
         }
 

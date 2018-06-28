@@ -3,5 +3,6 @@
     public class DefaultRateSettings
     {
         public DefaultOrderExecutionSettings DefaultOrderExecutionSettings { get; set; }
+        public DefaultOvernightSwapSettings DefaultOvernightSwapSettings { get; set; }
     }
 }

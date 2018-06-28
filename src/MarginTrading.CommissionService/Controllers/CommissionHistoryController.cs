@@ -37,7 +37,7 @@ namespace MarginTrading.CommissionService.Controllers
 		/// <param name="to"></param>
 		/// <returns></returns>
 		[Route("history")]
-		[ProducesResponseType(typeof(IEnumerable<IOvernightSwap>), 200)]
+		[ProducesResponseType(typeof(IEnumerable<IOvernightSwapCalculation>), 200)]
 		[ProducesResponseType(400)]
 		[HttpPost]
 		public async Task<IEnumerable<OvernightSwapHistoryContract>> GetOvernightSwapHistory(
@@ -48,7 +48,7 @@ namespace MarginTrading.CommissionService.Controllers
 			
 			var data = await _overnightSwapHistoryRepository.GetAsync(from, to);
 
-			return data.Select(x => _convertService.Convert<IOvernightSwap, OvernightSwapHistoryContract>(x));
+			return data.Select(x => _convertService.Convert<IOvernightSwapCalculation, OvernightSwapHistoryContract>(x));
 		}
 
 //		/// <summary>
