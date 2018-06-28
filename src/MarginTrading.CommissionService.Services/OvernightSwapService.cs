@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -112,46 +114,42 @@ namespace MarginTrading.CommissionService.Services
 
 			var filteredPositions = await GetOrdersForCalculationAsync();
 			
-			//start calculation in a separate thread
+			await _semaphore.WaitAsync();
+
 			var resultingCalculations = new List<IOvernightSwapCalculation>();
-			_threadSwitcher.SwitchThread(async () =>
+			try
 			{
-				await _semaphore.WaitAsync();
+				await _log.WriteInfoAsync(nameof(OvernightSwapService), nameof(Calculate),
+					$"Started, # of positions: {filteredPositions.Count}.", DateTime.UtcNow);
 
-				try
+				var assetPairs = (await _assetPairsApi.List())
+					.Select(x => _convertService.Convert<AssetPairContract, AssetPair>(x)).ToList();
+				
+				var streamCode = 0;
+				foreach (var position in filteredPositions)
 				{
-					await _log.WriteInfoAsync(nameof(OvernightSwapService), nameof(Calculate),
-						$"Started, # of positions: {filteredPositions.Count}.", DateTime.UtcNow);
-
-					var assetPairs = (await _assetPairsApi.List())
-						.Select(x => _convertService.Convert<AssetPairContract, AssetPair>(x)).ToList();
-					
-					resultingCalculations.Clear();
-					var streamCode = 0;
-					foreach (var position in filteredPositions)
+					var concreteOperationId = $"{operationId}_{streamCode++}";
+					try
 					{
-						var concreteOperationId = $"{operationId}_{streamCode++}";
-						try
-						{
-							var assetPair = assetPairs.First(x => x.Id == position.AssetPairId);
-							var calculation = await ProcessPosition(position, assetPair, concreteOperationId);
-							if(calculation != null)
-								resultingCalculations.Add(calculation);
-						}
-						catch (Exception ex)
-						{
-							resultingCalculations.Add(await ProcessPosition(position, null, concreteOperationId, ex));
-						}
+						var assetPair = assetPairs.First(x => x.Id == position.AssetPairId);
+						var calculation = await ProcessPosition(position, assetPair, concreteOperationId);
+						if(calculation != null)
+							resultingCalculations.Add(calculation);
 					}
-					
-					await _log.WriteInfoAsync(nameof(OvernightSwapService), nameof(Calculate),
-						$"Finished, # of successful calculations: {resultingCalculations.Count(x => x.IsSuccess)}, # of failed: {resultingCalculations.Count(x => !x.IsSuccess)}.", DateTime.UtcNow);
+					catch (Exception ex)
+					{
+						resultingCalculations.Add(await ProcessPosition(position, null, concreteOperationId, ex));
+					}
 				}
-				finally
-				{
-					_semaphore.Release();
-				}
-			});
+				
+				await _log.WriteInfoAsync(nameof(OvernightSwapService), nameof(Calculate),
+					$"Finished, # of successful calculations: {resultingCalculations.Count(x => x.IsSuccess)}, # of failed: {resultingCalculations.Count(x => !x.IsSuccess)}.", DateTime.UtcNow);
+			}
+			finally
+			{
+				_semaphore.Release();
+			}
+
 			return resultingCalculations;
 		}
 

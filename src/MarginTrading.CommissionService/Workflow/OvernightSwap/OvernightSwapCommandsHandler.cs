@@ -49,7 +49,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     accountId: swap.AccountId,
                     positionId: swap.PositionId,
                     assetPairId: swap.Instrument,
-                    swapAmount: swap.Volume));
+                    swapAmount: swap.SwapValue));
                 
 //                _chaosKitty.Meow(nameof(OvernightSwapCommandsHandler));
             }

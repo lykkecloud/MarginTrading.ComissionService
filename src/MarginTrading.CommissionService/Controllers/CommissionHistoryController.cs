@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MarginTrading.CommissionService.Controllers
 {
-	[Authorize]
 	[Route("api/commission")]
 	public class CommissionHistoryController : Controller, ICommissionHistoryApi
 	{

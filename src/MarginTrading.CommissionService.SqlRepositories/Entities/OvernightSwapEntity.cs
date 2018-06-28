@@ -36,7 +36,10 @@ namespace MarginTrading.CommissionService.SqlRepositories.Entities
                 SwapValue = obj.SwapValue,
                 PositionId = obj.PositionId,
                 IsSuccess = obj.IsSuccess,
-                Exception = JsonConvert.SerializeObject(obj.Exception)
+                Exception = JsonConvert.SerializeObject(obj.Exception, new JsonSerializerSettings
+                { 
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                })
             };
         }
     }
