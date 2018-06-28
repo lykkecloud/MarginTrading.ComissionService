@@ -1,6 +1,8 @@
-﻿using Autofac;
+﻿using System;
+using Autofac;
 using Common.Log;
 using Lykke.Common;
+using Lykke.Common.Chaos;
 using Lykke.SettingsReader;
 using MarginTrading.CommissionService.AzureRepositories;
 using MarginTrading.CommissionService.Core.Caches;
@@ -10,6 +12,7 @@ using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Services.Caches;
+using MarginTrading.CommissionService.SqlRepositories.Repositories;
 using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Modules
@@ -28,6 +31,8 @@ namespace MarginTrading.CommissionService.Modules
         protected override void Load(ContainerBuilder builder)
         {
             builder.RegisterInstance(_settings.Nested(s => s.CommissionService)).SingleInstance();
+            builder.RegisterInstance(_settings.CurrentValue.CommissionService).SingleInstance();
+            builder.RegisterInstance(_settings.CurrentValue.CommissionService.DefaultRateSettings).SingleInstance();
             builder.RegisterInstance(_log).As<ILog>().SingleInstance();
             builder.RegisterType<SystemClock>().As<ISystemClock>().SingleInstance();
 
@@ -50,6 +55,12 @@ namespace MarginTrading.CommissionService.Modules
                 .As<ISystemClock>()
                 .SingleInstance();
 
+            builder.RegisterInstance(new ConsoleLWriter(Console.WriteLine))
+                .As<IConsole>()
+                .SingleInstance();
+            
+            builder.RegisterChaosKitty(_settings.CurrentValue.CommissionService.ChaosKitty);
+
             RegisterRepositories(builder);
             RegisterServices(builder);
         }
@@ -60,8 +71,12 @@ namespace MarginTrading.CommissionService.Modules
                 .As<ICfdCalculatorService>()
                 .SingleInstance();
             
-            builder.RegisterType<global::MarginTrading.CommissionService.Services.CommissionCalcService>()
+            builder.RegisterType<CommissionCalcService>()
                 .As<ICommissionCalcService>()
+                .SingleInstance();
+
+            builder.RegisterType<ExecutedOrdersHandlingService>()
+                .As<IExecutedOrdersHandlingService>()
                 .SingleInstance();
             
             builder.RegisterType<ConvertService>()
@@ -79,6 +94,23 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<QuoteCacheService>()
                 .As<IQuoteCacheService>()
                 .SingleInstance();
+            
+            builder.RegisterType<AssetPairsCache>()
+                .As<IAssetPairsCache>()
+                .As<IAssetPairsInitializableCache>()
+                .AsSelf()
+                .SingleInstance();
+            
+            builder.RegisterType<AssetPairsManager>()
+                .AsSelf()
+                .As<IStartable>()
+                .As<IAssetPairsManager>()
+                .SingleInstance();
+
+            builder.RegisterType<FxRateCacheService>()
+                .As<IFxRateCacheService>()
+                .SingleInstance()
+                .OnActivated(args => args.Instance.Start());
         }
 
         private void RegisterRepositories(ContainerBuilder builder)
@@ -91,11 +123,14 @@ namespace MarginTrading.CommissionService.Modules
 
                 builder.Register<IOvernightSwapHistoryRepository>(ctx =>
                         AzureRepoFactories.MarginTrading.CreateOvernightSwapHistoryRepository(
-                            _settings.Nested(s => s.CommissionService.Db.MarginTradingConnString), _log))
+                            _settings.Nested(s => s.CommissionService.Db.StateConnString), _log))
                     .SingleInstance();
             } 
             else if (_settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.SqlServer)
             {
+                builder.Register<IMarginTradingBlobRepository>(ctx =>
+                        new SqlBlobRepository(_settings.CurrentValue.CommissionService.Db.StateConnString))
+                    .SingleInstance();
                 
             }
         }

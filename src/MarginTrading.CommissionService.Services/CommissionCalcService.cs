@@ -1,18 +1,23 @@
 ﻿using System;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
+using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Services;
+using MarginTrading.CommissionService.Core.Settings.Rates;
 
 namespace MarginTrading.CommissionService.Services
 {
     public class CommissionCalcService : ICommissionCalcService
     {
         private readonly ICfdCalculatorService _cfdCalculatorService;
+        private readonly DefaultRateSettings _defaultRateSettings;
 
         public CommissionCalcService(
-            ICfdCalculatorService cfdCalculatorService)
+            ICfdCalculatorService cfdCalculatorService,
+            DefaultRateSettings defaultRateSettings)
         {
             _cfdCalculatorService = cfdCalculatorService;
+            _defaultRateSettings = defaultRateSettings;
         }
 
         private decimal CalculateSwaps(string accountAssetId, string instrument, DateTime? openDate, DateTime? closeDate,
@@ -42,6 +47,23 @@ namespace MarginTrading.CommissionService.Services
 //            return CalculateSwaps(openPosition.AccountAssetId, openPosition.Instrument, openDate, closeDate,
 //                Math.Abs(openPosition.Volume), swapRate, openPosition.LegalEntity);
             return 0;
+        }
+
+        public decimal CalculateOrderExecutionCommission(string instrument, string legalEntity, decimal volume)
+        {
+            var defaultSettings = _defaultRateSettings.DefaultOrderExecutionSettings;
+
+            var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(defaultSettings.CommissionAsset,
+                                    instrument, legalEntity)
+                                * Math.Abs(volume);
+            
+            var commission = Math.Min(
+                defaultSettings.CommissionCap, 
+                Math.Max(
+                    defaultSettings.CommissionFloor,
+                    defaultSettings.CommissionRate * volumeInAsset));
+
+            return commission;
         }
     }
 }
