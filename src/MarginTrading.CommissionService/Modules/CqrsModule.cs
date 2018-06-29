@@ -14,6 +14,7 @@ using MarginTrading.AccountsManagement.Contracts.Commands;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
+using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
 using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
 using MarginTrading.CommissionService.Workflow.ChargeCommission;
 using MarginTrading.CommissionService.Workflow.OvernightSwap;
@@ -95,6 +96,7 @@ namespace MarginTrading.CommissionService.Modules
                 .ProcessingOptions(DefaultRoute).MultiThreaded(8).QueueCapacity(1024);
             RegisterChargeCommissionCommandHandler(contextRegistration);
             RegisterOvernightSwapCommandHandler(contextRegistration);
+            RegisterDailyPnlCommandsHandler(contextRegistration);
             return contextRegistration;
         }
 
@@ -103,7 +105,8 @@ namespace MarginTrading.CommissionService.Modules
             return Register.DefaultRouting
                 .PublishingCommands(
                     typeof(HandleExecutedOrderInternalCommand),
-                    typeof(StartOvernightSwapsProcessCommand))
+                    typeof(StartOvernightSwapsProcessCommand),
+                    typeof(StartDailyPnlProcessCommand))
                 .To(_contextNames.CommissionService)
                 .With(DefaultPipeline);
         }
@@ -115,7 +118,8 @@ namespace MarginTrading.CommissionService.Modules
             sagaRegistration
                 .ListeningEvents(
                     typeof(CommissionCalculatedInternalEvent),
-                    typeof(OvernightSwapCalculatedInternalEvent))
+                    typeof(OvernightSwapCalculatedInternalEvent),
+                    typeof(DailyPnlCalculatedInternalEvent))
                 .From(_contextNames.CommissionService)
                 .On(DefaultRoute)
                 .PublishingCommands(
@@ -152,6 +156,21 @@ namespace MarginTrading.CommissionService.Modules
                     typeof(OvernightSwapCalculatedInternalEvent))
                 .With(DefaultPipeline);
         }
+        
+        private static void RegisterDailyPnlCommandsHandler(
+            ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
+        {
+            contextRegistration
+                .ListeningCommands(
+                    typeof(StartDailyPnlProcessCommand))
+                .On(DefaultRoute)
+                .WithCommandsHandler<DailyPnlCommandsHandler>()
+                .PublishingEvents(
+                    typeof(DailyPnlCalculatedInternalEvent))
+                .With(DefaultPipeline);
+        }
+        
+        
 
         private ISagaRegistration RegisterSaga<TSaga>()
         {

@@ -20,5 +20,6 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
         string TradeId { get; }
         List<string> RelatedOrders { get; }
         List<RelatedOrderInfo> RelatedOrderInfos { get; }
+        decimal ChargedPnl { get; set; }
     }
 }
