@@ -94,7 +94,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             //evt.OperationId
             
             sender.SendCommand(new ChangeBalanceCommand(
-                    operationId: evt.OperationId,
+                    operationId: $"{evt.OperationId}_{evt.PositionId}",
                     clientId: null,
                     accountId: evt.AccountId, 
                     amount: evt.Pnl,
