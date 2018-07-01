@@ -1,4 +1,5 @@
 ﻿using System;
+using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
 using MarginTrading.AccountsManagement.Contracts;
@@ -6,6 +7,7 @@ using MarginTrading.AccountsManagement.Contracts.Commands;
 using MarginTrading.AccountsManagement.Contracts.Models;
 using MarginTrading.Backend.Contracts.Events;
 using MarginTrading.CommissionService.Core.Domain;
+using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
@@ -16,14 +18,19 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
     internal class ChargeCommissionSaga
     {
         private readonly CqrsContextNamesSettings _contextNames;
-
         private readonly IAccountsApi _accountsApi;
+        private readonly IOvernightSwapService _overnightSwapService;
+        private readonly ILog _log;
 
         public ChargeCommissionSaga(CqrsContextNamesSettings contextNames,
-            IAccountsApi accountsApi)
+            IAccountsApi accountsApi,
+            IOvernightSwapService overnightSwapService,
+            ILog log)
         {
             _contextNames = contextNames;
             _accountsApi = accountsApi;
+            _overnightSwapService = overnightSwapService;
+            _log = log;
         }
 
         /// <summary>
@@ -54,8 +61,12 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         [UsedImplicitly]
         private void Handle(OvernightSwapCalculatedInternalEvent evt, ICommandSender sender)
         {
-            //todo ensure operation idempotency
-            //evt.OperationId
+            if (!_overnightSwapService.CheckPositionOperationIsNew(evt.OperationId).GetAwaiter().GetResult())
+            {
+                _log.WriteInfo(nameof(ChargeCommissionSaga), nameof(Handle), 
+                    $"Duplicate OvernightSwapCalculatedInternalEvent arrived with OperationId = {evt.OperationId}");
+                return; //idempotency violated
+            }
             
             sender.SendCommand(new ChangeBalanceCommand(
                     operationId: evt.OperationId,
@@ -68,6 +79,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                     eventSourceId: evt.PositionId,
                     assetPairId: evt.AssetPairId),
                 _contextNames.AccountsManagement);
+            //todo what if Meow occurs here ?
+            _overnightSwapService.SetWasCharged(evt.OperationId).GetAwaiter().GetResult();
         }
 
         private AccountBalanceChangeReasonTypeContract GetReasonType(CommissionType evtCommissionType)

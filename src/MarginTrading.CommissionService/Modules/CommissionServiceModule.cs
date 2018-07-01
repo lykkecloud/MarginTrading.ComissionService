@@ -35,8 +35,6 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.DefaultRateSettings).SingleInstance();
             builder.RegisterInstance(_log).As<ILog>().SingleInstance();
             builder.RegisterType<SystemClock>().As<ISystemClock>().SingleInstance();
-
-            builder.RegisterType<OvernightSwapCache>().As<IOvernightSwapCache>().SingleInstance();
             
             builder.RegisterType<RabbitMqService>().As<IRabbitMqService>().SingleInstance();
             

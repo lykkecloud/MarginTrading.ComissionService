@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AzureStorage;
 using MarginTrading.CommissionService.AzureRepositories.Entities;
+using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Repositories;
 
@@ -44,9 +45,31 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
                 .OrderByDescending(item => item.Time).ToList();
         }
 
+        public async Task<bool> CheckOperationIsNew(string operationId)
+        {
+            return (await _tableStorage.GetDataAsync(x => x.OperationId == operationId)).Count == 0;
+        }
+
+        public async Task<bool> CheckPositionOperationIsNew(string positionOperationId)
+        {//TODO very unoptimal. Optimize if Azure impl is used.
+            return (await _tableStorage.GetDataAsync(x => x.Id == positionOperationId && x.WasCharged)).Count == 0;
+        }
+
         public async Task DeleteAsync(IOvernightSwapCalculation obj)
         {
             await _tableStorage.DeleteAsync(OvernightSwapEntity.Create(obj));
+        }
+
+        public async Task SetWasCharged(string positionOperationId)
+        {
+            var keys = OvernightSwapCalculation.ExtractKeysFromId(positionOperationId);
+            var item = (await _tableStorage.GetDataAsync(x =>
+                x.PositionId == keys.PositionId && x.OperationId == keys.OperationId)).First();
+            await _tableStorage.ReplaceAsync(item, x =>
+            {
+                x.WasCharged = true;
+                return x;
+            });
         }
     }
 }

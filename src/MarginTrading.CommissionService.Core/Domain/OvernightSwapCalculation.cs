@@ -8,8 +8,8 @@ namespace MarginTrading.CommissionService.Core.Domain
 {
     public class OvernightSwapCalculation : IOvernightSwapCalculation
 	{
-		public string Key => GetKey(OperationId);
-
+		public string Id => GetId(OperationId, PositionId);
+		
 		public string OperationId { get; }
 		public string AccountId { get; }
 		public string Instrument { get; }
@@ -22,12 +22,12 @@ namespace MarginTrading.CommissionService.Core.Domain
 		public bool IsSuccess { get; }
 		public Exception Exception { get; }
 		
-		public static string GetKey(string operationId) => $"{operationId}";
+		public bool WasCharged { get; }
 
 		public OvernightSwapCalculation([NotNull] string operationId, [NotNull] string accountId,
 			[NotNull] string instrument, [NotNull] PositionDirection? direction, DateTime time, decimal volume, 
-			decimal swapValue,
-			[NotNull] string positionId, bool isSuccess, [CanBeNull] Exception exception = null)
+			decimal swapValue, [NotNull] string positionId, bool isSuccess, [CanBeNull] Exception exception = null, 
+			bool wasCharged = false)
 		{
 			OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
 			AccountId = accountId ?? throw new ArgumentNullException(nameof(accountId));
@@ -39,6 +39,16 @@ namespace MarginTrading.CommissionService.Core.Domain
 			PositionId = positionId ?? throw new ArgumentNullException(nameof(positionId));
 			IsSuccess = isSuccess;
 			Exception = exception;
+			WasCharged = wasCharged;
+		}
+
+		public static string GetId(string operationId, string positionId) => $"{operationId}_{positionId}";
+		
+
+		public static (string PositionId, string OperationId) ExtractKeysFromId(string positionOperationId)
+		{
+			var arr = positionOperationId.Split('_');
+			return (arr[0], arr[1]);
 		}
 	}
 }

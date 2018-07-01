@@ -9,6 +9,8 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
 {
     public class OvernightSwapEntity : AzureTableEntity, IOvernightSwapCalculation
     {
+        public string Id => OvernightSwapCalculation.GetId(OperationId, PositionId);
+        
         public string OperationId { get; set; }
         public string AccountId { get; set; }
         public string Instrument { get; set; }
@@ -23,13 +25,15 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
         public bool IsSuccess { get; set; }
         public string Exception { get; set; }
         Exception IOvernightSwapCalculation.Exception => JsonConvert.DeserializeObject<Exception>(Exception);
+        
+        public bool WasCharged { get; set; }
 		
         public static OvernightSwapEntity Create(IOvernightSwapCalculation obj)
         {
             return new OvernightSwapEntity
             {
                 PartitionKey = obj.AccountId,
-                RowKey = obj.OperationId,
+                RowKey = obj.Id,
                 
                 OperationId = obj.OperationId,
                 AccountId = obj.AccountId,
@@ -40,7 +44,8 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
                 SwapValue = obj.SwapValue,
                 PositionId = obj.PositionId,
                 IsSuccess = obj.IsSuccess,
-                Exception = JsonConvert.SerializeObject(obj.Exception)
+                Exception = JsonConvert.SerializeObject(obj.Exception),
+                WasCharged = false,
             };
         }
     }

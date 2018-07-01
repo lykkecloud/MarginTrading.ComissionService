@@ -37,14 +37,17 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
         private async Task<CommandHandlingResult> Handle(StartOvernightSwapsProcessCommand command,
             IEventPublisher publisher)
         {
-            //todo ensure idempotency
+            if (!await _overnightSwapService.CheckOperationIsNew(command.OperationId))
+            {
+                return CommandHandlingResult.Ok(); //idempotency violated - no need to retry
+            }
 
             var calculatedSwaps = await _overnightSwapService.Calculate(command.OperationId, command.CreationTimestamp);
 
             foreach(var swap in calculatedSwaps)
             {
                 publisher.PublishEvent(new OvernightSwapCalculatedInternalEvent(
-                    operationId: swap.OperationId,
+                    operationId: swap.Id,
                     creationTimestamp: _systemClock.UtcNow.DateTime,
                     accountId: swap.AccountId,
                     positionId: swap.PositionId,

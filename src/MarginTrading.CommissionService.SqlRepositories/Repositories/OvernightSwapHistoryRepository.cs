@@ -19,7 +19,8 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
     {
         private const string TableName = "OvernightSwapHistory";
         private const string CreateTableScript = "CREATE TABLE [{0}](" +
-                                                 "[OperationId] [nvarchar] (64) NOT NULL PRIMARY KEY," +
+                                                 "[Id] [nvarchar] (128) NOT NULL PRIMARY KEY," +
+                                                 "[OperationId] [nvarchar] (64) NOT NULL," +
                                                  "[AccountId] [nvarchar] (64) NOT NULL, " +
                                                  "[Instrument] [nvarchar] (64) NOT NULL, " +
                                                  "[Direction] [nvarchar] (64) NOT NULL, " +
@@ -28,7 +29,9 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
                                                  "[SwapValue] float NOT NULL, " +
                                                  "[PositionId] [nvarchar] (64) NOT NULL, " +
                                                  "[IsSuccess] [bit] NOT NULL, " +
-                                                 "[Exception] [nvarchar] (MAX) NOT NULL" +
+                                                 "[Exception] [nvarchar] (MAX) NULL," +
+                                                 "[WasCharged] [bit] NOT NULL," +
+                                                 "INDEX IX_OSH NONCLUSTERED (OperationId, PositionId, WasCharged)" +
                                                  ");";
         
         private static Type DataType => typeof(IOvernightSwapCalculation);
@@ -85,12 +88,40 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
             return (await GetFilteredAsync(accountId, from, to)).ToList();
         }
 
+        public async Task<bool> CheckOperationIsNew(string operationId)
+        {
+            using (var conn = new SqlConnection(_settings.Db.StateConnString))
+            {
+                return 0 == await conn.QueryFirstAsync<int>(
+                    $"SELECT COUNT(*) FROM {TableName} WHERE OperationId=@operationId", new {operationId});
+            }
+        }
+
+        public async Task<bool> CheckPositionOperationIsNew(string positionOperationId)
+        {
+            using (var conn = new SqlConnection(_settings.Db.StateConnString))
+            {
+                return 0 == await conn.QueryFirstAsync<int>(
+                           $"SELECT COUNT(*) FROM {TableName} WHERE Id=@positionOperationId AND WasCharged=1", 
+                           new {positionOperationId});
+            }
+        }
+
         public async Task DeleteAsync(IOvernightSwapCalculation obj)
         {
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
                 await conn.ExecuteAsync(
                     $"DELETE {TableName} WHERE Id=@Id", new { Id = obj.OperationId});
+            }
+        }
+
+        public async Task SetWasCharged(string positionOperationId)
+        {
+            using (var conn = new SqlConnection(_settings.Db.StateConnString))
+            {
+                await conn.ExecuteAsync(
+                    $"UPDATE {TableName} SET [WasCharged]=1 WHERE Id=@Id", new { Id = positionOperationId});
             }
         }
 

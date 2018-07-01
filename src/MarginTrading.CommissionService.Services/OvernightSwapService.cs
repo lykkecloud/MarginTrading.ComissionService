@@ -68,16 +68,6 @@ namespace MarginTrading.CommissionService.Services
 			_log = log;
 		}
 
-		/*public void Start()
-		{
-			//initialize cache from storage
-			var savedState = _overnightSwapStateRepository.GetAsync().GetAwaiter().GetResult().ToList();
-			_overnightSwapCache.Initialize(savedState.Select(OvernightSwapCalculation.Create));
-
-			//start calculation
-			CalculateAndChargeSwaps();
-		}*/
-
 		/// <summary>
 		/// Filter orders that are already calculated
 		/// </summary>
@@ -125,20 +115,18 @@ namespace MarginTrading.CommissionService.Services
 				var assetPairs = (await _assetPairsApi.List())
 					.Select(x => _convertService.Convert<AssetPairContract, AssetPair>(x)).ToList();
 				
-				var streamCode = 0;
 				foreach (var position in filteredPositions)
 				{
-					var concreteOperationId = $"{operationId}_{streamCode++}";
 					try
 					{
 						var assetPair = assetPairs.First(x => x.Id == position.AssetPairId);
-						var calculation = await ProcessPosition(position, assetPair, concreteOperationId);
+						var calculation = await ProcessPosition(position, assetPair, operationId);
 						if(calculation != null)
 							resultingCalculations.Add(calculation);
 					}
 					catch (Exception ex)
 					{
-						resultingCalculations.Add(await ProcessPosition(position, null, concreteOperationId, ex));
+						resultingCalculations.Add(await ProcessPosition(position, null, operationId, ex));
 					}
 				}
 				
@@ -205,6 +193,21 @@ namespace MarginTrading.CommissionService.Services
 				.AddDays(dt.Hour > settingsCalcTime.Hours || (dt.Hour == settingsCalcTime.Hours && dt.Minute >= settingsCalcTime.Minutes) 
 					? 0 : -1);
 			return result;
+		}
+
+		public async Task<bool> CheckOperationIsNew(string operationId)
+		{
+			return await _overnightSwapHistoryRepository.CheckOperationIsNew(operationId);
+		}
+
+		public async Task<bool> CheckPositionOperationIsNew(string positionOperationId)
+		{
+			return await _overnightSwapHistoryRepository.CheckPositionOperationIsNew(positionOperationId); 
+		}
+
+		public async Task SetWasCharged(string positionOperationId)
+		{
+			await _overnightSwapHistoryRepository.SetWasCharged(positionOperationId);
 		}
 	}
 }

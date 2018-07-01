@@ -5,6 +5,7 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
 {
     public interface IOvernightSwapCalculation
     {
+        string Id { get; }
         string OperationId { get; }
         string AccountId { get; }
         string Instrument { get; }
@@ -13,7 +14,10 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
         decimal Volume { get; }
         decimal SwapValue { get; }
         string PositionId { get; }
+        
         bool IsSuccess { get; }
         Exception Exception { get; }
+        
+        bool WasCharged { get; }
     }
 }

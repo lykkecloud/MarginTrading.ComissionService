@@ -17,5 +17,14 @@ namespace MarginTrading.CommissionService.Core.Services
         /// <param name="creationTimestamp"></param>
         /// <returns></returns>
         Task<IReadOnlyList<IOvernightSwapCalculation>> Calculate(string operationId, DateTime creationTimestamp);
+
+        /// <summary>
+        /// True if operation with <param name="operationId"/> was never called before.
+        /// </summary>
+        /// <param name="operationId"></param>
+        /// <returns></returns>
+        Task<bool> CheckOperationIsNew(string operationId);
+        Task<bool> CheckPositionOperationIsNew(string positionOperationId);
+        Task SetWasCharged(string positionOperationId);
     }
 }

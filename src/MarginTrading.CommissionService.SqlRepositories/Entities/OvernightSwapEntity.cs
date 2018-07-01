@@ -8,6 +8,8 @@ namespace MarginTrading.CommissionService.SqlRepositories.Entities
 {
     public class OvernightSwapEntity : IOvernightSwapCalculation
     {
+        public string Id => OvernightSwapCalculation.GetId(OperationId, PositionId);
+        
         public string OperationId { get; set; }
         public string AccountId { get; set; }
         public string Instrument { get; set; }
@@ -22,6 +24,8 @@ namespace MarginTrading.CommissionService.SqlRepositories.Entities
         public bool IsSuccess { get; set; }
         public string Exception { get; set; }
         Exception IOvernightSwapCalculation.Exception => JsonConvert.DeserializeObject<Exception>(Exception);
+        
+        public bool WasCharged { get; set; }
 		
         public static OvernightSwapEntity Create(IOvernightSwapCalculation obj)
         {
@@ -39,7 +43,8 @@ namespace MarginTrading.CommissionService.SqlRepositories.Entities
                 Exception = JsonConvert.SerializeObject(obj.Exception, new JsonSerializerSettings
                 { 
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                })
+                }),
+                WasCharged = false,
             };
         }
     }
