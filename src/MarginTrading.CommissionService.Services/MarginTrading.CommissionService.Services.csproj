@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MarginTrading.CommissionService.Contracts\MarginTrading.CommissionService.Contracts.csproj" />
+    <ProjectReference Include="..\MarginTrading.CommissionService.Core\MarginTrading.CommissionService.Core.csproj" />
+    <ProjectReference Include="..\MarginTrading.CommissionService.SqlRepositories\MarginTrading.CommissionService.SqlRepositories.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Lykke.Common" Version="6.8.6" />
+    <PackageReference Include="Lykke.Logs" Version="4.3.4" />
+    <PackageReference Include="Lykke.MarginTrading.BackendSnow.Contracts" Version="1.1.1" />
+    <PackageReference Include="Lykke.MarginTrading.AccountsManagement.Contracts" Version="1.1.2" />
+    <PackageReference Include="Lykke.MarginTrading.SettingsService.Contracts" Version="1.0.1" />
+    <PackageReference Include="morelinq" Version="2.10.0" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+  </ItemGroup>
+</Project>
