@@ -4,11 +4,10 @@ using AzureStorage;
 using AzureStorage.Blob;
 using Common;
 using Lykke.SettingsReader;
-using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Repositories;
 using Newtonsoft.Json;
 
-namespace MarginTrading.CommissionService.AzureRepositories.Implementation
+namespace MarginTrading.CommissionService.AzureRepositories.Repositories
 {
     public class MarginTradingBlobRepository : IMarginTradingBlobRepository
     {

@@ -2,7 +2,7 @@
 using Common.Log;
 using Lykke.SettingsReader;
 using MarginTrading.CommissionService.AzureRepositories.Entities;
-using MarginTrading.CommissionService.AzureRepositories.Implementation;
+using MarginTrading.CommissionService.AzureRepositories.Repositories;
 
 namespace MarginTrading.CommissionService.AzureRepositories
 {

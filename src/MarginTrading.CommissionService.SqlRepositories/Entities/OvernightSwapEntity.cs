@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using Lykke.AzureStorage.Tables;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using Newtonsoft.Json;
 
-namespace MarginTrading.CommissionService.AzureRepositories.Entities
+namespace MarginTrading.CommissionService.SqlRepositories.Entities
 {
-    public class OvernightSwapEntity : AzureTableEntity, IOvernightSwapCalculation
+    public class OvernightSwapEntity : IOvernightSwapCalculation
     {
         public string Id => OvernightSwapCalculation.GetId(OperationId, PositionId);
         
@@ -32,9 +31,6 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
         {
             return new OvernightSwapEntity
             {
-                PartitionKey = obj.AccountId,
-                RowKey = obj.Id,
-                
                 OperationId = obj.OperationId,
                 AccountId = obj.AccountId,
                 Instrument = obj.Instrument,
@@ -44,7 +40,10 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
                 SwapValue = obj.SwapValue,
                 PositionId = obj.PositionId,
                 IsSuccess = obj.IsSuccess,
-                Exception = JsonConvert.SerializeObject(obj.Exception),
+                Exception = JsonConvert.SerializeObject(obj.Exception, new JsonSerializerSettings
+                { 
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                }),
                 WasCharged = false,
             };
         }

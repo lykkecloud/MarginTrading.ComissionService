@@ -3,18 +3,21 @@ using System.Collections.Generic;
 
 namespace MarginTrading.CommissionService.Core.Domain.Abstractions
 {
-    public interface IOvernightSwap
+    public interface IOvernightSwapCalculation
     {
-        string ClientId { get; }
+        string Id { get; }
+        string OperationId { get; }
         string AccountId { get; }
         string Instrument { get; }
         PositionDirection? Direction { get; }
         DateTime Time { get; }
         decimal Volume { get; }
-        decimal Value { get; }
-        decimal SwapRate { get; }
-        List<string> OpenOrderIds { get; }
+        decimal SwapValue { get; }
+        string PositionId { get; }
+        
         bool IsSuccess { get; }
         Exception Exception { get; }
+        
+        bool WasCharged { get; }
     }
 }

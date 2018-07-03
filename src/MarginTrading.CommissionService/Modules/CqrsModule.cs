@@ -6,6 +6,7 @@ using Lykke.Cqrs.Configuration;
 using Lykke.Cqrs.Configuration.BoundedContext;
 using Lykke.Cqrs.Configuration.Routing;
 using Lykke.Cqrs.Configuration.Saga;
+using Lykke.MarginTrading.CommissionService.Contracts.Commands;
 using Lykke.Messaging;
 using Lykke.Messaging.Contract;
 using Lykke.Messaging.RabbitMq;
@@ -13,7 +14,9 @@ using MarginTrading.AccountsManagement.Contracts.Commands;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
+using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
 using MarginTrading.CommissionService.Workflow.ChargeCommission;
+using MarginTrading.CommissionService.Workflow.OvernightSwap;
 
 namespace MarginTrading.CommissionService.Modules
 {
@@ -81,7 +84,7 @@ namespace MarginTrading.CommissionService.Modules
                 true,
                 Register.DefaultEndpointResolver(rabbitMqConventionEndpointResolver),
                 RegisterDefaultRouting(),
-                RegisterOrderExecSaga(),
+                RegisterChargeCommissionSaga(),
                 RegisterContext());
         }
 
@@ -91,6 +94,7 @@ namespace MarginTrading.CommissionService.Modules
                 .FailedCommandRetryDelay(_defaultRetryDelayMs)
                 .ProcessingOptions(DefaultRoute).MultiThreaded(8).QueueCapacity(1024);
             RegisterChargeCommissionCommandHandler(contextRegistration);
+            RegisterOvernightSwapCommandHandler(contextRegistration);
             return contextRegistration;
         }
 
@@ -98,18 +102,20 @@ namespace MarginTrading.CommissionService.Modules
         {
             return Register.DefaultRouting
                 .PublishingCommands(
-                    typeof(HandleExecutedOrderInternalCommand))
+                    typeof(HandleExecutedOrderInternalCommand),
+                    typeof(StartOvernightSwapsProcessCommand))
                 .To(_contextNames.CommissionService)
                 .With(DefaultPipeline);
         }
         
-        private IRegistration RegisterOrderExecSaga()
+        private IRegistration RegisterChargeCommissionSaga()
         {
             var sagaRegistration = RegisterSaga<ChargeCommissionSaga>();
             
             sagaRegistration
                 .ListeningEvents(
-                    typeof(CommissionCalculatedInternalEvent))
+                    typeof(CommissionCalculatedInternalEvent),
+                    typeof(OvernightSwapCalculatedInternalEvent))
                 .From(_contextNames.CommissionService)
                 .On(DefaultRoute)
                 .PublishingCommands(
@@ -127,9 +133,23 @@ namespace MarginTrading.CommissionService.Modules
                 .ListeningCommands(
                     typeof(HandleExecutedOrderInternalCommand))
                 .On(DefaultRoute)
+                //todo rename to OrderExecCommandsHandler
                 .WithCommandsHandler<ChargeCommissionCommandsHandler>()
                 .PublishingEvents(
                     typeof(CommissionCalculatedInternalEvent))
+                .With(DefaultPipeline);
+        }
+
+        private static void RegisterOvernightSwapCommandHandler(
+            ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
+        {
+            contextRegistration
+                .ListeningCommands(
+                    typeof(StartOvernightSwapsProcessCommand))
+                .On(DefaultRoute)
+                .WithCommandsHandler<OvernightSwapCommandsHandler>()
+                .PublishingEvents(
+                    typeof(OvernightSwapCalculatedInternalEvent))
                 .With(DefaultPipeline);
         }
 

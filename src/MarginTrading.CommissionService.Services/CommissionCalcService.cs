@@ -1,5 +1,6 @@
 ﻿using System;
 using MarginTrading.CommissionService.Core.Caches;
+using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Services;
@@ -40,13 +41,23 @@ namespace MarginTrading.CommissionService.Services
             return result;
         }
 
-        public decimal GetOvernightSwap(IOpenPosition openPosition, decimal swapRate)
+        /// <summary>
+        /// Value must be charged as it is, without negation
+        /// </summary>
+        /// <param name="openPosition"></param>
+        /// <param name="assetPair"></param>
+        /// <returns></returns>
+        public decimal GetOvernightSwap(IOpenPosition openPosition, IAssetPair assetPair)
         {
-            var openDate = DateTime.UtcNow;
-            var closeDate = openDate.AddDays(1);
-//            return CalculateSwaps(openPosition.AccountAssetId, openPosition.Instrument, openDate, closeDate,
-//                Math.Abs(openPosition.Volume), swapRate, openPosition.LegalEntity);
-            return 0;
+            var defaultSettings = _defaultRateSettings.DefaultOvernightSwapSettings;
+            var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(defaultSettings.CommissionAsset,
+                                    openPosition.AssetPairId, assetPair.LegalEntity)
+                                * Math.Abs(openPosition.CurrentVolume);
+            var basisOfCalc = - defaultSettings.FixRate
+                - (openPosition.Direction == PositionDirection.Short ? defaultSettings.RepoSurchargePercent : 0)
+                + (defaultSettings.VariableRateBase - defaultSettings.VariableRateQuote)
+                              * (openPosition.Direction == PositionDirection.Long ? 1 : -1);
+            return volumeInAsset * basisOfCalc / 365;
         }
 
         public decimal CalculateOrderExecutionCommission(string instrument, string legalEntity, decimal volume)

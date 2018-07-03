@@ -1,82 +1,54 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using JetBrains.Annotations;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 
 namespace MarginTrading.CommissionService.Core.Domain
 {
-    public class OvernightSwapCalculation : IOvernightSwap
+    public class OvernightSwapCalculation : IOvernightSwapCalculation
 	{
-		public string Key => GetKey(AccountId, Instrument, Direction);
+		public string Id => GetId(OperationId, PositionId);
 		
-		public string ClientId { get; set; }
-		public string AccountId { get; set; }
-		public string Instrument { get; set; }
-		public PositionDirection? Direction { get; set; }
-		public DateTime Time { get; set; }
-		public decimal Volume { get; set; }
-		public decimal Value { get; set; }
-		public decimal SwapRate { get; set; }
-		public List<string> OpenOrderIds { get; set; }
-		
-		public bool IsSuccess { get; set; }
-		public Exception Exception { get; set; }
-		
-		public static string GetKey(string accountId, string instrument, PositionDirection? direction) =>
-			$"{accountId}_{instrument ?? ""}_{direction?.ToString() ?? ""}";
+		public string OperationId { get; }
+		public string AccountId { get; }
+		public string Instrument { get; }
+		public PositionDirection? Direction { get; }
+		public DateTime Time { get; }
+		public decimal Volume { get; }
+		public decimal SwapValue { get; }
+		public string PositionId { get; }
 
-		public static OvernightSwapCalculation Create(IOvernightSwap state)
-		{
-			return new OvernightSwapCalculation
-			{
-				ClientId = state.ClientId,
-				AccountId = state.AccountId,
-				Instrument = state.Instrument,
-				Direction = state.Direction,
-				Time = state.Time,
-				Volume = state.Volume,
-				Value = state.Value,
-				SwapRate = state.SwapRate,
-				OpenOrderIds = state.OpenOrderIds,
-				IsSuccess = true
-			};
-		}
+		public bool IsSuccess { get; }
+		public Exception Exception { get; }
 		
-		public static OvernightSwapCalculation Create(string clientId, string accountId, string instrument,
-			List<string> orderIds, DateTime timestamp, bool isSuccess, Exception exception = null, decimal volume = default(decimal),
-			decimal value = default(decimal), decimal swapRate = default(decimal), PositionDirection? direction = null)
+		public bool WasCharged { get; }
+
+		public OvernightSwapCalculation([NotNull] string operationId, [NotNull] string accountId,
+			[NotNull] string instrument, [NotNull] PositionDirection? direction, DateTime time, decimal volume, 
+			decimal swapValue, [NotNull] string positionId, bool isSuccess, [CanBeNull] Exception exception = null, 
+			bool wasCharged = false)
 		{
-			return new OvernightSwapCalculation
-			{
-				ClientId = clientId,
-				AccountId = accountId,
-				Instrument = instrument,
-				Direction = direction,
-				Time = timestamp,
-				Volume = volume,
-				Value = value,
-				SwapRate = swapRate,
-				OpenOrderIds = orderIds,
-				IsSuccess = isSuccess,
-				Exception = exception,
-			};
+			OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
+			AccountId = accountId ?? throw new ArgumentNullException(nameof(accountId));
+			Instrument = instrument ?? throw new ArgumentNullException(nameof(instrument));
+			Direction = direction ?? throw new ArgumentNullException(nameof(direction));
+			Time = time;
+			Volume = volume;
+			SwapValue = swapValue;
+			PositionId = positionId ?? throw new ArgumentNullException(nameof(positionId));
+			IsSuccess = isSuccess;
+			Exception = exception;
+			WasCharged = wasCharged;
 		}
 
-		public static OvernightSwapCalculation Update(OvernightSwapCalculation newCalc, OvernightSwapCalculation lastCalc)
+		public static string GetId(string operationId, string positionId) => $"{operationId}_{positionId}";
+		
+
+		public static (string PositionId, string OperationId) ExtractKeysFromId(string positionOperationId)
 		{
-			return new OvernightSwapCalculation
-				{
-					ClientId = newCalc.ClientId,
-					AccountId = newCalc.AccountId,
-					Instrument = newCalc.Instrument,
-					Direction = newCalc.Direction,
-					Time = newCalc.Time,
-					Volume = newCalc.Volume,
-					Value = newCalc.Value + lastCalc.Value,
-					OpenOrderIds = newCalc.OpenOrderIds.Concat(lastCalc.OpenOrderIds).ToList(),
-					SwapRate = newCalc.SwapRate,
-					IsSuccess = true
-				};
+			var arr = positionOperationId.Split('_');
+			return (arr[0], arr[1]);
 		}
 	}
 }
