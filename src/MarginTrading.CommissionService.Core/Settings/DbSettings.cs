@@ -9,6 +9,5 @@ namespace MarginTrading.CommissionService.Core.Settings
         
         public string StateConnString { get; set; }
         public string LogsConnString { get; set; }
-        public string MarginTradingConnString { get; set; }
     }
 }

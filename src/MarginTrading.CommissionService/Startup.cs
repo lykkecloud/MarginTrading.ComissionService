@@ -10,7 +10,10 @@ using JetBrains.Annotations;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Logs;
+using Lykke.MarginTrading.CommissionService.Contracts.Api;
 using Lykke.SettingsReader;
+using MarginTrading.Backend.Contracts.Events;
+using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
@@ -18,7 +21,10 @@ using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Infrastructure;
 using MarginTrading.CommissionService.Modules;
 using MarginTrading.CommissionService.Services;
+using MarginTrading.CommissionService.Services.Caches;
 using MarginTrading.CommissionService.SqlRepositories.Repositories;
+using MarginTrading.OrderbookAggregator.Contracts.Messages;
+using MarginTrading.SettingsService.Contracts.Messages;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -74,6 +80,7 @@ namespace MarginTrading.CommissionService
 
                 builder.RegisterModule(new CommissionServiceModule(appSettings, Log));
                 builder.RegisterModule(new CommissionServiceExternalModule(appSettings));
+                builder.RegisterModule(new CqrsModule(appSettings.CurrentValue.CommissionService.Cqrs, Log));
 
                 builder.Populate(services);
 
@@ -102,7 +109,7 @@ namespace MarginTrading.CommissionService
                 app.UseLykkeMiddleware(ServiceName, ex => new ErrorResponse {ErrorMessage = "Technical problem", Details
  = ex.Message});
 #endif
-
+                
                 app.UseMvc();
                 app.UseSwagger();
                 app.UseSwaggerUI(a => a.SwaggerEndpoint("/swagger/v1/swagger.json", "Main Swagger"));
@@ -125,7 +132,29 @@ namespace MarginTrading.CommissionService
                 //TODO thats only to get swap comission values - EOD keeper will provide interest rates
                 
                 // NOTE: Service not yet recieves and processes requests here
+                var settings = ApplicationContainer.Resolve<CommissionServiceSettings>();
+                var rabbitMqService = ApplicationContainer.Resolve<IRabbitMqService>();
+                var fxRateCacheService = ApplicationContainer.Resolve<IFxRateCacheService>();
+                var executedOrdersHandlingService = ApplicationContainer.Resolve<IExecutedOrdersHandlingService>();
+                var assetPairManager = ApplicationContainer.Resolve<IAssetPairsManager>();
                 
+                if (settings.RabbitMq.Consumers.FxRateRabbitMqSettings != null)
+                {
+                    rabbitMqService.Subscribe(settings.RabbitMq.Consumers.FxRateRabbitMqSettings, false,
+                        fxRateCacheService.SetQuote, rabbitMqService.GetMsgPackDeserializer<ExternalExchangeOrderbookMessage>());
+                }
+                if (settings.RabbitMq.Consumers.OrderExecutedSettings != null)
+                {
+                    rabbitMqService.Subscribe(settings.RabbitMq.Consumers.OrderExecutedSettings, true,
+                        executedOrdersHandlingService.Handle, rabbitMqService.GetJsonDeserializer<OrderHistoryEvent>());
+                }
+
+                if (settings.RabbitMq.Consumers.SettingsChanged != null)
+                {
+                    rabbitMqService.Subscribe(settings.RabbitMq.Consumers.SettingsChanged, true, 
+                        arg => assetPairManager.HandleSettingsChanged(arg), 
+                        rabbitMqService.GetJsonDeserializer<SettingsChangedEvent>());
+                }
                 
                 Log?.WriteMonitorAsync("", "", "Started").Wait();
             }

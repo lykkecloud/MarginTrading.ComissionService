@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -8,9 +9,7 @@ namespace MarginTrading.CommissionService.Core.Extensions
 {
     public static class ValidationExtensions
     {
-        [NotNull]
-        [ContractAnnotation("value:null => halt")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [NotNull, ContractAnnotation("value:null => halt"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T RequiredNotNull<T>(this T value, string paramName, string message = null) where T : class
         {
             if (value == null)
@@ -21,8 +20,8 @@ namespace MarginTrading.CommissionService.Core.Extensions
             return value;
         }
 
-        [ContractAnnotation("value:null => halt")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        [ContractAnnotation("value:null => halt"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T RequiredNotNull<T>(this T? value, string paramName, string message = null) where T : struct
         {
             if (value == null)
@@ -33,9 +32,8 @@ namespace MarginTrading.CommissionService.Core.Extensions
             return value.Value;
         }
 
-        [NotNull]
-        [ContractAnnotation("value:null => halt")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        [NotNull, ContractAnnotation("value:null => halt"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string RequiredNotNullOrWhiteSpace(this string value, string paramName, string message = null)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -46,9 +44,8 @@ namespace MarginTrading.CommissionService.Core.Extensions
             return value;
         }
 
-        [NotNull]
-        [ContractAnnotation("value:null => halt")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        [NotNull, ContractAnnotation("value:null => halt"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string RequiredNotNullOrEmpty(this string value, string paramName, string message = null)
         {
             if (string.IsNullOrEmpty(value))
@@ -59,10 +56,31 @@ namespace MarginTrading.CommissionService.Core.Extensions
             return value;
         }
 
-        [NotNull]
-        [ContractAnnotation("values:null => halt")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ICollection<T> RequiredNotNullOrEmpty<T>(this ICollection<T> values, string paramName,
+
+        [NotNull, ContractAnnotation("value:null => halt"), MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T RequiredNotNullOrEmpty<T>(this T value, string paramName, string message = null) where T : class
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(paramName, message);
+            }
+
+            var e = value as IEnumerable;
+            if (e != null)
+            {
+                var en = e.GetEnumerator();
+                if (!en.MoveNext())
+                {
+                    throw new ArgumentNullException(paramName, message);
+                }
+            }
+
+            return value;
+        }
+
+
+        [NotNull, ContractAnnotation("values:null => halt"), MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ICollection<T> RequiredNotNullOrEmptyCollection<T>(this ICollection<T> values, string paramName,
             string message = null)
         {
             if (values == null || values.Count == 0)
@@ -73,52 +91,19 @@ namespace MarginTrading.CommissionService.Core.Extensions
             return values;
         }
 
-        [Pure]
-        [NotNull]
-        [ContractAnnotation("values:null => halt")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IEnumerable<T> RequiredNotNullOrEmpty<T>([CanBeNull] this IEnumerable<T> values, string paramName,
+
+        [NotNull, ContractAnnotation("values:null => halt"), MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IEnumerable<T> RequiredNotNullOrEmptyEnumerable<T>(this IEnumerable<T> values, string paramName,
             string message = null)
         {
-            if (values == null)
+            // ReSharper disable PossibleMultipleEnumeration
+            if (values == null || !values.Any())
             {
                 throw new ArgumentNullException(paramName, message);
             }
 
-            var hasValues = false;
-            foreach (var value in values)
-            {
-                yield return value;
-                hasValues = true;
-            }
-
-            if (!hasValues)
-            {
-                throw new ArgumentException(message, paramName);
-            }
-        }
-
-        [Pure]
-        [NotNull]
-        [ContractAnnotation("values:null => halt")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IEnumerable<T> RequiredNotNullElems<T>([CanBeNull] [ItemCanBeNull] this IEnumerable<T> values,
-            string paramName, string message = null)
-        {
-            if (values == null)
-            {
-                throw new ArgumentNullException(paramName, message);
-            }
-
-            foreach (var value in values)
-            {
-                if (value == null)
-                {
-                    throw new ArgumentException(message, paramName);
-                }
-
-                yield return value;
-            }
+            return values;
+            // ReSharper restore PossibleMultipleEnumeration
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -137,6 +122,7 @@ namespace MarginTrading.CommissionService.Core.Extensions
             throw new ArgumentOutOfRangeException(paramName, message);
         }
 
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T RequiredNotEqualsTo<T>(this T value, T value2, string paramName, string message = null)
         {
@@ -153,9 +139,7 @@ namespace MarginTrading.CommissionService.Core.Extensions
             throw new ArgumentOutOfRangeException(paramName, message);
         }
 
-        [CanBeNull]
-        [ContractAnnotation("value:null => null")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CanBeNull, ContractAnnotation("value:null => null"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? RequiredLessThan<T>(this T? value, T maxValue, string paramName, string message = null)
             where T : struct, IComparable
         {
@@ -167,9 +151,8 @@ namespace MarginTrading.CommissionService.Core.Extensions
             return value;
         }
 
-        [CanBeNull]
-        [ContractAnnotation("value:null => null")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        [CanBeNull, ContractAnnotation("value:null => null"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? RequiredLessThan<T>(this T? value, T? maxValue, string paramName, string message = null)
             where T : struct, IComparable
         {
@@ -180,6 +163,7 @@ namespace MarginTrading.CommissionService.Core.Extensions
 
             return value;
         }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T RequiredLessThan<T>(this T value, T maxValue, string paramName, string message = null)
@@ -198,9 +182,8 @@ namespace MarginTrading.CommissionService.Core.Extensions
             throw new ArgumentOutOfRangeException(paramName, message);
         }
 
-        [CanBeNull]
-        [ContractAnnotation("value:null => null")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        [CanBeNull, ContractAnnotation("value:null => null"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? RequiredNotLessThan<T>(this T? value, T minValue, string paramName, string message = null)
             where T : struct, IComparable
         {
@@ -212,9 +195,8 @@ namespace MarginTrading.CommissionService.Core.Extensions
             return value;
         }
 
-        [CanBeNull]
-        [ContractAnnotation("value:null => null")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        [CanBeNull, ContractAnnotation("value:null => null"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? RequiredNotLessThan<T>(this T? value, T? minValue, string paramName, string message = null)
             where T : struct, IComparable
         {
@@ -225,6 +207,7 @@ namespace MarginTrading.CommissionService.Core.Extensions
 
             return value;
         }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T RequiredNotLessThan<T>(this T value, T minValue, string paramName, string message = null)
@@ -243,9 +226,8 @@ namespace MarginTrading.CommissionService.Core.Extensions
             throw new ArgumentOutOfRangeException(paramName, message);
         }
 
-        [CanBeNull]
-        [ContractAnnotation("value:null => null")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        [CanBeNull, ContractAnnotation("value:null => null"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? RequiredGreaterThan<T>(this T? value, T minValue, string paramName, string message = null)
             where T : struct, IComparable
         {
@@ -257,9 +239,8 @@ namespace MarginTrading.CommissionService.Core.Extensions
             return value;
         }
 
-        [CanBeNull]
-        [ContractAnnotation("value:null => null")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        [CanBeNull, ContractAnnotation("value:null => null"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? RequiredGreaterThan<T>(this T? value, T? minValue, string paramName, string message = null)
             where T : struct, IComparable
         {
@@ -270,6 +251,7 @@ namespace MarginTrading.CommissionService.Core.Extensions
 
             return value;
         }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T RequiredGreaterThan<T>(this T value, T minValue, string paramName, string message = null)
@@ -288,9 +270,8 @@ namespace MarginTrading.CommissionService.Core.Extensions
             return value;
         }
 
-        [CanBeNull]
-        [ContractAnnotation("value:null => null")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        [CanBeNull, ContractAnnotation("value:null => null"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? RequiredNotGreaterThan<T>(this T? value, T maxValue, string paramName, string message = null)
             where T : struct, IComparable
         {
@@ -302,9 +283,8 @@ namespace MarginTrading.CommissionService.Core.Extensions
             return value;
         }
 
-        [CanBeNull]
-        [ContractAnnotation("value:null => null")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        [CanBeNull, ContractAnnotation("value:null => null"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? RequiredNotGreaterThan<T>(this T? value, T? maxValue, string paramName, string message = null)
             where T : struct, IComparable
         {
@@ -315,6 +295,7 @@ namespace MarginTrading.CommissionService.Core.Extensions
 
             return value;
         }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T RequiredNotGreaterThan<T>(this T value, T maxValue, string paramName, string message = null)
@@ -333,24 +314,22 @@ namespace MarginTrading.CommissionService.Core.Extensions
             throw new ArgumentOutOfRangeException(paramName, message);
         }
 
-        [CanBeNull]
-        [ContractAnnotation("value:null => null")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T? RequiredBetween<T>(this T? value, T minValue, T maxValue, string paramName, string message = null)
+
+        [CanBeNull, ContractAnnotation("value:null => null"), MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T? RequiredIn<T>(this T? value, T minValue, T maxValue, string paramName, string message = null)
             where T : struct, IComparable
         {
             if (value != null)
             {
-                value.Value.RequiredBetween(minValue, maxValue, paramName, message);
+                value.Value.RequiredIn(minValue, maxValue, paramName, message);
             }
 
             return value;
         }
 
-        [CanBeNull]
-        [ContractAnnotation("value:null => null")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T? RequiredBetween<T>(this T? value, T? minValue, T? maxValue, string paramName, string message = null)
+
+        [CanBeNull, ContractAnnotation("value:null => null"), MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T? RequiredIn<T>(this T? value, T? minValue, T? maxValue, string paramName, string message = null)
             where T : struct, IComparable
         {
             if (value == null)
@@ -360,7 +339,7 @@ namespace MarginTrading.CommissionService.Core.Extensions
 
             if (minValue != null && maxValue != null)
             {
-                value.Value.RequiredBetween(minValue.Value, maxValue.Value, paramName, message);
+                value.Value.RequiredIn(minValue.Value, maxValue.Value, paramName, message);
             }
             else if (minValue != null)
             {
@@ -374,8 +353,9 @@ namespace MarginTrading.CommissionService.Core.Extensions
             return value;
         }
 
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T RequiredBetween<T>(this T value, T minValue, T maxValue, string paramName, string message = null)
+        public static T RequiredIn<T>(this T value, T minValue, T maxValue, string paramName, string message = null)
             where T : IComparable
         {
             if (value.CompareTo(minValue) >= 0 && value.CompareTo(maxValue) <= 0)
@@ -385,32 +365,15 @@ namespace MarginTrading.CommissionService.Core.Extensions
 
             if (string.IsNullOrEmpty(message))
             {
-                message = $"{paramName} = {value} should be within interval {minValue} .. {maxValue}.";
+                message = string.Format("{0} = {1} should be within interval {2} .. {3}.", paramName, value, minValue,
+                    maxValue);
             }
 
             throw new ArgumentOutOfRangeException(paramName, message);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T RequiredInSet<T>(this T value, IEnumerable<T> set, string paramName, string message = null)
-            where T : IEquatable<T>
-        {
-            if (set.Any(value.Equals))
-            {
-                return value;
-            }
 
-            if (string.IsNullOrEmpty(message))
-            {
-                message = $"{paramName} = {value} should be one of {string.Join(", ", set)}.";
-            }
-
-            throw new ArgumentOutOfRangeException(paramName, message);
-        }
-
-        [CanBeNull]
-        [ContractAnnotation("value:null => null")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CanBeNull, ContractAnnotation("value:null => null"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T? RequiredEnum<T>(this T? value, string paramName, string message = null)
             where T : struct
         {
@@ -421,6 +384,7 @@ namespace MarginTrading.CommissionService.Core.Extensions
 
             return value;
         }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T RequiredEnum<T>(this T value, string paramName, string message = null)
@@ -439,9 +403,8 @@ namespace MarginTrading.CommissionService.Core.Extensions
             throw new ArgumentOutOfRangeException(paramName, message);
         }
 
-        [CanBeNull]
-        [ContractAnnotation("values:null => null")]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        [CanBeNull, ContractAnnotation("values:null => null"), MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IEnumerable<T> RequiredAll<T>([CanBeNull] this IEnumerable<T> values, Action<T> check)
         {
             if (values == null)

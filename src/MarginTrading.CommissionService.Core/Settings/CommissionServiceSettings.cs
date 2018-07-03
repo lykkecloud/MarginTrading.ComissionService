@@ -1,4 +1,8 @@
 ﻿using System;
+using JetBrains.Annotations;
+using Lykke.Common.Chaos;
+using Lykke.SettingsReader.Attributes;
+using MarginTrading.CommissionService.Core.Settings.Rates;
 
 namespace MarginTrading.CommissionService.Core.Settings
 {
@@ -7,8 +11,11 @@ namespace MarginTrading.CommissionService.Core.Settings
         public DbSettings Db { get; set; }
         public RabbitMqSettings RabbitMq { get; set; }
         public ServicesSettings Services { get; set; }
+        public CqrsSettings Cqrs { get; set; }
+
+        [Optional, CanBeNull]
+        public ChaosSettings ChaosKitty { get; set; }
         
-        public bool SendOvernightSwapEmails { get; set; }
-        public TimeSpan OvernightSwapCalculationTime { get; set; }
+        public DefaultRateSettings DefaultRateSettings { get; set; }
     }
 }
