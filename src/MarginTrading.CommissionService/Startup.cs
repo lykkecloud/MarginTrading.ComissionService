@@ -24,6 +24,7 @@ using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Services.Caches;
 using MarginTrading.CommissionService.SqlRepositories.Repositories;
 using MarginTrading.OrderbookAggregator.Contracts.Messages;
+using MarginTrading.SettingsService.Contracts.Messages;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -135,17 +136,24 @@ namespace MarginTrading.CommissionService
                 var rabbitMqService = ApplicationContainer.Resolve<IRabbitMqService>();
                 var fxRateCacheService = ApplicationContainer.Resolve<IFxRateCacheService>();
                 var executedOrdersHandlingService = ApplicationContainer.Resolve<IExecutedOrdersHandlingService>();
+                var assetPairManager = ApplicationContainer.Resolve<IAssetPairsManager>();
                 
                 if (settings.RabbitMq.Consumers.FxRateRabbitMqSettings != null)
                 {
                     rabbitMqService.Subscribe(settings.RabbitMq.Consumers.FxRateRabbitMqSettings, false,
                         fxRateCacheService.SetQuote, rabbitMqService.GetMsgPackDeserializer<ExternalExchangeOrderbookMessage>());
                 }
-                
                 if (settings.RabbitMq.Consumers.OrderExecutedSettings != null)
                 {
                     rabbitMqService.Subscribe(settings.RabbitMq.Consumers.OrderExecutedSettings, true,
                         executedOrdersHandlingService.Handle, rabbitMqService.GetJsonDeserializer<OrderHistoryEvent>());
+                }
+
+                if (settings.RabbitMq.Consumers.SettingsChanged != null)
+                {
+                    rabbitMqService.Subscribe(settings.RabbitMq.Consumers.SettingsChanged, true, 
+                        arg => assetPairManager.HandleSettingsChanged(arg), 
+                        rabbitMqService.GetJsonDeserializer<SettingsChangedEvent>());
                 }
                 
                 Log?.WriteMonitorAsync("", "", "Started").Wait();

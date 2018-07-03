@@ -41,6 +41,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 operationId: command.OperationId,
                 accountId: command.AccountId,
                 orderId: command.OrderId,
+                assetPairId: command.Instrument,
                 amount: commissionAmount,
                 commissionType: CommissionType.OrderExecution,
                 reason: $"{CommissionType.OrderExecution.ToString()} commission for {command.Instrument} order #{command.OrderCode}, id: {command.OrderId}, volume: {command.Volume}"

@@ -43,15 +43,15 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             //evt.OperationId
             
             sender.SendCommand(new ChangeBalanceCommand(
-                    operationId: evt.OperationId,
-                    clientId: null,
-                    accountId: evt.AccountId, 
-                    amount: - evt.Amount,
-                    reasonType: GetReasonType(evt.CommissionType), 
-                    reason: evt.Reason, 
-                    auditLog: null,
-                    eventSourceId: evt.OrderId,
-                    assetPairId: string.Empty),//TODO: implement
+                operationId: evt.OperationId,
+                clientId: null,
+                accountId: evt.AccountId, 
+                amount: - evt.Amount,
+                reasonType: GetReasonType(evt.CommissionType), 
+                reason: evt.Reason, 
+                auditLog: null,
+                eventSourceId: evt.OrderId,
+                assetPairId: evt.AssetPairId),
                 _contextNames.AccountsManagement);
         }
 

@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 
 namespace MarginTrading.CommissionService.Core.Domain.Rates
 {
-    public class OrderExecution
+    public class OrderExecutionRate
     {
         public string AssetPairId { get; }
         
