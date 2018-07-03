@@ -28,28 +28,14 @@ namespace MarginTrading.CommissionService.Services
         private readonly ConcurrentDictionary<RabbitMqSubscriptionSettings, IStopable> _subscribers =
             new ConcurrentDictionary<RabbitMqSubscriptionSettings, IStopable>(new SubscriptionSettingsEqualityComparer());
 
-        private readonly ConcurrentDictionary<RabbitMqSubscriptionSettings, Lazy<IStopable>> _producers =
-            new ConcurrentDictionary<RabbitMqSubscriptionSettings, Lazy<IStopable>>(
+        private readonly ConcurrentDictionary<RabbitMqSubscriptionSettings, IStopable> _producers =
+            new ConcurrentDictionary<RabbitMqSubscriptionSettings, IStopable>(
                 new SubscriptionSettingsEqualityComparer());
-
-        //[ItemCanBeNull] private readonly Lazy<MessagePackBlobPublishingQueueRepository> _queueRepository;
 
         public RabbitMqService(ILog logger, IConsole consoleWriter)
         {
             _logger = logger;
             _consoleWriter = consoleWriter;
-            //_queueRepository = new Lazy<MessagePackBlobPublishingQueueRepository>(() =>
-//            {
-//                if (string.IsNullOrWhiteSpace(queueRepositoryConnectionString?.CurrentValue))
-//                {
-//                    _logger.WriteWarning(nameof(RabbitMqService), "",
-//                        "QueueRepositoryConnectionString is not configured");
-//                    return null;
-//                }
-
-                //var blob = AzureBlobStorage.Create(queueRepositoryConnectionString);
-                //return new MessagePackBlobPublishingQueueRepository(blob);
-            //});
         }
 
         public void Dispose()
@@ -57,7 +43,7 @@ namespace MarginTrading.CommissionService.Services
             foreach (var stoppable in _subscribers.Values)
                 stoppable.Stop();
             foreach (var stoppable in _producers.Values)
-                stoppable.Value.Stop();
+                stoppable.Stop();
         }
 
         public IRabbitMqSerializer<TMessage> GetJsonSerializer<TMessage>()
@@ -92,27 +78,22 @@ namespace MarginTrading.CommissionService.Services
                 IsDurable = isDurable,
             };
 
-            return (IMessageProducer<TMessage>) _producers.GetOrAdd(subscriptionSettings, CreateProducer).Value;
+            return (IMessageProducer<TMessage>) _producers.GetOrAdd(subscriptionSettings, CreateProducer);
 
-            Lazy<IStopable> CreateProducer(RabbitMqSubscriptionSettings s)
+            IStopable CreateProducer(RabbitMqSubscriptionSettings s)
             {
-                // Lazy ensures RabbitMqPublisher will be created and started only once
-                // https://andrewlock.net/making-getoradd-on-concurrentdictionary-thread-safe-using-lazy/
-                return new Lazy<IStopable>(() =>
-                {
-                    var publisher = new RabbitMqPublisher<TMessage>(s);
+                var publisher = new RabbitMqPublisher<TMessage>(s);
 
-                    //if (isDurable && _queueRepository.Value != null)
-                    //    publisher.SetQueueRepository(_queueRepository.Value);
-                    //else
-                        publisher.DisableInMemoryQueuePersistence();
+                //if (isDurable && _queueRepository.Value != null)
+                //    publisher.SetQueueRepository(_queueRepository.Value);
+                //else
+                    publisher.DisableInMemoryQueuePersistence();
 
-                    return publisher
-                        .SetSerializer(serializer)
-                        .SetLogger(_logger)
-                        .SetConsole(_consoleWriter)
-                        .Start();
-                });
+                return publisher
+                    .SetSerializer(serializer)
+                    .SetLogger(_logger)
+                    .SetConsole(_consoleWriter)
+                    .Start();
             }
         }
 

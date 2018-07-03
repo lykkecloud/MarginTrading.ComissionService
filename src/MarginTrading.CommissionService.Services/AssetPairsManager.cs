@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Threading.Tasks;
 using Autofac;
 using JetBrains.Annotations;
 using MarginTrading.CommissionService.Core.Caches;
@@ -7,6 +8,8 @@ using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.SettingsService.Contracts;
 using MarginTrading.SettingsService.Contracts.AssetPair;
+using MarginTrading.SettingsService.Contracts.Enums;
+using MarginTrading.SettingsService.Contracts.Messages;
 
 namespace MarginTrading.CommissionService.Services
 {
@@ -42,6 +45,16 @@ namespace MarginTrading.CommissionService.Services
                         s => (IAssetPair) _convertService.Convert<AssetPairContract, AssetPair>(s));
                 _assetPairsCache.InitPairsCache(pairs);
             }
+        }
+
+        public Task HandleSettingsChanged(SettingsChangedEvent evt)
+        {
+            if (evt.SettingsType == SettingsTypeContract.AssetPair)
+            {
+                InitAssetPairs();
+            }
+
+            return Task.CompletedTask;
         }
     }
 }

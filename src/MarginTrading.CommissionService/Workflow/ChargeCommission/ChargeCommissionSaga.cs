@@ -43,7 +43,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 reason: evt.Reason, 
                 auditLog: null,
                 eventSourceId: evt.OrderId,
-                assetPairId: string.Empty),//TODO: implement
+                assetPairId: evt.AssetPairId),
                 _contextNames.AccountsManagement);
         }
 

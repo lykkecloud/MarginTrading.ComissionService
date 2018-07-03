@@ -1,6 +1,6 @@
 ﻿namespace MarginTrading.CommissionService.Core.Domain.Rates
 {
-    public class OrderExecution
+    public class OrderExecutionRate
     {
         public decimal CommissionCap { get; }
         
@@ -8,7 +8,7 @@
         
         public decimal CommissionRate { get; }
 
-        public OrderExecution(decimal commissionCap, decimal commissionFloor, decimal commissionRate)
+        public OrderExecutionRate(decimal commissionCap, decimal commissionFloor, decimal commissionRate)
         {
             CommissionCap = commissionCap;
             CommissionFloor = commissionFloor;
