@@ -11,6 +11,7 @@ using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
+using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
 using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
 
 namespace MarginTrading.CommissionService.Workflow.ChargeCommission
@@ -81,6 +82,28 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 _contextNames.AccountsManagement);
             //todo what if Meow occurs here ?
             _overnightSwapService.SetWasCharged(evt.OperationId).GetAwaiter().GetResult();
+        }
+        
+        /// <summary>
+        /// Send charge command to AccountManagement service
+        /// </summary>
+        [UsedImplicitly]
+        private void Handle(DailyPnlCalculatedInternalEvent evt, ICommandSender sender)
+        {
+            //todo ensure operation idempotency
+            //evt.OperationId
+            
+            sender.SendCommand(new ChangeBalanceCommand(
+                    operationId: $"{evt.OperationId}_{evt.PositionId}",
+                    clientId: null,
+                    accountId: evt.AccountId, 
+                    amount: evt.Pnl,
+                    reasonType: AccountBalanceChangeReasonTypeContract.UnrealizedDailyPnL, 
+                    reason: nameof(DailyPnlCalculatedInternalEvent), 
+                    auditLog: null,
+                    eventSourceId: evt.PositionId,
+                    assetPairId: evt.AssetPairId),
+                _contextNames.AccountsManagement);
         }
 
         private AccountBalanceChangeReasonTypeContract GetReasonType(CommissionType evtCommissionType)

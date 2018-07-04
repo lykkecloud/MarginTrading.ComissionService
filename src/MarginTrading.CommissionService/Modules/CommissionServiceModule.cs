@@ -88,6 +88,10 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<OvernightSwapService>()
                 .As<IOvernightSwapService>()
                 .SingleInstance();
+            
+            builder.RegisterType<DailyPnlService>()
+                .As<IDailyPnlService>()
+                .SingleInstance();
 
             builder.RegisterType<QuoteCacheService>()
                 .As<IQuoteCacheService>()
