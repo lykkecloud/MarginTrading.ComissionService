@@ -15,7 +15,7 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
         
         public string CommissionAsset { get; }
 
-        public OrderExecution(string assetPairId, decimal commissionCap, decimal commissionFloor, 
+        public OrderExecutionRate(string assetPairId, decimal commissionCap, decimal commissionFloor, 
             decimal commissionRate, [NotNull] string commissionAsset)
         {
             AssetPairId = assetPairId ?? throw new ArgumentNullException(nameof(assetPairId));
