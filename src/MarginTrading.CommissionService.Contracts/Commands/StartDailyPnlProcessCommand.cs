@@ -5,7 +5,7 @@ using MessagePack;
 namespace Lykke.MarginTrading.CommissionService.Contracts.Commands
 {
     /// <summary>
-    /// Command to perform dayly pnl calculation and account charging
+    /// Command to perform daily pnl calculation and account charging
     /// </summary>
     [MessagePackObject]
     public class StartDailyPnlProcessCommand

@@ -32,7 +32,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
         private async Task<CommandHandlingResult> Handle(StartDailyPnlProcessCommand command,
             IEventPublisher publisher)
         {
-            //todo ensure idempotency
+            //todo ensure idempotency https://lykke-snow.atlassian.net/browse/MTC-205
 
             var calculatedPnLs = await _dailyPnlService.Calculate(command.OperationId, command.CreationTimestamp);
 

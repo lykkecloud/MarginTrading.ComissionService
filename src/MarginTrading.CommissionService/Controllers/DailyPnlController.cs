@@ -34,7 +34,7 @@ namespace MarginTrading.CommissionService.Controllers
             _cqrsEngine.SendCommand(
                 new StartDailyPnlProcessCommand(
                     operationId.RequiredNotNullOrWhiteSpace(nameof(operationId)),
-                    _systemClock.UtcNow.DateTime,
+                    _systemClock.UtcNow.UtcDateTime,
                     tradingDay), 
                 _cqrsContextNamesSettings.CommissionService,
                 _cqrsContextNamesSettings.CommissionService);
