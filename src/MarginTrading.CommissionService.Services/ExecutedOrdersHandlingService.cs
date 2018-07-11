@@ -2,7 +2,9 @@
 using System.Threading.Tasks;
 using MarginTrading.Backend.Contracts.Events;
 using MarginTrading.Backend.Contracts.Orders;
+using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Extensions;
+using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 
@@ -18,9 +20,7 @@ namespace MarginTrading.CommissionService.Services
         }
 
         public Task Handle(OrderHistoryEvent orderHistoryEvent)
-        {
-            //todo ensure idempotency
-            
+        {   
             var order = orderHistoryEvent.OrderSnapshot;
             if (order == null)
             {
