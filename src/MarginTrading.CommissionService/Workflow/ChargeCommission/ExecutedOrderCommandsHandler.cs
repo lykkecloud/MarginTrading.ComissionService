@@ -10,7 +10,7 @@ using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
 
 namespace MarginTrading.CommissionService.Workflow.ChargeCommission
 {
-    internal class ChargeCommissionCommandsHandler
+    internal class ExecutedOrderCommandsHandler
     {
         private const string OperationName = "ExecutedOrderCommission";
         private readonly ICommissionCalcService _commissionCalcService;
@@ -18,7 +18,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         private readonly IConvertService _convertService;
         private readonly IOperationExecutionInfoRepository _executionInfoRepository;
 
-        public ChargeCommissionCommandsHandler(ICommissionCalcService commissionCalcService,
+        public ExecutedOrderCommandsHandler(ICommissionCalcService commissionCalcService,
             IChaosKitty chaosKitty, 
             IConvertService convertService,
             IOperationExecutionInfoRepository executionInfoRepository)
@@ -37,7 +37,23 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             IEventPublisher publisher)
         {
             //ensure idempotency
-            if (await _executionInfoRepository.GetAsync<ExecutedOrderOperationData>(OperationName, command.OperationId) != null)
+            var executionInfo = await _executionInfoRepository.GetOrAddAsync(
+                operationName: OperationName, 
+                operationId: command.OperationId,
+                factory: () => new OperationExecutionInfo<ExecutedOrderOperationData>(
+                    operationName: OperationName,
+                    id: command.OperationId,
+                    data: new ExecutedOrderOperationData()
+                    {
+                        AccountId = command.AccountId,
+                        OrderId = command.OrderId,
+                        OrderCode = command.OrderCode,
+                        Instrument = command.Instrument,
+                        LegalEntity = command.LegalEntity,
+                        Volume = command.Volume,
+                    }
+                ));
+            if (executionInfo.existed)
                 return CommandHandlingResult.Ok();//no retries
             
             var commissionAmount = _commissionCalcService.CalculateOrderExecutionCommission(

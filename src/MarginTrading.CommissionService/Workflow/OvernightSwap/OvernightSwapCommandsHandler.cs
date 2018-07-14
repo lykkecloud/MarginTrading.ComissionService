@@ -13,25 +13,22 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
 {
     public class OvernightSwapCommandsHandler
     {
-        private readonly ICommissionCalcService _commissionCalcService;
         private readonly IOvernightSwapService _overnightSwapService;
         private readonly ISystemClock _systemClock;
         private readonly IChaosKitty _chaosKitty;
 
         public OvernightSwapCommandsHandler(
-            ICommissionCalcService commissionCalcService,
             IOvernightSwapService overnightSwapService,
             ISystemClock systemClock,
             IChaosKitty chaosKitty)
         {
-            _commissionCalcService = commissionCalcService;
             _overnightSwapService = overnightSwapService;
             _systemClock = systemClock;
             _chaosKitty = chaosKitty;
         }
 
         /// <summary>
-        /// Calculate commision size
+        /// Calculate commission size
         /// </summary>
         [UsedImplicitly]
         private async Task<CommandHandlingResult> Handle(StartOvernightSwapsProcessCommand command,

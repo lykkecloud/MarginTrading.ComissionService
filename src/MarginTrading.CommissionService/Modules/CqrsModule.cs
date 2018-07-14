@@ -137,8 +137,7 @@ namespace MarginTrading.CommissionService.Modules
                 .ListeningCommands(
                     typeof(HandleExecutedOrderInternalCommand))
                 .On(DefaultRoute)
-                //todo rename to OrderExecCommandsHandler
-                .WithCommandsHandler<ChargeCommissionCommandsHandler>()
+                .WithCommandsHandler<ExecutedOrderCommandsHandler>()
                 .PublishingEvents(
                     typeof(CommissionCalculatedInternalEvent))
                 .With(DefaultPipeline);

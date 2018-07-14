@@ -3,6 +3,8 @@ using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using Lykke.MarginTrading.CommissionService.Contracts.Commands;
+using MarginTrading.CommissionService.Core.Domain;
+using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
 using Microsoft.Extensions.Internal;
@@ -11,18 +13,22 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
 {
     public class DailyPnlCommandsHandler
     {
+        private const string OperationName = "DailyPnlCommission";
         private readonly IDailyPnlService _dailyPnlService;
+        private readonly IOperationExecutionInfoRepository _executionInfoRepository;
         private readonly ISystemClock _systemClock;
         private readonly IChaosKitty _chaosKitty;
 
         public DailyPnlCommandsHandler(
             IDailyPnlService dailyPnlService,
+            IOperationExecutionInfoRepository executionInfoRepository,
             ISystemClock systemClock,
             IChaosKitty chaosKitty)
         {
+            _dailyPnlService = dailyPnlService;
+            _executionInfoRepository = executionInfoRepository;
             _systemClock = systemClock;
             _chaosKitty = chaosKitty;
-            _dailyPnlService = dailyPnlService;
         }
 
         /// <summary>
@@ -32,8 +38,21 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
         private async Task<CommandHandlingResult> Handle(StartDailyPnlProcessCommand command,
             IEventPublisher publisher)
         {
-            //todo ensure idempotency https://lykke-snow.atlassian.net/browse/MTC-205
-
+            //ensure idempotency
+            var executionInfo = await _executionInfoRepository.GetOrAddAsync(
+                operationName: OperationName, 
+                operationId: command.OperationId,
+                factory: () => new OperationExecutionInfo<DailyPnlOperationData>(
+                    operationName: OperationName,
+                    id: command.OperationId,
+                    data: new DailyPnlOperationData
+                    {
+                        TradingDay = command.CreationTimestamp,
+                    }
+                ));
+            if (executionInfo.existed)
+                return CommandHandlingResult.Ok();//no retries
+            
             var calculatedPnLs = await _dailyPnlService.Calculate(command.OperationId, command.CreationTimestamp);
 
             foreach(var pnl in calculatedPnLs)
