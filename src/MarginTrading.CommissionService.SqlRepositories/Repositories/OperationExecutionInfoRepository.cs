@@ -16,7 +16,7 @@ using Newtonsoft.Json.Linq;
 
 namespace MarginTrading.CommissionService.SqlRepositories.Repositories
 {
-    internal class OperationExecutionInfoRepository : IOperationExecutionInfoRepository
+    public class OperationExecutionInfoRepository : IOperationExecutionInfoRepository
     {
         private const string TableName = "CommissionExecutionInfo";
         private const string CreateTableScript = "CREATE TABLE [{0}](" +

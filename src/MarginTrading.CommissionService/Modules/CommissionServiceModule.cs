@@ -127,6 +127,11 @@ namespace MarginTrading.CommissionService.Modules
                         AzureRepoFactories.MarginTrading.CreateOvernightSwapHistoryRepository(
                             _settings.Nested(s => s.CommissionService.Db.StateConnString), _log))
                     .SingleInstance();
+                
+                builder.Register<IOperationExecutionInfoRepository>(ctx =>
+                        AzureRepoFactories.MarginTrading.CreateOperationExecutionInfoRepository(
+                            _settings.Nested(s => s.CommissionService.Db.StateConnString), _log))
+                    .SingleInstance();
             } 
             else if (_settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.SqlServer)
             {
@@ -137,7 +142,10 @@ namespace MarginTrading.CommissionService.Modules
                 builder.RegisterType<OvernightSwapHistoryRepository>()
                     .As<IOvernightSwapHistoryRepository>()
                     .SingleInstance();
-                
+
+                builder.RegisterType<OperationExecutionInfoRepository>()
+                    .As<IOperationExecutionInfoRepository>()
+                    .SingleInstance();
             }
         }
     }
