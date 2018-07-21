@@ -26,7 +26,7 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterClient<IPositionsApi>(_settings.CurrentValue.CommissionService.Services.Backend.Url, 
                 config => config.WithApiKey(_settings.CurrentValue.CommissionService.Services.Backend.ApiKey));
 
-            builder.RegisterClient<IOrdersHistoryApi>(
+            builder.RegisterClient<IOrderEventsApi>(
                 _settings.CurrentValue.CommissionService.Services.TradingHistory.Url);
                 //, config => config.WithApiKey(_settings.CurrentValue.CommissionService.Services.TradingHistory.ApiKey));
             

@@ -1,10 +1,15 @@
 ﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings.Rates;
+using MarginTrading.TradingHistory.Client;
+using MarginTrading.TradingHistory.Client.Models;
+using Newtonsoft.Json;
 
 namespace MarginTrading.CommissionService.Services
 {
@@ -12,13 +17,16 @@ namespace MarginTrading.CommissionService.Services
     {
         private readonly ICfdCalculatorService _cfdCalculatorService;
         private readonly DefaultRateSettings _defaultRateSettings;
+        private readonly IOrderEventsApi _orderEventsApi;
 
         public CommissionCalcService(
             ICfdCalculatorService cfdCalculatorService,
-            DefaultRateSettings defaultRateSettings)
+            DefaultRateSettings defaultRateSettings,
+            IOrderEventsApi orderEventsApi)
         {
             _cfdCalculatorService = cfdCalculatorService;
             _defaultRateSettings = defaultRateSettings;
+            _orderEventsApi = orderEventsApi;
         }
 
         private decimal CalculateSwaps(string accountAssetId, string instrument, DateTime? openDate, DateTime? closeDate,
@@ -75,6 +83,60 @@ namespace MarginTrading.CommissionService.Services
                     defaultSettings.CommissionRate * volumeInAsset));
 
             return commission;
+        }
+
+        public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId)
+        {
+            var orderEvents = await _orderEventsApi.OrderById(orderId, null, true);
+
+            var parentOrderCorrelationId = orderEvents.Single(x => 
+                x.Id == orderId && x.UpdateType == OrderUpdateTypeContract.Place).CorrelationId;
+            
+            var actionsNum = 0;
+            foreach (var orderEvent in orderEvents)
+            {
+                if (!TryExtractOnBehalf(orderEvent.AdditionalInfo))
+                    continue;
+
+                if (orderEvent.Type == OrderTypeContract.Market && orderEvent.UpdateType == OrderUpdateTypeContract.Place)
+                {
+                    actionsNum++; 
+                    continue;
+                }
+
+                if (new[]
+                {
+                    OrderTypeContract.Limit, OrderTypeContract.Stop, OrderTypeContract.StopLoss,
+                    OrderTypeContract.TakeProfit, OrderTypeContract.TrailingStop
+                }.Contains(orderEvent.Type))
+                {
+                    if (orderEvent.UpdateType == OrderUpdateTypeContract.Cancel
+                        || orderEvent.UpdateType == OrderUpdateTypeContract.Change)
+                    {
+                        actionsNum++; continue;
+                    }
+
+                    if (orderEvent.UpdateType == OrderUpdateTypeContract.Place)
+                    {
+                        if (parentOrderCorrelationId != orderEvent.CorrelationId)
+                            actionsNum++;
+                    }
+                }
+            }
+
+            return (actionsNum, actionsNum * _defaultRateSettings.DefaultOnBehalfSettings.Commission);
+        }
+
+        private bool TryExtractOnBehalf(string additionalInfo)
+        {
+            try
+            {
+                return JsonConvert.DeserializeAnonymousType(additionalInfo, new {IsOnBehalf = false}).IsOnBehalf;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

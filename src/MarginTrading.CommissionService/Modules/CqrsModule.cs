@@ -15,8 +15,11 @@ using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
 using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
+using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands;
+using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Events;
 using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
 using MarginTrading.CommissionService.Workflow.ChargeCommission;
+using MarginTrading.CommissionService.Workflow.OnBehalf;
 using MarginTrading.CommissionService.Workflow.OvernightSwap;
 
 namespace MarginTrading.CommissionService.Modules
@@ -94,7 +97,8 @@ namespace MarginTrading.CommissionService.Modules
             var contextRegistration = Register.BoundedContext(_contextNames.CommissionService)
                 .FailedCommandRetryDelay(_defaultRetryDelayMs)
                 .ProcessingOptions(DefaultRoute).MultiThreaded(8).QueueCapacity(1024);
-            RegisterChargeCommissionCommandHandler(contextRegistration);
+            RegisterOrderExecCommissionCommandHandler(contextRegistration);
+            RegisterOnBehalfCommandsHandler(contextRegistration);
             RegisterOvernightSwapCommandHandler(contextRegistration);
             RegisterDailyPnlCommandsHandler(contextRegistration);
             return contextRegistration;
@@ -104,7 +108,7 @@ namespace MarginTrading.CommissionService.Modules
         {
             return Register.DefaultRouting
                 .PublishingCommands(
-                    typeof(HandleExecutedOrderInternalCommand),
+                    typeof(HandleOrderExecInternalCommand),
                     typeof(StartOvernightSwapsProcessCommand),
                     typeof(StartDailyPnlProcessCommand))
                 .To(_contextNames.CommissionService)
@@ -117,7 +121,8 @@ namespace MarginTrading.CommissionService.Modules
             
             sagaRegistration
                 .ListeningEvents(
-                    typeof(CommissionCalculatedInternalEvent),
+                    typeof(OrderExecCommissionCalculatedInternalEvent),
+                    typeof(OnBehalfCalculatedInternalEvent),
                     typeof(OvernightSwapCalculatedInternalEvent),
                     typeof(DailyPnlCalculatedInternalEvent))
                 .From(_contextNames.CommissionService)
@@ -130,17 +135,29 @@ namespace MarginTrading.CommissionService.Modules
             return sagaRegistration;
         }
 
-        private static void RegisterChargeCommissionCommandHandler(
+        private static void RegisterOrderExecCommissionCommandHandler(
             ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
         {
             contextRegistration
                 .ListeningCommands(
-                    typeof(HandleExecutedOrderInternalCommand))
+                    typeof(HandleOrderExecInternalCommand))
                 .On(DefaultRoute)
-                //todo rename to OrderExecCommandsHandler
-                .WithCommandsHandler<ChargeCommissionCommandsHandler>()
+                .WithCommandsHandler<OrderExecCommissionCommandsHandler>()
                 .PublishingEvents(
-                    typeof(CommissionCalculatedInternalEvent))
+                    typeof(OrderExecCommissionCalculatedInternalEvent))
+                .With(DefaultPipeline);
+        }
+        
+        private static void RegisterOnBehalfCommandsHandler(
+            ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
+        {
+            contextRegistration
+                .ListeningCommands(
+                    typeof(HandleOnBehalfInternalCommand))
+                .On(DefaultRoute)
+                .WithCommandsHandler<OnBehalfCommandsHandler>()
+                .PublishingEvents(
+                    typeof(OnBehalfCalculatedInternalEvent))
                 .With(DefaultPipeline);
         }
 
@@ -169,8 +186,6 @@ namespace MarginTrading.CommissionService.Modules
                     typeof(DailyPnlCalculatedInternalEvent))
                 .With(DefaultPipeline);
         }
-        
-        
 
         private ISagaRegistration RegisterSaga<TSaga>()
         {
