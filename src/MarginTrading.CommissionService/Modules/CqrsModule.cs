@@ -109,6 +109,7 @@ namespace MarginTrading.CommissionService.Modules
             return Register.DefaultRouting
                 .PublishingCommands(
                     typeof(HandleOrderExecInternalCommand),
+                    typeof(HandleOnBehalfInternalCommand),
                     typeof(StartOvernightSwapsProcessCommand),
                     typeof(StartDailyPnlProcessCommand))
                 .To(_contextNames.CommissionService)
