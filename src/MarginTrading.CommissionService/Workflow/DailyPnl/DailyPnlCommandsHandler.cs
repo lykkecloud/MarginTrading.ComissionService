@@ -13,7 +13,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
 {
     public class DailyPnlCommandsHandler
     {
-        private const string OperationName = "DailyPnlCommission";
+        public const string OperationName = "DailyPnlCommission";
         private readonly IDailyPnlService _dailyPnlService;
         private readonly IOperationExecutionInfoRepository _executionInfoRepository;
         private readonly ISystemClock _systemClock;
@@ -48,6 +48,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     data: new DailyPnlOperationData
                     {
                         TradingDay = command.CreationTimestamp,
+                        State = CommissionOperationState.Initiated,
                     }
                 ));
             if (executionInfo.existed)

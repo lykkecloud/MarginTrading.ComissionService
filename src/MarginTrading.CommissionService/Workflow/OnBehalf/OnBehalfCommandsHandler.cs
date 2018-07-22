@@ -3,6 +3,7 @@ using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using MarginTrading.CommissionService.Core.Domain;
+using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Events;
@@ -12,9 +13,11 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
 {
     public class OnBehalfCommandsHandler
     {
+        public const string OperationName = "OnBehalfCommission";
         private readonly ICommissionCalcService _commissionCalcService;
         private readonly IChaosKitty _chaosKitty;
         private readonly ISystemClock _systemClock;
+        private readonly IOperationExecutionInfoRepository _executionInfoRepository;
 
         public OnBehalfCommandsHandler(
             ICommissionCalcService commissionCalcService,
@@ -33,7 +36,22 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
         private async Task<CommandHandlingResult> Handle(HandleOnBehalfInternalCommand command,
             IEventPublisher publisher)
         {
-            //todo ensure idempotency
+            //ensure idempotency
+            var executionInfo = await _executionInfoRepository.GetOrAddAsync(
+                operationName: OperationName,
+                operationId: command.OperationId,
+                factory: () => new OperationExecutionInfo<OnBehalfOperationData>(
+                    operationName: OperationName,
+                    id: command.OperationId,
+                    data: new OnBehalfOperationData()
+                    {
+                        AccountId = command.AccountId,
+                        OrderId = command.OrderId,
+                        State = CommissionOperationState.Initiated,
+                    }
+                ));
+            if (executionInfo.existed) 
+                return CommandHandlingResult.Ok();//no retries 
             
             var result = await _commissionCalcService.CalculateOnBehalfCommissionAsync(command.OrderId);
             

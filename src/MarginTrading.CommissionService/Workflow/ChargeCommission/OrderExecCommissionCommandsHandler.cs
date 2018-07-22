@@ -3,6 +3,7 @@ using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using MarginTrading.CommissionService.Core.Domain;
+using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
@@ -11,15 +12,21 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
 {
     internal class OrderExecCommissionCommandsHandler
     {
+        public const string OperationName = "ExecutedOrderCommission";
         private readonly ICommissionCalcService _commissionCalcService;
         private readonly IChaosKitty _chaosKitty;
+        private readonly IConvertService _convertService;
+        private readonly IOperationExecutionInfoRepository _executionInfoRepository;
 
-        public OrderExecCommissionCommandsHandler(
-            ICommissionCalcService commissionCalcService,
-            IChaosKitty chaosKitty)
+        public OrderExecCommissionCommandsHandler(ICommissionCalcService commissionCalcService,
+            IChaosKitty chaosKitty, 
+            IConvertService convertService,
+            IOperationExecutionInfoRepository executionInfoRepository)
         {
             _commissionCalcService = commissionCalcService;
             _chaosKitty = chaosKitty;
+            _convertService = convertService;
+            _executionInfoRepository = executionInfoRepository;
         }
 
         /// <summary>
@@ -29,7 +36,26 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         private async Task<CommandHandlingResult> Handle(HandleOrderExecInternalCommand command,
             IEventPublisher publisher)
         {
-            //todo ensure idempotency
+            //ensure idempotency
+            var executionInfo = await _executionInfoRepository.GetOrAddAsync(
+                operationName: OperationName,
+                operationId: command.OperationId,
+                factory: () => new OperationExecutionInfo<ExecutedOrderOperationData>(
+                    operationName: OperationName,
+                    id: command.OperationId,
+                    data: new ExecutedOrderOperationData()
+                    {
+                        AccountId = command.AccountId,
+                        OrderId = command.OrderId,
+                        OrderCode = command.OrderCode,
+                        Instrument = command.Instrument,
+                        LegalEntity = command.LegalEntity,
+                        Volume = command.Volume,
+                        State = CommissionOperationState.Initiated,
+                    }
+                ));
+            if (executionInfo.existed) 
+                return CommandHandlingResult.Ok();//no retries 
 
             var commissionAmount = _commissionCalcService.CalculateOrderExecutionCommission(
                 command.Instrument, command.LegalEntity, command.Volume);
