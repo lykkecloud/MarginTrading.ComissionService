@@ -129,9 +129,9 @@ namespace MarginTrading.CommissionService
         {
             try
             {
-                //TODO thats only to get swap comission values - EOD keeper will provide interest rates
+                //TODO that's only to get swap commission values - EOD keeper will provide interest rates
                 
-                // NOTE: Service not yet recieves and processes requests here
+                // NOTE: Service not yet receives and processes requests here
                 var settings = ApplicationContainer.Resolve<CommissionServiceSettings>();
                 var rabbitMqService = ApplicationContainer.Resolve<IRabbitMqService>();
                 var fxRateCacheService = ApplicationContainer.Resolve<IFxRateCacheService>();
@@ -169,7 +169,7 @@ namespace MarginTrading.CommissionService
         {
             try
             {
-                // NOTE: Service still can recieve and process requests here, so take care about it if you add logic here.
+                // NOTE: Service still can receive and process requests here, so take care about it if you add logic here.
             }
             catch (Exception ex)
             {

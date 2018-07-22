@@ -8,9 +8,9 @@ namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Command
     /// Command to calculate order execution commissions
     /// </summary>
     [MessagePackObject]
-    public class HandleExecutedOrderInternalCommand
+    public class HandleOrderExecInternalCommand
     {
-        public HandleExecutedOrderInternalCommand([NotNull] string operationId,
+        public HandleOrderExecInternalCommand([NotNull] string operationId,
             [NotNull] string accountId, [NotNull] string orderId, long orderCode, 
             [NotNull] string instrument, [NotNull] string legalEntity, decimal volume)
         {
@@ -24,7 +24,7 @@ namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Command
         }
 
         /// <summary>
-        /// Unique opetation ID
+        /// Unique operation ID
         /// </summary>
         [NotNull]
         [Key(0)]
