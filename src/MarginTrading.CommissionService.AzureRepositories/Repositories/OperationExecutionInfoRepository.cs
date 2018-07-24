@@ -30,20 +30,15 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
             _log = log.CreateComponentScope(nameof(OperationExecutionInfoRepository));
         }
         
-        public async Task<(bool existed, IOperationExecutionInfo<TData> data)> GetOrAddAsync<TData>(
+        public async Task<IOperationExecutionInfo<TData>> GetOrAddAsync<TData>(
             string operationName, string operationId, Func<IOperationExecutionInfo<TData>> factory) where TData : class
         {
-            var existed = true;
             var entity = await _tableStorage.GetOrInsertAsync(
                 partitionKey: OperationExecutionInfoEntity.GeneratePartitionKey(operationName),
                 rowKey: OperationExecutionInfoEntity.GeneratePartitionKey(operationId),
-                createNew: () =>
-                {
-                    existed = false;
-                    return Convert(factory());
-                });
+                createNew: () => Convert(factory()));
                 
-            return (existed, Convert<TData>(entity));
+            return Convert<TData>(entity);
         }
 
         public async Task<IOperationExecutionInfo<TData>> GetAsync<TData>(string operationName, string id)

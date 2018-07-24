@@ -7,6 +7,7 @@ using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
+using MarginTrading.CommissionService.Workflow.ChargeCommission;
 using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Workflow.OvernightSwap
@@ -51,27 +52,31 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                         State = CommissionOperationState.Initiated,
                     }
                 ));
-            if (executionInfo.existed)
-                return CommandHandlingResult.Ok();//no retries
-            
-            var calculatedPnLs = await _dailyPnlService.Calculate(command.OperationId, command.CreationTimestamp);
 
-            foreach(var pnl in calculatedPnLs)
+            if (ChargeCommissionSaga.SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
+                CommissionOperationState.Started))
             {
-                publisher.PublishEvent(new DailyPnlCalculatedInternalEvent(
-                    operationId: pnl.OperationId,
-                    creationTimestamp: _systemClock.UtcNow.DateTime,
-                    accountId: pnl.AccountId,
-                    positionId: pnl.PositionId,
-                    assetPairId: pnl.Instrument,
-                    pnl: pnl.Pnl,
-                    tradingDay: pnl.TradingDay,
-                    volume: pnl.Volume,
-                    fxRate: pnl.FxRate));
+                var calculatedPnLs = await _dailyPnlService.Calculate(command.OperationId, command.CreationTimestamp);
 
-//                _chaosKitty.Meow(nameof(OvernightSwapCommandsHandler));
+                foreach (var pnl in calculatedPnLs)
+                {
+                    publisher.PublishEvent(new DailyPnlCalculatedInternalEvent(
+                        operationId: pnl.OperationId,
+                        creationTimestamp: _systemClock.UtcNow.DateTime,
+                        accountId: pnl.AccountId,
+                        positionId: pnl.PositionId,
+                        assetPairId: pnl.Instrument,
+                        pnl: pnl.Pnl,
+                        tradingDay: pnl.TradingDay,
+                        volume: pnl.Volume,
+                        fxRate: pnl.FxRate));
+
+                    _chaosKitty.Meow(nameof(OvernightSwapCommandsHandler));
+                }
+                
+                await _executionInfoRepository.Save(executionInfo);
             }
-            
+
             return CommandHandlingResult.Ok();
         }
 

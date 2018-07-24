@@ -54,26 +54,34 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                         State = CommissionOperationState.Initiated,
                     }
                 ));
-            if (executionInfo.existed) 
-                return CommandHandlingResult.Ok();//no retries 
+            
+            if (ChargeCommissionSaga.SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
+                CommissionOperationState.Started))
+            {
 
-            var commissionAmount = _commissionCalcService.CalculateOrderExecutionCommission(
-                command.Instrument, command.LegalEntity, command.Volume);
-            
-            //no failure handling.. so operation will be retried on fail
-            
-            _chaosKitty.Meow(command.OperationId);
-            
-            publisher.PublishEvent(new OrderExecCommissionCalculatedInternalEvent(
-                operationId: command.OperationId,
-                accountId: command.AccountId,
-                orderId: command.OrderId,
-                assetPairId: command.Instrument,
-                amount: commissionAmount,
-                commissionType: CommissionType.OrderExecution,
-                reason: $"{CommissionType.OrderExecution.ToString()} commission for {command.Instrument} order #{command.OrderCode}, id: {command.OrderId}, volume: {command.Volume}"
-            ));
-            
+                var commissionAmount = _commissionCalcService.CalculateOrderExecutionCommission(
+                    command.Instrument, command.LegalEntity, command.Volume);
+
+                //no failure handling.. so operation will be retried on fail
+
+                _chaosKitty.Meow(command.OperationId);
+
+                publisher.PublishEvent(new OrderExecCommissionCalculatedInternalEvent(
+                    operationId: command.OperationId,
+                    accountId: command.AccountId,
+                    orderId: command.OrderId,
+                    assetPairId: command.Instrument,
+                    amount: commissionAmount,
+                    commissionType: CommissionType.OrderExecution,
+                    reason:
+                    $"{CommissionType.OrderExecution.ToString()} commission for {command.Instrument} order #{command.OrderCode}, id: {command.OrderId}, volume: {command.Volume}"
+                ));
+                
+                _chaosKitty.Meow(command.OperationId);
+                
+                await _executionInfoRepository.Save(executionInfo);
+            }
+
             return CommandHandlingResult.Ok();
         }
     }

@@ -7,6 +7,7 @@ using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Events;
+using MarginTrading.CommissionService.Workflow.ChargeCommission;
 using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Workflow.OnBehalf
@@ -50,28 +51,34 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
                         State = CommissionOperationState.Initiated,
                     }
                 ));
-            if (executionInfo.existed) 
-                return CommandHandlingResult.Ok();//no retries 
-            
-            var result = await _commissionCalcService.CalculateOnBehalfCommissionAsync(command.OrderId);
-            
-            if (result.Commission == 0)
-                return CommandHandlingResult.Ok();
-            
-            //no failure handling.. so operation will be retried on fail
-            
-            _chaosKitty.Meow(command.OperationId);
-            
-            publisher.PublishEvent(new OnBehalfCalculatedInternalEvent(
-                operationId: command.OperationId,
-                createdTimestamp: _systemClock.UtcNow.UtcDateTime,
-                accountId: command.AccountId,
-                orderId: command.OrderId,
-                assetPairId: command.AssetPairId,
-                numberOfActions: result.ActionsNum,
-                commission: result.Commission
-            ));
-            
+
+            if (ChargeCommissionSaga.SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
+                CommissionOperationState.Started))
+            {
+                var result = await _commissionCalcService.CalculateOnBehalfCommissionAsync(command.OrderId);
+
+                if (result.Commission == 0)
+                    return CommandHandlingResult.Ok();
+
+                //no failure handling.. so operation will be retried on fail
+
+                _chaosKitty.Meow(command.OperationId);
+
+                publisher.PublishEvent(new OnBehalfCalculatedInternalEvent(
+                    operationId: command.OperationId,
+                    createdTimestamp: _systemClock.UtcNow.UtcDateTime,
+                    accountId: command.AccountId,
+                    orderId: command.OrderId,
+                    assetPairId: command.AssetPairId,
+                    numberOfActions: result.ActionsNum,
+                    commission: result.Commission
+                ));
+                
+                _chaosKitty.Meow(command.OperationId);
+                
+                await _executionInfoRepository.Save(executionInfo);
+            }
+
             return CommandHandlingResult.Ok();
         }
     }

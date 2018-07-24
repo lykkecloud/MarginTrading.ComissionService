@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using MarginTrading.AccountsManagement.Contracts;
 using MarginTrading.AccountsManagement.Contracts.Commands;
@@ -27,16 +28,19 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         private readonly IOvernightSwapService _overnightSwapService;
         private readonly ILog _log;
         private readonly IOperationExecutionInfoRepository _executionInfoRepository;
+        private readonly IChaosKitty _chaosKitty;
 
         public ChargeCommissionSaga(CqrsContextNamesSettings contextNames,
             IOvernightSwapService overnightSwapService,
             ILog log,
-            IOperationExecutionInfoRepository executionInfoRepository)
+            IOperationExecutionInfoRepository executionInfoRepository,
+            IChaosKitty chaosKitty)
         {
             _contextNames = contextNames;
             _overnightSwapService = overnightSwapService;
             _log = log;
             _executionInfoRepository = executionInfoRepository;
+            _chaosKitty = chaosKitty;
         }
 
         /// <summary>
@@ -51,7 +55,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 id: evt.OperationId
             );
 
-            if (SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
+            if (SwitchState(executionInfo?.Data, CommissionOperationState.Started,
                 CommissionOperationState.Calculated))
             {
                 sender.SendCommand(new ChangeBalanceCommand(
@@ -65,6 +69,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                         eventSourceId: evt.OrderId,
                         assetPairId: evt.AssetPairId),
                     _contextNames.AccountsManagement);
+                
+                _chaosKitty.Meow(evt.OperationId);
                 
                 await _executionInfoRepository.Save(executionInfo);
             }
@@ -82,7 +88,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 id: evt.OperationId
             );
             
-            if (SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
+            if (SwitchState(executionInfo?.Data, CommissionOperationState.Started,
                 CommissionOperationState.Calculated))
             {
                 sender.SendCommand(new ChangeBalanceCommand(
@@ -96,6 +102,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                         eventSourceId: evt.OrderId,
                         assetPairId: evt.AssetPairId),
                     _contextNames.AccountsManagement);
+                
+                _chaosKitty.Meow(evt.OperationId);
 
                 await _executionInfoRepository.Save(executionInfo);
             }
@@ -142,7 +150,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 id: evt.OperationId
             );
 
-            if (SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
+            if (SwitchState(executionInfo?.Data, CommissionOperationState.Started,
                 CommissionOperationState.Calculated))
             {
                 sender.SendCommand(new ChangeBalanceCommand(
@@ -156,6 +164,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                         eventSourceId: evt.PositionId,
                         assetPairId: evt.AssetPairId),
                     _contextNames.AccountsManagement);
+                
+                _chaosKitty.Meow(evt.OperationId);
                 
                 await _executionInfoRepository.Save(executionInfo);
             }
@@ -174,7 +184,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             }
         }
 
-        private static bool SwitchState(CommissionOperationData data, 
+        public static bool SwitchState(CommissionOperationData data, 
             CommissionOperationState expectedState, CommissionOperationState nextState)
         {
             if (data == null)
