@@ -87,6 +87,36 @@ namespace MarginTrading.CommissionService.Services
 
         public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId)
         {
+            /*//check OnBehalf
+            var orderEvents = await _orderEventsApi.OrderById(orderId, null, true);
+
+            var onlythis = orderEvents.Where(x => 
+                x.Id == orderId &&
+                new[] {OrderUpdateTypeContract.Place, OrderUpdateTypeContract.Change}
+                    .Contains(x.UpdateType)).ToList();
+            
+            
+            var puretotal = onlythis.Count();
+
+            if (new[]
+            {
+                OrderTypeContract.StopLoss,
+                OrderTypeContract.TakeProfit,
+                OrderTypeContract.TrailingStop
+            }.Contains(onlythis.FirstOrDefault().UpdateType))
+            {
+                var par = orderEvents.SingleOrDefault(x =>
+                    x.ParentOrderId == null && x.UpdateType == OrderUpdateTypeContract.Place);
+                var child = onlythis.SingleOrDefault(y => y.UpdateType == OrderUpdateTypeContract.Place);
+                if (par.CorrelationId == child.CorrelationId && puretotal > 0)
+                    puretotal--;
+            }*/
+            
+//            var orderEvents = (await _orderEventsApi.OrderById(orderId, null, true))
+//                .Where(x => x.Originator == OriginatorTypeContract.OnBehalf
+//                    && (string.IsNullOrEmpty(x.ParentOrderId) && (x.UpdateType == OrderUpdateTypeContract.Place))
+//                    || (x.Id == orderId && new[] {OrderUpdateTypeContract.Place, OrderUpdateTypeContract.Change}
+//                            .Contains(x.UpdateType)));
             var orderEvents = await _orderEventsApi.OrderById(orderId, null, true);
 
             var parentOrderCorrelationId = orderEvents.SingleOrDefault(x => 
