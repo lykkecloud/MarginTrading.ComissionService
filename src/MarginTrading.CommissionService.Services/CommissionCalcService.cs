@@ -89,13 +89,13 @@ namespace MarginTrading.CommissionService.Services
         {
             var orderEvents = await _orderEventsApi.OrderById(orderId, null, true);
 
-            var parentOrderCorrelationId = orderEvents.Single(x => 
-                x.Id == orderId && x.UpdateType == OrderUpdateTypeContract.Place).CorrelationId;
+            var parentOrderCorrelationId = orderEvents.SingleOrDefault(x => 
+                x.Id == orderId && x.UpdateType == OrderUpdateTypeContract.Place)?.CorrelationId;
             
             var actionsNum = 0;
             foreach (var orderEvent in orderEvents)
             {
-                if (!TryExtractOnBehalf(orderEvent.AdditionalInfo))
+                if (orderEvent.Originator != OriginatorTypeContract.OnBehalf)
                     continue;
 
                 if (orderEvent.Type == OrderTypeContract.Market && orderEvent.UpdateType == OrderUpdateTypeContract.Place)
@@ -110,8 +110,7 @@ namespace MarginTrading.CommissionService.Services
                     OrderTypeContract.TakeProfit, OrderTypeContract.TrailingStop
                 }.Contains(orderEvent.Type))
                 {
-                    if (orderEvent.UpdateType == OrderUpdateTypeContract.Cancel
-                        || orderEvent.UpdateType == OrderUpdateTypeContract.Change)
+                    if (orderEvent.UpdateType == OrderUpdateTypeContract.Change)
                     {
                         actionsNum++; continue;
                     }
@@ -125,18 +124,6 @@ namespace MarginTrading.CommissionService.Services
             }
 
             return (actionsNum, actionsNum * _defaultRateSettings.DefaultOnBehalfSettings.Commission);
-        }
-
-        private bool TryExtractOnBehalf(string additionalInfo)
-        {
-            try
-            {
-                return JsonConvert.DeserializeAnonymousType(additionalInfo, new {IsOnBehalf = false}).IsOnBehalf;
-            }
-            catch
-            {
-                return false;
-            }
         }
     }
 }
