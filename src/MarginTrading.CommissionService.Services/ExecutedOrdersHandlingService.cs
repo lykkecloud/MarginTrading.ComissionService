@@ -53,6 +53,7 @@ namespace MarginTrading.CommissionService.Services
                     operationId: $"{order.Id}-{OnBehalfPostfix}",
                     createdTimestamp: _systemClock.UtcNow.UtcDateTime,
                     accountId: order.AccountId,
+                    accountAssetId: order.AccountAssetId,
                     orderId: order.Id,
                     assetPairId: order.AssetPairId
                 )),

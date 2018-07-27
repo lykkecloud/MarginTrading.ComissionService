@@ -35,7 +35,8 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
         {
             //todo ensure idempotency
             
-            var result = await _commissionCalcService.CalculateOnBehalfCommissionAsync(command.OrderId);
+            var result = await _commissionCalcService.CalculateOnBehalfCommissionAsync(command.OrderId, 
+                command.AccountAssetId);
             
             if (result.Commission == 0)
                 return CommandHandlingResult.Ok();

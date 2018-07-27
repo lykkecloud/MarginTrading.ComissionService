@@ -7,6 +7,7 @@ namespace MarginTrading.CommissionService.Core.Services
     {
         decimal GetOvernightSwap(IOpenPosition openPosition, IAssetPair assetPair);
         decimal CalculateOrderExecutionCommission(string instrument, string legalEntity, decimal volume);
-        Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId);
+        Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId,
+            string accountAssetId);
     }
 }
