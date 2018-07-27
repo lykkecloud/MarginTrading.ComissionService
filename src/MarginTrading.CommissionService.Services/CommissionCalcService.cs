@@ -117,10 +117,9 @@ namespace MarginTrading.CommissionService.Services
 //                    && (string.IsNullOrEmpty(x.ParentOrderId) && (x.UpdateType == OrderUpdateTypeContract.Place))
 //                    || (x.Id == orderId && new[] {OrderUpdateTypeContract.Place, OrderUpdateTypeContract.Change}
 //                            .Contains(x.UpdateType)));
-            var orderEvents = await _orderEventsApi.OrderById(orderId, null, true);
-
-            var parentOrderCorrelationId = orderEvents.SingleOrDefault(x => 
-                x.Id == orderId && x.UpdateType == OrderUpdateTypeContract.Place)?.CorrelationId;
+            
+            //we handle separately main and related order execution events
+            var orderEvents = await _orderEventsApi.OrderById(orderId, null, false);
             
             var actionsNum = 0;
             foreach (var orderEvent in orderEvents)
@@ -130,30 +129,47 @@ namespace MarginTrading.CommissionService.Services
 
                 if (orderEvent.Type == OrderTypeContract.Market && orderEvent.UpdateType == OrderUpdateTypeContract.Place)
                 {
-                    actionsNum++; 
-                    continue;
+                    actionsNum++; continue;
                 }
 
-                if (new[]
+                if (new[] { OrderTypeContract.Limit, OrderTypeContract.Stop }.Contains(orderEvent.Type)
+                    && new[] {OrderUpdateTypeContract.Place, OrderUpdateTypeContract.Change}.Contains(orderEvent.UpdateType))
                 {
-                    OrderTypeContract.Limit, OrderTypeContract.Stop, OrderTypeContract.StopLoss,
-                    OrderTypeContract.TakeProfit, OrderTypeContract.TrailingStop
-                }.Contains(orderEvent.Type))
+                    actionsNum++; continue;
+                }
+
+                if (new[] { OrderTypeContract.StopLoss, OrderTypeContract.TakeProfit, OrderTypeContract.TrailingStop }
+                    .Contains(orderEvent.Type))
                 {
                     if (orderEvent.UpdateType == OrderUpdateTypeContract.Change)
                     {
                         actionsNum++; continue;
                     }
+ 
+                    var parentOrderId = orderEvents.FirstOrDefault(x => 
+                        !string.IsNullOrWhiteSpace(x.ParentOrderId) && x.UpdateType == OrderUpdateTypeContract.Place
+                        && x.Originator == OriginatorTypeContract.OnBehalf)?.ParentOrderId;
 
-                    if (orderEvent.UpdateType == OrderUpdateTypeContract.Place)
+                    if (orderEvent.UpdateType == OrderUpdateTypeContract.Place 
+                        && await CheckCorrelationId(parentOrderId, orderEvent.CorrelationId))
                     {
-                        if (parentOrderCorrelationId != orderEvent.CorrelationId)
-                            actionsNum++;
+                        actionsNum++;
                     }
                 }
             }
 
             return (actionsNum, actionsNum * _defaultRateSettings.DefaultOnBehalfSettings.Commission);
+
+            async Task<bool> CheckCorrelationId(string parentOrderId, string correlationId)
+            {
+                if (string.IsNullOrWhiteSpace(parentOrderId))
+                    return false;
+
+                var parentCorrelationId = (await _orderEventsApi.OrderById(parentOrderId, OrderStatusContract.Placed, 
+                    false)).FirstOrDefault()?.CorrelationId;
+
+                return correlationId != parentCorrelationId;
+            }
         }
     }
 }
