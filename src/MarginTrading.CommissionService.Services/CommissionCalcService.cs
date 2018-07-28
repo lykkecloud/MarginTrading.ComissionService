@@ -92,10 +92,11 @@ namespace MarginTrading.CommissionService.Services
                 .Where(o => o.Originator == OriginatorTypeContract.OnBehalf).ToList();
 
             var changeEventsCount = onBehalfEvents.Count(o => o.UpdateType == OrderUpdateTypeContract.Change);
-            
-            var placeEventCharged = onBehalfEvents.Exists(o => o.UpdateType == OrderUpdateTypeContract.Place
-                                                               && !string.IsNullOrWhiteSpace(o.ParentOrderId)
-                                                               && CorrelatesWithParent(o).Result)
+
+            var placeEventCharged = !onBehalfEvents.Exists(o => o.UpdateType == OrderUpdateTypeContract.Place)
+                                    || onBehalfEvents.Exists(o => o.UpdateType == OrderUpdateTypeContract.Place
+                                                                  && !string.IsNullOrWhiteSpace(o.ParentOrderId)
+                                                                  && CorrelatesWithParent(o).Result)
                 ? 0
                 : 1;
 
