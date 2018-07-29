@@ -9,27 +9,28 @@ using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
 
 namespace MarginTrading.CommissionService.Workflow.ChargeCommission
 {
-    internal class ChargeCommissionCommandsHandler
+    internal class OrderExecCommissionCommandsHandler
     {
         private readonly ICommissionCalcService _commissionCalcService;
         private readonly IChaosKitty _chaosKitty;
-        private readonly IConvertService _convertService;
 
-        public ChargeCommissionCommandsHandler(ICommissionCalcService commissionCalcService,
-            IChaosKitty chaosKitty, IConvertService convertService)
+        public OrderExecCommissionCommandsHandler(
+            ICommissionCalcService commissionCalcService,
+            IChaosKitty chaosKitty)
         {
             _commissionCalcService = commissionCalcService;
             _chaosKitty = chaosKitty;
-            _convertService = convertService;
         }
 
         /// <summary>
-        /// Calculate commision size
+        /// Calculate commission size
         /// </summary>
         [UsedImplicitly]
-        private async Task<CommandHandlingResult> Handle(HandleExecutedOrderInternalCommand command,
+        private async Task<CommandHandlingResult> Handle(HandleOrderExecInternalCommand command,
             IEventPublisher publisher)
         {
+            //todo ensure idempotency
+
             var commissionAmount = _commissionCalcService.CalculateOrderExecutionCommission(
                 command.Instrument, command.LegalEntity, command.Volume);
             
@@ -37,7 +38,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             
             _chaosKitty.Meow(command.OperationId);
             
-            publisher.PublishEvent(new CommissionCalculatedInternalEvent(
+            publisher.PublishEvent(new OrderExecCommissionCalculatedInternalEvent(
                 operationId: command.OperationId,
                 accountId: command.AccountId,
                 orderId: command.OrderId,

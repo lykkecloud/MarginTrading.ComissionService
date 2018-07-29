@@ -12,6 +12,7 @@ using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
+using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands;
 using MarginTrading.SettingsService.Contracts.Enums;
 using MarginTrading.SettingsService.Contracts.Messages;
 using Microsoft.Extensions.Internal;
@@ -43,11 +44,22 @@ namespace MarginTrading.CommissionService.Services
             _contextNames = contextNames;
         }
 
-        public async Task SendHandleExecutedOrderInternalCommand(HandleExecutedOrderInternalCommand command)
+        public Task SendHandleExecutedOrderInternalCommand(HandleOrderExecInternalCommand command)
         {
             _cqrsEngine.SendCommand(command, 
                 _contextNames.CommissionService, 
                 _contextNames.CommissionService);
+            
+            return Task.CompletedTask;
+        }
+
+        public Task SendHandleOnBehalfInternalCommand(HandleOnBehalfInternalCommand command)
+        {
+            _cqrsEngine.SendCommand(command,
+                _contextNames.CommissionService, 
+                _contextNames.CommissionService);
+            
+            return Task.CompletedTask;
         }
     }
 }

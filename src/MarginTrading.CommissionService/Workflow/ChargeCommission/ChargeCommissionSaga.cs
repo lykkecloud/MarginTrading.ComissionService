@@ -12,6 +12,7 @@ using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
 using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
+using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Events;
 using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
 
 namespace MarginTrading.CommissionService.Workflow.ChargeCommission
@@ -38,7 +39,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         /// Send charge command to AccountManagement service
         /// </summary>
         [UsedImplicitly]
-        private void Handle(CommissionCalculatedInternalEvent evt, ICommandSender sender)
+        private void Handle(OrderExecCommissionCalculatedInternalEvent evt, ICommandSender sender)
         {
             //todo ensure operation idempotency
             //evt.OperationId
@@ -56,6 +57,28 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 _contextNames.AccountsManagement);
         }
 
+        /// <summary>
+        /// Send charge command to AccountManagement service
+        /// </summary>
+        [UsedImplicitly]
+        private void Handle(OnBehalfCalculatedInternalEvent evt, ICommandSender sender)
+        {
+            //todo ensure operation idempotency
+            //evt.OperationId
+            
+            sender.SendCommand(new ChangeBalanceCommand(
+                    operationId: evt.OperationId,
+                    clientId: null,
+                    accountId: evt.AccountId, 
+                    amount: - evt.Commission,
+                    reasonType: AccountBalanceChangeReasonTypeContract.OnBehalf, 
+                    reason: nameof(OnBehalfCalculatedInternalEvent), 
+                    auditLog: null,
+                    eventSourceId: evt.OrderId,
+                    assetPairId: evt.AssetPairId),
+                _contextNames.AccountsManagement);
+        }
+        
         /// <summary>
         /// Send charge command to AccountManagement service
         /// </summary>
