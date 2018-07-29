@@ -1,4 +1,5 @@
-﻿using MarginTrading.CommissionService.Core.Caches;
+﻿using System;
+using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Services;
 
 namespace MarginTrading.CommissionService.Services
@@ -30,6 +31,18 @@ namespace MarginTrading.CommissionService.Services
                 : 1 / _fxRateCacheService.GetQuote(assetPairSubst.Id).Bid;
             
             return rate;
+        }
+        
+        public decimal GetQuote(string asset1, string asset2, string legalEntity)
+        {
+            if (asset1 == asset2)
+                return 1;
+            
+            var assetPair = _assetPairsCache.FindAssetPair(asset1, asset2, legalEntity);
+
+            var quote = _fxRateCacheService.GetQuote(assetPair.Id);
+
+            return quote.Bid;
         }
     }
 }

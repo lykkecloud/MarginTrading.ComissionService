@@ -6,9 +6,9 @@ using MessagePack;
 namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events
 {
     [MessagePackObject]
-    public class CommissionCalculatedInternalEvent
+    public class OrderExecCommissionCalculatedInternalEvent
     {
-        public CommissionCalculatedInternalEvent([NotNull] string operationId, [NotNull] string accountId, 
+        public OrderExecCommissionCalculatedInternalEvent([NotNull] string operationId, [NotNull] string accountId, 
             [NotNull] string orderId, [CanBeNull] string assetPairId, decimal amount, CommissionType commissionType,
             [NotNull] string reason)
         {

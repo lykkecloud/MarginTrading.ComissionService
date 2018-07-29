@@ -84,10 +84,7 @@ namespace MarginTrading.CommissionService.Services
             {
                 var publisher = new RabbitMqPublisher<TMessage>(s);
 
-                //if (isDurable && _queueRepository.Value != null)
-                //    publisher.SetQueueRepository(_queueRepository.Value);
-                //else
-                    publisher.DisableInMemoryQueuePersistence();
+                publisher.DisableInMemoryQueuePersistence();
 
                 return publisher
                     .SetSerializer(serializer)
