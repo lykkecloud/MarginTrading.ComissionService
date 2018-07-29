@@ -1,3 +1,4 @@
+using System;
 using Lykke.AzureStorage.Tables;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using Newtonsoft.Json;
@@ -17,6 +18,8 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
             get => RowKey;
             set => RowKey = value;
         }
+
+        public DateTime LastModified { get; set; }
 
         object IOperationExecutionInfo<object>.Data => JsonConvert.DeserializeObject<object>(Data);
         public string Data { get; set; }

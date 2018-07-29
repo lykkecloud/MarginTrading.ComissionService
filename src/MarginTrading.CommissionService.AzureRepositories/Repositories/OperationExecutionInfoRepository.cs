@@ -10,6 +10,7 @@ using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Settings;
+using Microsoft.Extensions.Internal;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -19,15 +20,17 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
     {
         private readonly INoSQLTableStorage<OperationExecutionInfoEntity> _tableStorage;
         private readonly ILog _log;
+        private readonly ISystemClock _systemClock;
         private readonly bool _enableOperationsLogs = true;
 
-        public OperationExecutionInfoRepository(IReloadingManager<string> connStr, ILog log)
+        public OperationExecutionInfoRepository(IReloadingManager<string> connStr, ILog log, ISystemClock systemClock)
         {
             _tableStorage = AzureTableStorage<OperationExecutionInfoEntity>.Create(
                 connStr,
                 "CommissionExecutionInfo",
                 log);
             _log = log.CreateComponentScope(nameof(OperationExecutionInfoRepository));
+            _systemClock = systemClock;
         }
         
         public async Task<IOperationExecutionInfo<TData>> GetOrAddAsync<TData>(
@@ -36,7 +39,12 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
             var entity = await _tableStorage.GetOrInsertAsync(
                 partitionKey: OperationExecutionInfoEntity.GeneratePartitionKey(operationName),
                 rowKey: OperationExecutionInfoEntity.GeneratePartitionKey(operationId),
-                createNew: () => Convert(factory()));
+                createNew: () =>
+                {
+                    var result = Convert(factory());
+                    result.LastModified = _systemClock.UtcNow.UtcDateTime;
+                    return result;
+                });
                 
             return Convert<TData>(entity);
         }
@@ -54,7 +62,9 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
 
         public async Task Save<TData>(IOperationExecutionInfo<TData> executionInfo) where TData : class
         {
-            await _tableStorage.ReplaceAsync(Convert(executionInfo));
+            var entity = Convert(executionInfo);
+            entity.LastModified = _systemClock.UtcNow.UtcDateTime;
+            await _tableStorage.ReplaceAsync(entity);
         }
 
         private static IOperationExecutionInfo<TData> Convert<TData>(OperationExecutionInfoEntity entity)
@@ -63,6 +73,7 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
             return new OperationExecutionInfo<TData>(
                 operationName: entity.OperationName,
                 id: entity.Id,
+                lastModified: entity.LastModified,
                 data: entity.Data is string dataStr
                     ? JsonConvert.DeserializeObject<TData>(dataStr)
                     : ((JToken) entity.Data).ToObject<TData>());

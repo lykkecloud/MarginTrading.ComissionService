@@ -7,6 +7,7 @@ using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
+using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Workflow.ChargeCommission
 {
@@ -17,16 +18,19 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         private readonly IChaosKitty _chaosKitty;
         private readonly IConvertService _convertService;
         private readonly IOperationExecutionInfoRepository _executionInfoRepository;
+        private readonly ISystemClock _systemClock;
 
         public OrderExecCommissionCommandsHandler(ICommissionCalcService commissionCalcService,
             IChaosKitty chaosKitty, 
             IConvertService convertService,
-            IOperationExecutionInfoRepository executionInfoRepository)
+            IOperationExecutionInfoRepository executionInfoRepository,
+            ISystemClock systemClock)
         {
             _commissionCalcService = commissionCalcService;
             _chaosKitty = chaosKitty;
             _convertService = convertService;
             _executionInfoRepository = executionInfoRepository;
+            _systemClock = systemClock;
         }
 
         /// <summary>
@@ -43,6 +47,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 factory: () => new OperationExecutionInfo<ExecutedOrderOperationData>(
                     operationName: OperationName,
                     id: command.OperationId,
+                    lastModified: _systemClock.UtcNow.UtcDateTime,
                     data: new ExecutedOrderOperationData()
                     {
                         AccountId = command.AccountId,

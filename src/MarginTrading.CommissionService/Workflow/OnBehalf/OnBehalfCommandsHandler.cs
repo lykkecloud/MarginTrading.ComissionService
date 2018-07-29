@@ -44,6 +44,7 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
                 factory: () => new OperationExecutionInfo<OnBehalfOperationData>(
                     operationName: OperationName,
                     id: command.OperationId,
+                    lastModified: _systemClock.UtcNow.UtcDateTime,
                     data: new OnBehalfOperationData()
                     {
                         AccountId = command.AccountId,

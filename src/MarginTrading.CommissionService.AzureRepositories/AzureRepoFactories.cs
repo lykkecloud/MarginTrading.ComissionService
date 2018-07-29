@@ -3,6 +3,7 @@ using Common.Log;
 using Lykke.SettingsReader;
 using MarginTrading.CommissionService.AzureRepositories.Entities;
 using MarginTrading.CommissionService.AzureRepositories.Repositories;
+using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.AzureRepositories
 {
@@ -23,9 +24,9 @@ namespace MarginTrading.CommissionService.AzureRepositories
             }
 
             public static OperationExecutionInfoRepository CreateOperationExecutionInfoRepository(
-                IReloadingManager<string> connString, ILog log)
+                IReloadingManager<string> connString, ILog log, ISystemClock systemClock)
             {
-                return new OperationExecutionInfoRepository(connString, log);
+                return new OperationExecutionInfoRepository(connString, log, systemClock);
             }
         }
     }

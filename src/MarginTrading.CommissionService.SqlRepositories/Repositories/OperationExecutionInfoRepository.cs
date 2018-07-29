@@ -11,6 +11,7 @@ using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.SqlRepositories.Entities;
+using Microsoft.Extensions.Internal;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -21,6 +22,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
         private const string TableName = "CommissionExecutionInfo";
         private const string CreateTableScript = "CREATE TABLE [{0}](" +
                                                  "[Id] [nvarchar] (64) NOT NULL PRIMARY KEY," +
+                                                 "[LastModified] [datetime] NOT NULL, " +
                                                  "[OperationName] [nvarchar] (64) NULL, " +
                                                  "[Version] [nvarchar] (64) NULL, " +
                                                  "[Data] [nvarchar] (MAX) NOT NULL " +
@@ -35,12 +37,17 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
         private readonly IConvertService _convertService;
         private readonly CommissionServiceSettings _settings;
         private readonly ILog _log;
+        private readonly ISystemClock _systemClock;
 
-        public OperationExecutionInfoRepository(IConvertService convertService, CommissionServiceSettings settings, ILog log)
+        public OperationExecutionInfoRepository(IConvertService convertService, 
+            CommissionServiceSettings settings, 
+            ILog log,
+            ISystemClock systemClock)
         {
             _convertService = convertService;
-            _log = log;
             _settings = settings;
+            _log = log;
+            _systemClock = systemClock;
             
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
@@ -66,6 +73,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
                     if (operationInfo == null)
                     {
                         var entity = Convert(factory());
+                        entity.LastModified = _systemClock.UtcNow.UtcDateTime;
 
                         await conn.ExecuteAsync(
                             $"insert into {TableName} ({GetColumns}) values ({GetFields})", entity);
@@ -97,6 +105,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
         public async Task Save<TData>(IOperationExecutionInfo<TData> executionInfo) where TData : class
         {
             var entity = Convert(executionInfo);
+            entity.LastModified = _systemClock.UtcNow.UtcDateTime;
             
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
@@ -119,6 +128,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
             return new OperationExecutionInfo<TData>(
                 operationName: entity.OperationName,
                 id: entity.Id,
+                lastModified: entity.LastModified,
                 data: entity.Data is string dataStr
                     ? JsonConvert.DeserializeObject<TData>(dataStr)
                     : ((JToken) entity.Data).ToObject<TData>());

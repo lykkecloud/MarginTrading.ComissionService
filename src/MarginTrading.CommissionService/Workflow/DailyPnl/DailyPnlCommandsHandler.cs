@@ -46,6 +46,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                 factory: () => new OperationExecutionInfo<DailyPnlOperationData>(
                     operationName: OperationName,
                     id: command.OperationId,
+                    lastModified: _systemClock.UtcNow.UtcDateTime,
                     data: new DailyPnlOperationData
                     {
                         TradingDay = command.CreationTimestamp,

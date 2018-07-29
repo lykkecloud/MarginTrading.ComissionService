@@ -130,7 +130,7 @@ namespace MarginTrading.CommissionService.Modules
                 
                 builder.Register<IOperationExecutionInfoRepository>(ctx =>
                         AzureRepoFactories.MarginTrading.CreateOperationExecutionInfoRepository(
-                            _settings.Nested(s => s.CommissionService.Db.StateConnString), _log))
+                            _settings.Nested(s => s.CommissionService.Db.StateConnString), _log, ctx.Resolve<ISystemClock>()))
                     .SingleInstance();
             } 
             else if (_settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.SqlServer)
