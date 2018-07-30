@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Lykke.Cqrs;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 
 namespace MarginTrading.CommissionService.Core.Services

@@ -18,5 +18,8 @@ namespace MarginTrading.CommissionService.Core.Settings
         
         public DefaultRateSettings DefaultRateSettings { get; set; }
         public EodSettings EodSettings { get; set; }
+        
+        public int OvernightSwapsChargingTimeoutSec { get; set; }
+        public int DailyPnlsChargingTimeoutSec { get; set; }
     }
 }

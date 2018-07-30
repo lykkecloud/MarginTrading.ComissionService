@@ -1,37 +1,51 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Common.Log;
 using JetBrains.Annotations;
+using Lykke.Common;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using Lykke.MarginTrading.CommissionService.Contracts.Commands;
+using Lykke.MarginTrading.CommissionService.Contracts.Events;
+using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Services;
+using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
+using MarginTrading.CommissionService.Services;
 using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Workflow.OvernightSwap
 {
     public class OvernightSwapCommandsHandler
     {
-        private readonly ICommissionCalcService _commissionCalcService;
         private readonly IOvernightSwapService _overnightSwapService;
+        private readonly IOvernightSwapListener _overnightSwapListener;
         private readonly ISystemClock _systemClock;
         private readonly IChaosKitty _chaosKitty;
+        private readonly ILog _log;
+        private readonly IThreadSwitcher _threadSwitcher;
 
         public OvernightSwapCommandsHandler(
-            ICommissionCalcService commissionCalcService,
             IOvernightSwapService overnightSwapService,
+            IOvernightSwapListener overnightSwapListener,
             ISystemClock systemClock,
-            IChaosKitty chaosKitty)
+            IChaosKitty chaosKitty,
+            ILog log,
+            IThreadSwitcher threadSwitcher)
         {
-            _commissionCalcService = commissionCalcService;
             _overnightSwapService = overnightSwapService;
+            _overnightSwapListener = overnightSwapListener;
             _systemClock = systemClock;
             _chaosKitty = chaosKitty;
+            _log = log;
+            _threadSwitcher = threadSwitcher;
         }
 
         /// <summary>
-        /// Calculate commision size
+        /// Calculate commission size
         /// </summary>
         [UsedImplicitly]
         private async Task<CommandHandlingResult> Handle(StartOvernightSwapsProcessCommand command,
@@ -42,9 +56,36 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                 return CommandHandlingResult.Ok(); //idempotency violated - no need to retry
             }
 
-            var calculatedSwaps = await _overnightSwapService.Calculate(command.OperationId, command.CreationTimestamp);
+            IReadOnlyList<IOvernightSwapCalculation> calculatedSwaps = null;
+            try
+            {
+                calculatedSwaps = await _overnightSwapService.Calculate(command.OperationId, command.CreationTimestamp);
+            }
+            catch (Exception exception)
+            {
+                publisher.PublishEvent(new OvernightSwapsStartFailedEvent(
+                    operationId: command.OperationId,
+                    creationTimestamp: _systemClock.UtcNow.UtcDateTime,
+                    failReason: exception.Message
+                ));
+                await _log.WriteErrorAsync(nameof(DailyPnlCommandsHandler), nameof(Handle), exception, _systemClock.UtcNow.UtcDateTime);
+                return CommandHandlingResult.Ok();//no retries
+            }
+            
+            publisher.PublishEvent(new OvernightSwapsCalculatedEvent(
+                operationId: command.OperationId,
+                creationTimestamp: _systemClock.UtcNow.UtcDateTime,
+                total: calculatedSwaps.Count,
+                failed: calculatedSwaps.Count(x => !x.IsSuccess) 
+            ));
 
-            foreach(var swap in calculatedSwaps)
+            _threadSwitcher.SwitchThread(() => _overnightSwapListener.TrackCharging(
+                operationId: command.OperationId, 
+                operationIds: calculatedSwaps.Where(x => x.IsSuccess).Select(x => x.Id), 
+                publisher: publisher
+            ));
+            
+            foreach(var swap in calculatedSwaps.Where(x => x.IsSuccess))
             {
                 publisher.PublishEvent(new OvernightSwapCalculatedInternalEvent(
                     operationId: swap.Id,
