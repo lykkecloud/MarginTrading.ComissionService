@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Common;
 using Common.Log;
 using Lykke.Common;
+using Lykke.Cqrs;
 using Lykke.SettingsReader;
 using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Caches;

@@ -7,10 +7,12 @@ using Lykke.Cqrs.Configuration.BoundedContext;
 using Lykke.Cqrs.Configuration.Routing;
 using Lykke.Cqrs.Configuration.Saga;
 using Lykke.MarginTrading.CommissionService.Contracts.Commands;
+using Lykke.MarginTrading.CommissionService.Contracts.Events;
 using Lykke.Messaging;
 using Lykke.Messaging.Contract;
 using Lykke.Messaging.RabbitMq;
 using MarginTrading.AccountsManagement.Contracts.Commands;
+using MarginTrading.AccountsManagement.Contracts.Events;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
@@ -18,6 +20,7 @@ using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Events;
 using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
+using MarginTrading.CommissionService.Workflow;
 using MarginTrading.CommissionService.Workflow.ChargeCommission;
 using MarginTrading.CommissionService.Workflow.OnBehalf;
 using MarginTrading.CommissionService.Workflow.OvernightSwap;
@@ -89,6 +92,7 @@ namespace MarginTrading.CommissionService.Modules
                 Register.DefaultEndpointResolver(rabbitMqConventionEndpointResolver),
                 RegisterDefaultRouting(),
                 RegisterChargeCommissionSaga(),
+                RegisterAccountListenerSaga(),
                 RegisterContext());
         }
 
@@ -171,7 +175,10 @@ namespace MarginTrading.CommissionService.Modules
                 .On(DefaultRoute)
                 .WithCommandsHandler<OvernightSwapCommandsHandler>()
                 .PublishingEvents(
-                    typeof(OvernightSwapCalculatedInternalEvent))
+                    typeof(OvernightSwapCalculatedInternalEvent),
+                    typeof(OvernightSwapsCalculatedEvent),
+                    typeof(OvernightSwapsStartFailedEvent),
+                    typeof(OvernightSwapsChargedEvent))
                 .With(DefaultPipeline);
         }
         
@@ -184,8 +191,24 @@ namespace MarginTrading.CommissionService.Modules
                 .On(DefaultRoute)
                 .WithCommandsHandler<DailyPnlCommandsHandler>()
                 .PublishingEvents(
-                    typeof(DailyPnlCalculatedInternalEvent))
+                    typeof(DailyPnlCalculatedInternalEvent),
+                    typeof(DailyPnlsCalculatedEvent),
+                    typeof(DailyPnlsStartFailedEvent),
+                    typeof(DailyPnlsChargedEvent))
                 .With(DefaultPipeline);
+        }
+
+        private IRegistration RegisterAccountListenerSaga()
+        {
+            var sagaRegistration = RegisterSaga<AccountListenerSaga>();
+            
+            sagaRegistration
+                .ListeningEvents(
+                    typeof(AccountChangedEvent))
+                .From(_contextNames.AccountsManagement)
+                .On(DefaultRoute);
+
+            return sagaRegistration;
         }
 
         private ISagaRegistration RegisterSaga<TSaga>()

@@ -6,6 +6,8 @@ namespace MarginTrading.CommissionService.Core.Domain
 {
     public class DailyPnlCalculation : IDailyPnlCalculation
     {
+        public string Id => GetId(OperationId, PositionId);
+        
         public string OperationId { get; }
         public string AccountId { get; }
         public string Instrument { get; }
@@ -27,7 +29,8 @@ namespace MarginTrading.CommissionService.Core.Domain
             FxRate = fxRate;
             PositionId = positionId ?? throw new ArgumentNullException(nameof(operationId));
             Pnl = pnl;
-            ;
         }
+
+        public static string GetId(string operationId, string positionId) => $"{operationId}_{positionId}";
     }
 }
