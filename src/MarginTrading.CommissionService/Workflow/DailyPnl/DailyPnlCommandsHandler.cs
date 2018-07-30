@@ -76,7 +76,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
             }
             
             publisher.PublishEvent(new DailyPnlsCalculatedEvent(
-                operationId: Guid.NewGuid().ToString("N"),
+                operationId: command.OperationId,
                 creationTimestamp: _systemClock.UtcNow.UtcDateTime,
                 total: calculatedPnLs.Count,
                 failed: 0 //todo not implemented: check
