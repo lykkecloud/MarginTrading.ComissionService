@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.Common;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using Lykke.MarginTrading.CommissionService.Contracts.Commands;
@@ -21,17 +22,23 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
         private readonly ISystemClock _systemClock;
         private readonly IChaosKitty _chaosKitty;
         private readonly ILog _log;
+        private readonly IThreadSwitcher _threadSwitcher;
+        private readonly IDailyPnlListener _dailyPnlListener;
 
         public DailyPnlCommandsHandler(
             IDailyPnlService dailyPnlService,
             ISystemClock systemClock,
             IChaosKitty chaosKitty,
-            ILog log)
+            ILog log,
+            IThreadSwitcher threadSwitcher,
+            IDailyPnlListener dailyPnlListener)
         {
             _systemClock = systemClock;
             _chaosKitty = chaosKitty;
             _dailyPnlService = dailyPnlService;
             _log = log;
+            _threadSwitcher = threadSwitcher;
+            _dailyPnlListener = dailyPnlListener;
         }
 
         /// <summary>
@@ -57,6 +64,12 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                 await _log.WriteErrorAsync(nameof(DailyPnlCommandsHandler), nameof(Handle), exception, _systemClock.UtcNow.UtcDateTime);
                 return CommandHandlingResult.Ok();//no retries
             }
+
+            _threadSwitcher.SwitchThread(() => _dailyPnlListener.TrackCharging(
+                operationId: command.OperationId, 
+                operationIds: calculatedPnLs.Select(x => x.Id), 
+                publisher: publisher
+            ));
 
             foreach(var pnl in calculatedPnLs)
             {
