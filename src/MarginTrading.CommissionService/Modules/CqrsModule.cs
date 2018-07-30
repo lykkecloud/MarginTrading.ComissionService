@@ -193,7 +193,8 @@ namespace MarginTrading.CommissionService.Modules
                 .PublishingEvents(
                     typeof(DailyPnlCalculatedInternalEvent),
                     typeof(DailyPnlsCalculatedEvent),
-                    typeof(DailyPnlsStartFailedEvent))
+                    typeof(DailyPnlsStartFailedEvent),
+                    typeof(DailyPnlsChargedEvent))
                 .With(DefaultPipeline);
         }
 
