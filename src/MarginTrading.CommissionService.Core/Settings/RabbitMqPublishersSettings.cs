@@ -2,5 +2,6 @@
 {
     public class RabbitMqPublishersSettings
     {
+        public RabbitConnectionSettings RateSettingsChanged { get; set; }
     }
 }

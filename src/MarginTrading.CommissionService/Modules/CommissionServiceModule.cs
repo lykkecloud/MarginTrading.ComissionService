@@ -15,6 +15,7 @@ using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Services.Caches;
 using MarginTrading.CommissionService.SqlRepositories.Repositories;
 using Microsoft.Extensions.Internal;
+using StackExchange.Redis;
 
 namespace MarginTrading.CommissionService.Modules
 {
@@ -63,6 +64,7 @@ namespace MarginTrading.CommissionService.Modules
             RegisterRepositories(builder);
             RegisterServices(builder);
             RegisterEventChannels(builder);
+            RegisterRedis(builder);
         }
 
         private void RegisterEventChannels(ContainerBuilder builder)
@@ -138,6 +140,10 @@ namespace MarginTrading.CommissionService.Modules
                 .As<IEventConsumer<DailyPnlChargedEventArgs>>()
                 .WithParameter(new TypedParameter(typeof(int), _settings.CurrentValue.CommissionService.DailyPnlsChargingTimeoutSec))
                 .SingleInstance();
+
+            builder.RegisterType<RateSettingsService>()
+                .As<IRateSettingsService>()
+                .SingleInstance();
         }
 
         private void RegisterRepositories(ContainerBuilder builder)
@@ -164,6 +170,17 @@ namespace MarginTrading.CommissionService.Modules
                     .SingleInstance();
                 
             }
+        }
+
+        private void RegisterRedis(ContainerBuilder builder)
+        {
+            builder.Register(c => ConnectionMultiplexer.Connect(
+                    _settings.CurrentValue.CommissionService.RedisSettings.Configuration))
+                .As<IConnectionMultiplexer>()
+                .SingleInstance();
+
+            builder.Register(c => c.Resolve<IConnectionMultiplexer>().GetDatabase())
+                .As<IDatabase>();
         }
     }
 }

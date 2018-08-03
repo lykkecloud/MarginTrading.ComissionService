@@ -50,7 +50,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
             }
         }
 
-        public async Task Write<T>(string blobContainer, string key, T obj)
+        public async Task WriteAsync<T>(string blobContainer, string key, T obj)
         {
             var request = new
             {

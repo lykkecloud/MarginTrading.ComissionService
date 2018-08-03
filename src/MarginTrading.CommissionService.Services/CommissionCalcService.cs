@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Common.Log;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
@@ -18,35 +19,18 @@ namespace MarginTrading.CommissionService.Services
         private readonly ICfdCalculatorService _cfdCalculatorService;
         private readonly DefaultRateSettings _defaultRateSettings;
         private readonly IOrderEventsApi _orderEventsApi;
+        private readonly ILog _log;
 
         public CommissionCalcService(
             ICfdCalculatorService cfdCalculatorService,
             DefaultRateSettings defaultRateSettings,
-            IOrderEventsApi orderEventsApi)
+            IOrderEventsApi orderEventsApi,
+            ILog log)
         {
             _cfdCalculatorService = cfdCalculatorService;
             _defaultRateSettings = defaultRateSettings;
             _orderEventsApi = orderEventsApi;
-        }
-
-        private decimal CalculateSwaps(string accountAssetId, string instrument, DateTime? openDate, DateTime? closeDate,
-            decimal volume, decimal swapRate, string legalEntity)
-        {
-            decimal result = 0;
-
-//            if (openDate.HasValue)
-//            {
-//                var close = closeDate ?? DateTime.UtcNow;
-//                var seconds = (decimal) (close - openDate.Value).TotalSeconds;
-//
-//                const int secondsInYear = 31536000;
-//                var quote = _cfdCalculatorService.GetQuoteRateForBaseAsset(accountAssetId, instrument, legalEntity, 
-//                    volume * swapRate > 0);
-//                var swaps = quote * volume * swapRate * seconds / secondsInYear;
-//                result = Math.Round(swaps, _assetsCache.GetAssetAccuracy(accountAssetId));
-//            }
-
-            return result;
+            _log = log;
         }
 
         /// <summary>

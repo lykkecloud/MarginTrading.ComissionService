@@ -7,7 +7,7 @@ namespace MarginTrading.CommissionService.Core.Repositories
     {
         [CanBeNull]
         T Read<T>(string blobContainer, string key);
-        Task Write<T>(string blobContainer, string key, T obj);
+        Task WriteAsync<T>(string blobContainer, string key, T obj);
         [ItemCanBeNull]
         Task<T> ReadAsync<T>(string blobContainer, string key);
     }

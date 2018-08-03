@@ -45,7 +45,7 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
             return default(T);
         }
 
-        public async Task Write<T>(string blobContainer, string key, T obj)
+        public async Task WriteAsync<T>(string blobContainer, string key, T obj)
         {
             var data = JsonConvert.SerializeObject(obj).ToUtf8Bytes();
             await _blobStorage.SaveBlobAsync(blobContainer, key, data);

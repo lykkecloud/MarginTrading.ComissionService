@@ -1,9 +1,8 @@
-﻿using System;
 using JetBrains.Annotations;
 
-namespace MarginTrading.CommissionService.Core.Domain.Rates
+namespace Lykke.MarginTrading.CommissionService.Contracts.Models
 {
-    public class OrderExecutionRate
+    public class OrderExecutionRateContract
     {
         [NotNull] public string AssetPairId { get; set; }
         

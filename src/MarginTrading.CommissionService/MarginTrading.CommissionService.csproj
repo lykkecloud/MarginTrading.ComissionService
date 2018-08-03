@@ -46,6 +46,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.1.1" />
     <PackageReference Include="morelinq" Version="2.10.0" />
+    <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MarginTrading.CommissionService.AzureRepositories\MarginTrading.CommissionService.AzureRepositories.csproj" />
