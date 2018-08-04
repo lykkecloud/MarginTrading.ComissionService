@@ -20,10 +20,6 @@
     <PackageReference Include="morelinq" Version="2.10.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
     <PackageReference Include="Lykke.Cqrs" Version="4.6.1" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="StackExchange.Redis, Version=1.2.6.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>..\..\..\..\.nuget\packages\stackexchange.redis\1.2.6\lib\netstandard1.5\StackExchange.Redis.dll</HintPath>
-    </Reference>
+    <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
   </ItemGroup>
 </Project>
