@@ -9,6 +9,7 @@ using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Rates;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
+using MarginTrading.CommissionService.Core.Settings.Rates;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 
@@ -20,22 +21,47 @@ namespace MarginTrading.CommissionService.Services
         private readonly IDatabase _redisDatabase;
         private readonly IEventSender _eventSender;
         private readonly ILog _log;
+        private readonly DefaultRateSettings _defaultRateSettings;
 
         public RateSettingsService(
             IMarginTradingBlobRepository blobRepository,
             IDatabase redisDatabase,
             IEventSender eventSender,
-            ILog log)
+            ILog log,
+            DefaultRateSettings defaultRateSettings)
         {
             _blobRepository = blobRepository;
             _redisDatabase = redisDatabase;
             _eventSender = eventSender;
             _log = log;
+            _defaultRateSettings = defaultRateSettings;
         }
 
         #region Order Execution
+
+        public async Task<OrderExecutionRate> GetOrderExecutionRate(string assetPairId)
+        {
+            //first we try to grab from Redis
+            var serializedData = await _redisDatabase.HashGetAsync(GetKey(LykkeConstants.OrderExecutionKey), assetPairId);
+            var cachedData = serializedData.HasValue ? Deserialize<OrderExecutionRate>(serializedData) : null;
+
+            //now we try to refresh the cache from repository
+            if (cachedData == null)
+            {
+                var repoData = await RefreshRedisFromRepo((List<OrderExecutionRate>)null);
+                if (repoData == null)
+                {
+                    await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOrderExecutionRate),
+                        $"No order execution rate for {assetPairId}. Using the default one.");
+                    
+                    return OrderExecutionRate.FromDefault(_defaultRateSettings.DefaultOrderExecutionSettings, assetPairId);
+                }
+            }
+
+            return cachedData;
+        }
         
-        public async Task<IReadOnlyList<OrderExecutionRate>> GetOrderExecutionRates()
+        public async Task<IReadOnlyList<OrderExecutionRate>> GetOrderExecutionRatesForApi()
         {
             var cachedData = (await _redisDatabase.HashGetAllAsync(GetKey(LykkeConstants.OrderExecutionKey)))
                 .Select(x => Deserialize<OrderExecutionRate>(x.Value)).ToList();
@@ -43,17 +69,24 @@ namespace MarginTrading.CommissionService.Services
             // Refresh the data from the repo if it is absent in Redis
             if (cachedData.Count == 0)
             {
-                var repoData = (await _blobRepository.ReadAsync<IEnumerable<OrderExecutionRate>>(
-                    blobContainer: LykkeConstants.RateSettingsBlobContainer,
-                    key: LykkeConstants.OrderExecutionKey
-                ))?.ToList();
+                cachedData = await RefreshRedisFromRepo(cachedData);
+            }
 
-                if (repoData != null && repoData.Count != 0)
-                {
-                    await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OrderExecutionKey), 
-                        repoData.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
-                    cachedData = repoData;
-                }
+            return cachedData;
+        }
+
+        private async Task<List<OrderExecutionRate>> RefreshRedisFromRepo(List<OrderExecutionRate> cachedData = null)
+        {
+            var repoData = (await _blobRepository.ReadAsync<IEnumerable<OrderExecutionRate>>(
+                blobContainer: LykkeConstants.RateSettingsBlobContainer,
+                key: LykkeConstants.OrderExecutionKey
+            ))?.ToList();
+
+            if (repoData != null && repoData.Count != 0)
+            {
+                await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OrderExecutionKey), 
+                    repoData.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
+                cachedData = repoData;
             }
 
             return cachedData;
@@ -75,8 +108,30 @@ namespace MarginTrading.CommissionService.Services
         #endregion Order Execution
 
         #region Overnight Swaps
+
+        public async Task<OvernightSwapRate> GetOvernightSwapRate(string assetPairId)
+        {
+            //first we try to grab from Redis
+            var serializedData = await _redisDatabase.HashGetAsync(GetKey(LykkeConstants.OvernightSwapKey), assetPairId);
+            var cachedData = serializedData.HasValue ? Deserialize<OvernightSwapRate>(serializedData) : null;
+
+            //now we try to refresh the cache from repository
+            if (cachedData == null)
+            {
+                var repoData = await RefreshRedisFromRepo((List<OvernightSwapRate>)null);
+                if (repoData == null)
+                {
+                    await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOvernightSwapRate),
+                        $"No overnight swap rate for {assetPairId}. Using the default one.");
+                    
+                    return OvernightSwapRate.FromDefault(_defaultRateSettings.DefaultOvernightSwapSettings, assetPairId);
+                }
+            }
+
+            return cachedData;
+        }
         
-        public async Task<IReadOnlyList<OvernightSwapRate>> GetOvernightSwapRates()
+        public async Task<IReadOnlyList<OvernightSwapRate>> GetOvernightSwapRatesForApi()
         {
             var cachedData = (await _redisDatabase.HashGetAllAsync(GetKey(LykkeConstants.OvernightSwapKey)))
                 .Select(x => Deserialize<OvernightSwapRate>(x.Value)).ToList();
@@ -100,6 +155,23 @@ namespace MarginTrading.CommissionService.Services
             return cachedData;
         }
 
+        private async Task<List<OvernightSwapRate>> RefreshRedisFromRepo(List<OvernightSwapRate> cachedData = null)
+        {
+            var repoData = (await _blobRepository.ReadAsync<IEnumerable<OvernightSwapRate>>(
+                blobContainer: LykkeConstants.RateSettingsBlobContainer,
+                key: LykkeConstants.OvernightSwapKey
+            ))?.ToList();
+
+            if (repoData != null && repoData.Count != 0)
+            {
+                await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OvernightSwapKey), 
+                    repoData.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
+                cachedData = repoData;
+            }
+
+            return cachedData;
+        }
+
         public async Task ReplaceOvernightSwapRates(List<OvernightSwapRate> rates)
         {
             await _blobRepository.WriteAsync(
@@ -116,7 +188,7 @@ namespace MarginTrading.CommissionService.Services
         #endregion Overnight Swaps
         
         #region On Behalf
-        
+
         public async Task<OnBehalfRate> GetOnBehalfRate()
         {
             var cachedStr = await _redisDatabase.StringGetAsync(GetKey(LykkeConstants.OnBehalfKey));

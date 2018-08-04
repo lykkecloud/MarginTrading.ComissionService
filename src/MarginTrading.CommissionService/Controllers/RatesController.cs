@@ -32,15 +32,21 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpGet("get-order-exec")]
         public async Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates()
         {
-            return (await _rateSettingsService.GetOrderExecutionRates())
+            return (await _rateSettingsService.GetOrderExecutionRatesForApi())
                 ?.Select(x => _convertService.Convert<OrderExecutionRate, OrderExecutionRateContract>(x)).ToList()
                    ?? new List<OrderExecutionRateContract>();
         }
 
+        /// <summary>
+        /// Replace order execution rates
+        /// </summary>
+        /// <param name="rates"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [HttpPost("replace-order-exec")]
-        public async Task ReplaceOrderExecutionRates([FromQuery] List<OrderExecutionRateContract> rates)
+        public async Task ReplaceOrderExecutionRates([FromBody] OrderExecutionRateContract[] rates)
         {
             if (rates == null || !rates.Any() || rates.Any(x => 
                     string.IsNullOrWhiteSpace(x.AssetPairId)
@@ -61,7 +67,7 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpGet("get-overnight-swap")]
         public async Task<IReadOnlyList<OvernightSwapRateContract>> GetOvernightSwapRates()
         {
-            return (await _rateSettingsService.GetOvernightSwapRates())
+            return (await _rateSettingsService.GetOvernightSwapRatesForApi())
                    ?.Select(x => _convertService.Convert<OvernightSwapRate, OvernightSwapRateContract>(x)).ToList()
                    ?? new List<OvernightSwapRateContract>();
         }
@@ -69,10 +75,11 @@ namespace MarginTrading.CommissionService.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [HttpPost("replace-overnight-swap")]
-        public async Task ReplaceOvernightSwapRates(List<OvernightSwapRateContract> rates)
+        public async Task ReplaceOvernightSwapRates([FromBody] OvernightSwapRateContract[] rates)
         {
             if (rates == null || !rates.Any() || rates.Any(x => 
-                    string.IsNullOrWhiteSpace(x.AssetPairId)))
+                    string.IsNullOrWhiteSpace(x.AssetPairId)
+                    || string.IsNullOrWhiteSpace(x.CommissionAsset)))
             {
                 throw new ArgumentNullException(nameof(rates));
             }
@@ -96,7 +103,7 @@ namespace MarginTrading.CommissionService.Controllers
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [HttpPost("replace-on-behalf")]
-        public async Task ReplaceOnBehalfRate(OnBehalfRateContract rate)
+        public async Task ReplaceOnBehalfRate([FromBody] OnBehalfRateContract rate)
         {
             if (string.IsNullOrWhiteSpace(rate?.CommissionAsset))
             {

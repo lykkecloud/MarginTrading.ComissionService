@@ -46,6 +46,10 @@ namespace MarginTrading.CommissionService.Modules
                     new TypedParameter(typeof(RabbitMqSettings), _settings.CurrentValue.CommissionService.RabbitMq), 
                 })
                 .SingleInstance();
+
+            builder.RegisterType<CqrsMessageSender>()
+                .As<ICqrsMessageSender>()
+                .SingleInstance();
             
             builder.RegisterType<ThreadSwitcherToNewTask>()
                 .As<IThreadSwitcher>()

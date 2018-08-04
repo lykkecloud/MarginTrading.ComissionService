@@ -22,33 +22,36 @@ using Microsoft.Extensions.Internal;
 namespace MarginTrading.CommissionService.Services
 {
     [UsedImplicitly]
-    public class EventSender : IEventSender
+    public class CqrsMessageSender : ICqrsMessageSender
     {
-        private readonly ILog _log;
-        private readonly ISystemClock _systemClock;
-        private readonly IMessageProducer<RateSettingsChangedEvent> _rateSettingsChangedEventProducer;
+        private readonly ICqrsEngine _cqrsEngine;
+        private readonly CqrsContextNamesSettings _contextNames;
 
-        public EventSender(
-            IRabbitMqService rabbitMqService,
-            ILog log,
+        public CqrsMessageSender(
             ISystemClock systemClock,
-            RabbitMqSettings rabbitMqSettings)
+            ICqrsEngine cqrsEngine,
+            CqrsContextNamesSettings contextNames)
         {
-            _log = log;
-            _systemClock = systemClock;
-            
-            _rateSettingsChangedEventProducer =
-                rabbitMqService.GetProducer(rabbitMqSettings.Publishers.RateSettingsChanged, true,
-                    rabbitMqService.GetJsonSerializer<RateSettingsChangedEvent>());
+            _cqrsEngine = cqrsEngine;
+            _contextNames = contextNames;
         }
 
-        public async Task SendRateSettingsChanged(CommissionType type)
+        public Task SendHandleExecutedOrderInternalCommand(HandleOrderExecInternalCommand command)
         {
-            await _rateSettingsChangedEventProducer.ProduceAsync(new RateSettingsChangedEvent
-            {
-                CreatedTimeStamp = _systemClock.UtcNow.UtcDateTime,
-                Type = type.ToType<CommissionTypeContract>()
-            });
+            _cqrsEngine.SendCommand(command, 
+                _contextNames.CommissionService, 
+                _contextNames.CommissionService);
+            
+            return Task.CompletedTask;
+        }
+
+        public Task SendHandleOnBehalfInternalCommand(HandleOnBehalfInternalCommand command)
+        {
+            _cqrsEngine.SendCommand(command,
+                _contextNames.CommissionService, 
+                _contextNames.CommissionService);
+            
+            return Task.CompletedTask;
         }
     }
 }

@@ -23,7 +23,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// Insert or update existing order execution rates
         /// </summary>
         [Post("api/rates/replace-order-exec")]
-        Task ReplaceOrderExecutionRates([Query, NotNull] List<OrderExecutionRateContract> rates);
+        Task ReplaceOrderExecutionRates([Body, NotNull] OrderExecutionRateContract[] rates);
         
         
         
@@ -37,7 +37,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// Insert or update existing overnight swap rates
         /// </summary>
         [Post("api/rates/replace-overnight-swap")]
-        Task ReplaceOvernightSwapRates([Query, NotNull] List<OvernightSwapRateContract> rates);
+        Task ReplaceOvernightSwapRates([Body, NotNull] OvernightSwapRateContract[] rates);
         
         
         
@@ -52,6 +52,6 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// Insert or update existing on behalf rate
         /// </summary>
         [Post("api/rates/replace-on-behalf")]
-        Task ReplaceOnBehalfRate([Query, NotNull] OnBehalfRateContract rate);
+        Task ReplaceOnBehalfRate([Body, NotNull] OnBehalfRateContract rate);
     }
 }

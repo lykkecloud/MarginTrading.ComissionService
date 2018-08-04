@@ -31,7 +31,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         {
             //todo ensure idempotency
 
-            var commissionAmount = _commissionCalcService.CalculateOrderExecutionCommission(
+            var commissionAmount = await _commissionCalcService.CalculateOrderExecutionCommission(
                 command.Instrument, command.LegalEntity, command.Volume);
             
             //no failure handling.. so operation will be retried on fail

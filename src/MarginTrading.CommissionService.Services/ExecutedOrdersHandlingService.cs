@@ -16,7 +16,7 @@ namespace MarginTrading.CommissionService.Services
 {
     public class ExecutedOrdersHandlingService : IExecutedOrdersHandlingService
     {
-        private readonly IEventSender _eventSender;
+        private readonly ICqrsMessageSender _cqrsMessageSender;
         private readonly ISystemClock _systemClock;
         private readonly ILog _log;
         
@@ -24,11 +24,11 @@ namespace MarginTrading.CommissionService.Services
         public static readonly string OrderExecPostfix = "order-executed";
 
         public ExecutedOrdersHandlingService(
-            IEventSender eventSender,
+            ICqrsMessageSender cqrsMessageSender,
             ISystemClock systemClock,
             ILog log)
         {
-            _eventSender = eventSender;
+            _cqrsMessageSender = cqrsMessageSender;
             _systemClock = systemClock;
             _log = log;
         }
@@ -49,7 +49,7 @@ namespace MarginTrading.CommissionService.Services
             new List<Task>
             {
                 //on behalf
-                _eventSender.SendHandleOnBehalfInternalCommand(new HandleOnBehalfInternalCommand(
+                _cqrsMessageSender.SendHandleOnBehalfInternalCommand(new HandleOnBehalfInternalCommand(
                     operationId: $"{order.Id}-{OnBehalfPostfix}",
                     createdTimestamp: _systemClock.UtcNow.UtcDateTime,
                     accountId: order.AccountId,
@@ -58,7 +58,7 @@ namespace MarginTrading.CommissionService.Services
                     assetPairId: order.AssetPairId
                 )),
                 //order exec commission
-                _eventSender.SendHandleExecutedOrderInternalCommand(new HandleOrderExecInternalCommand(
+                _cqrsMessageSender.SendHandleExecutedOrderInternalCommand(new HandleOrderExecInternalCommand(
                     $"{order.Id}-{OrderExecPostfix}",
                     order.AccountId.RequiredNotNullOrWhiteSpace(nameof(order.AccountId)),
                     order.Id.RequiredNotNullOrWhiteSpace(nameof(order.Id)),

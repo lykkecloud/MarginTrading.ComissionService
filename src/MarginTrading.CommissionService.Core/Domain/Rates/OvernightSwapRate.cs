@@ -1,6 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
+using MarginTrading.CommissionService.Core.Settings.Rates;
 
 namespace MarginTrading.CommissionService.Core.Domain.Rates
 {
@@ -15,5 +16,21 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
         public decimal VariableRateBase { get; set; }
         
         public decimal VariableRateQuote { get; set; }
+        
+        [NotNull] public string CommissionAsset { get; set; }
+
+        public static OvernightSwapRate FromDefault(DefaultOvernightSwapSettings defaultOvernightSwapSettings,
+            string assetPairId)
+        {
+            return new OvernightSwapRate
+            {
+                AssetPairId = assetPairId,
+                RepoSurchargePercent = defaultOvernightSwapSettings.RepoSurchargePercent,
+                FixRate = defaultOvernightSwapSettings.FixRate,
+                VariableRateBase = defaultOvernightSwapSettings.VariableRateBase,
+                VariableRateQuote = defaultOvernightSwapSettings.VariableRateQuote,
+                CommissionAsset = defaultOvernightSwapSettings.CommissionAsset,
+            };
+        }
     }
 }

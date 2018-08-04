@@ -1,5 +1,6 @@
 ﻿using System;
 using JetBrains.Annotations;
+using MarginTrading.CommissionService.Core.Settings.Rates;
 
 namespace MarginTrading.CommissionService.Core.Domain.Rates
 {
@@ -14,5 +15,18 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
         public decimal CommissionRate { get; set; }
         
         [NotNull] public string CommissionAsset { get; set; }
+
+        public static OrderExecutionRate FromDefault(DefaultOrderExecutionSettings defaultOrderExecutionSettings,
+            string assetPairId)
+        {
+            return new OrderExecutionRate
+            {
+                AssetPairId = assetPairId,
+                CommissionCap = defaultOrderExecutionSettings.CommissionCap,
+                CommissionFloor = defaultOrderExecutionSettings.CommissionFloor,
+                CommissionRate = defaultOrderExecutionSettings.CommissionRate,
+                CommissionAsset = defaultOrderExecutionSettings.CommissionAsset,
+            };
+        }
     }
 }

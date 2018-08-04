@@ -17,18 +17,18 @@ namespace MarginTrading.CommissionService.Services
     public class CommissionCalcService : ICommissionCalcService
     {
         private readonly ICfdCalculatorService _cfdCalculatorService;
-        private readonly DefaultRateSettings _defaultRateSettings;
+        private readonly IRateSettingsService _rateSettingsService;
         private readonly IOrderEventsApi _orderEventsApi;
         private readonly ILog _log;
 
         public CommissionCalcService(
             ICfdCalculatorService cfdCalculatorService,
-            DefaultRateSettings defaultRateSettings,
+            IRateSettingsService rateSettingsService,
             IOrderEventsApi orderEventsApi,
             ILog log)
         {
             _cfdCalculatorService = cfdCalculatorService;
-            _defaultRateSettings = defaultRateSettings;
+            _rateSettingsService = rateSettingsService;
             _orderEventsApi = orderEventsApi;
             _log = log;
         }
@@ -39,32 +39,32 @@ namespace MarginTrading.CommissionService.Services
         /// <param name="openPosition"></param>
         /// <param name="assetPair"></param>
         /// <returns></returns>
-        public decimal GetOvernightSwap(IOpenPosition openPosition, IAssetPair assetPair)
+        public async Task<decimal> GetOvernightSwap(IOpenPosition openPosition, IAssetPair assetPair)
         {
-            var defaultSettings = _defaultRateSettings.DefaultOvernightSwapSettings;
-            var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(defaultSettings.CommissionAsset,
+            var rateSettings = await _rateSettingsService.GetOvernightSwapRate(assetPair.Id);
+            var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(rateSettings.CommissionAsset,
                                     openPosition.AssetPairId, assetPair.LegalEntity)
                                 * Math.Abs(openPosition.CurrentVolume);
-            var basisOfCalc = - defaultSettings.FixRate
-                - (openPosition.Direction == PositionDirection.Short ? defaultSettings.RepoSurchargePercent : 0)
-                + (defaultSettings.VariableRateBase - defaultSettings.VariableRateQuote)
+            var basisOfCalc = - rateSettings.FixRate
+                - (openPosition.Direction == PositionDirection.Short ? rateSettings.RepoSurchargePercent : 0)
+                + (rateSettings.VariableRateBase - rateSettings.VariableRateQuote)
                               * (openPosition.Direction == PositionDirection.Long ? 1 : -1);
             return volumeInAsset * basisOfCalc / 365;
         }
 
-        public decimal CalculateOrderExecutionCommission(string instrument, string legalEntity, decimal volume)
+        public async Task<decimal> CalculateOrderExecutionCommission(string instrument, string legalEntity, decimal volume)
         {
-            var defaultSettings = _defaultRateSettings.DefaultOrderExecutionSettings;
+            var rateSettings = await _rateSettingsService.GetOrderExecutionRate(instrument);
 
-            var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(defaultSettings.CommissionAsset,
+            var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(rateSettings.CommissionAsset,
                                     instrument, legalEntity)
                                 * Math.Abs(volume);
             
             var commission = Math.Min(
-                defaultSettings.CommissionCap, 
+                rateSettings.CommissionCap, 
                 Math.Max(
-                    defaultSettings.CommissionFloor,
-                    defaultSettings.CommissionRate * volumeInAsset));
+                    rateSettings.CommissionFloor,
+                    rateSettings.CommissionRate * volumeInAsset));
 
             return commission;
         }
@@ -85,13 +85,15 @@ namespace MarginTrading.CommissionService.Services
                 : 1;
 
             var actionsNum = changeEventsCount + placeEventCharged;
+
+            var rateSettings = await _rateSettingsService.GetOnBehalfRate(); 
             
             //use fx rates to convert to account asset
-            var quote = _cfdCalculatorService.GetQuote(_defaultRateSettings.DefaultOnBehalfSettings.CommissionAsset, 
-                accountAssetId, _defaultRateSettings.DefaultOnBehalfSettings.DefaultLegalEntity);
+            var quote = _cfdCalculatorService.GetQuote(rateSettings.CommissionAsset, accountAssetId, 
+                rateSettings.LegalEntity);
             
             //calculate commission
-            return (actionsNum, actionsNum * _defaultRateSettings.DefaultOnBehalfSettings.Commission * quote);
+            return (actionsNum, actionsNum * rateSettings.Commission * quote);
 
             async Task<bool> CorrelatesWithParent(OrderEventContract order) =>
                 (await _orderEventsApi.OrderById(order.ParentOrderId, OrderStatusContract.Placed, false))

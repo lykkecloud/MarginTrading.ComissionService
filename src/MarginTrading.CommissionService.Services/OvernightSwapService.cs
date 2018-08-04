@@ -161,7 +161,7 @@ namespace MarginTrading.CommissionService.Services
 					direction: position.Direction,
 					time: _systemClock.UtcNow.DateTime,
 					volume: position.CurrentVolume,
-					swapValue: _commissionCalcService.GetOvernightSwap(position, assetPair),
+					swapValue: await _commissionCalcService.GetOvernightSwap(position, assetPair),
 					positionId: position.Id,
 					isSuccess: true)
 				: new OvernightSwapCalculation(
