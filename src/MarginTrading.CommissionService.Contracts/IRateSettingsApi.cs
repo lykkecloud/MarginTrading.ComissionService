@@ -11,7 +11,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
     /// RateSettingsChangedEvent is generated on change.
     /// </summary>
     [PublicAPI]
-    public interface IRates
+    public interface IRateSettingsApi
     {
         /// <summary>
         /// Get order execution rates

@@ -14,12 +14,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace MarginTrading.CommissionService.Controllers
 {
     [Route("api/rates")]
-    public class RatesController : Controller, IRates
+    public class RateSettingsController : Controller, IRateSettingsApi
     {
         private readonly IRateSettingsService _rateSettingsService;
         private readonly IConvertService _convertService;
 
-        public RatesController(
+        public RateSettingsController(
             IRateSettingsService rateSettingsService,
             IConvertService convertService)
         {
