@@ -139,17 +139,7 @@ namespace MarginTrading.CommissionService.Services
             // Refresh the data from the repo if it is absent in Redis
             if (cachedData.Count == 0)
             {
-                var repoData = (await _blobRepository.ReadAsync<IEnumerable<OvernightSwapRate>>(
-                    blobContainer: LykkeConstants.RateSettingsBlobContainer,
-                    key: LykkeConstants.OvernightSwapKey
-                ))?.ToList();
-
-                if (repoData != null && repoData.Count != 0)
-                {
-                    await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OvernightSwapKey), 
-                        repoData.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
-                    cachedData = repoData;
-                }
+                cachedData = await RefreshRedisFromRepo(cachedData);
             }
 
             return cachedData;
@@ -191,22 +181,51 @@ namespace MarginTrading.CommissionService.Services
 
         public async Task<OnBehalfRate> GetOnBehalfRate()
         {
+            //first we try to grab from Redis
+            var serializedData = await _redisDatabase.StringGetAsync(GetKey(LykkeConstants.OrderExecutionKey));
+            var cachedData = serializedData.HasValue ? Deserialize<OnBehalfRate>(serializedData) : null;
+
+            //now we try to refresh the cache from repository
+            if (cachedData == null)
+            {
+                var repoData = await RefreshRedisFromRepo((OnBehalfRate)null);
+                if (repoData == null)
+                {
+                    await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOnBehalfRate),
+                        $"No OnBehalf rate saved, using the default one.");
+                    
+                    return OnBehalfRate.FromDefault(_defaultRateSettings.DefaultOnBehalfSettings);
+                }
+            }
+
+            return cachedData;
+        }
+
+        public async Task<OnBehalfRate> GetOnBehalfRateApi()
+        {
             var cachedStr = await _redisDatabase.StringGetAsync(GetKey(LykkeConstants.OnBehalfKey));
             var cachedData = string.IsNullOrEmpty(cachedStr) ? null : Deserialize<OnBehalfRate>(cachedStr);
 
             // Refresh the data from the repo if it is absent in Redis
             if (cachedData == null)
             {
-                var repoData = await _blobRepository.ReadAsync<OnBehalfRate>(
-                    blobContainer: LykkeConstants.RateSettingsBlobContainer,
-                    key: LykkeConstants.OnBehalfKey
-                );
+                cachedData = await RefreshRedisFromRepo(cachedData);
+            }
 
-                if (repoData != null)
-                {
-                    await _redisDatabase.StringSetAsync(GetKey(LykkeConstants.OnBehalfKey), Serialize(repoData));
-                    cachedData = repoData;
-                }
+            return cachedData;
+        }
+
+        private async Task<OnBehalfRate> RefreshRedisFromRepo(OnBehalfRate cachedData = null)
+        {
+            var repoData = await _blobRepository.ReadAsync<OnBehalfRate>(
+                blobContainer: LykkeConstants.RateSettingsBlobContainer,
+                key: LykkeConstants.OnBehalfKey
+            );
+
+            if (repoData != null)
+            {
+                await _redisDatabase.StringSetAsync(GetKey(LykkeConstants.OnBehalfKey), Serialize(repoData));
+                cachedData = repoData;
             }
 
             return cachedData;

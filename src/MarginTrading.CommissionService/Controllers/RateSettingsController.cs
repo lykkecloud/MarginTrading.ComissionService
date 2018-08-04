@@ -62,7 +62,7 @@ namespace MarginTrading.CommissionService.Controllers
 
         
         
-        [ProducesResponseType(typeof(IReadOnlyList<OrderExecutionRateContract>), 200)]
+        [ProducesResponseType(typeof(IReadOnlyList<OvernightSwapRateContract>), 200)]
         [ProducesResponseType(400)]
         [HttpGet("get-overnight-swap")]
         public async Task<IReadOnlyList<OvernightSwapRateContract>> GetOvernightSwapRates()
@@ -96,7 +96,7 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpGet("get-on-behalf")]
         public async Task<OnBehalfRateContract> GetOnBehalfRate()
         {
-            var item = await _rateSettingsService.GetOnBehalfRate();
+            var item = await _rateSettingsService.GetOnBehalfRateApi();
             return item == null ? null : _convertService.Convert<OnBehalfRate, OnBehalfRateContract>(item);
         }
 

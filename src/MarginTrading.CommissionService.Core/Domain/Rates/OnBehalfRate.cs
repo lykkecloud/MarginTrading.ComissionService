@@ -1,3 +1,5 @@
+using MarginTrading.CommissionService.Core.Settings.Rates;
+
 namespace MarginTrading.CommissionService.Core.Domain.Rates
 {
     public class OnBehalfRate
@@ -7,5 +9,15 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
         public string CommissionAsset { get; set; }
         
         public string LegalEntity { get; set; }
+        
+        public static OnBehalfRate FromDefault(DefaultOnBehalfSettings defaultOnBehalfSettings)
+        {
+            return new OnBehalfRate
+            {
+                Commission = defaultOnBehalfSettings.Commission,
+                CommissionAsset = defaultOnBehalfSettings.CommissionAsset,
+                LegalEntity = defaultOnBehalfSettings.LegalEntity,
+            };
+        }
     }
 }
