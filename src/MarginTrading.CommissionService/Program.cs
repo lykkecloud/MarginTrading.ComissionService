@@ -22,7 +22,7 @@ namespace MarginTrading.CommissionService
             void RunHost() =>
                 new WebHostBuilder()
                     .UseKestrel()
-                    .UseUrls("http://*:5007")
+                    .UseUrls("http://*:5050")
                     .UseContentRoot(Directory.GetCurrentDirectory())
                     .UseStartup<Startup>()
                     .UseApplicationInsights()

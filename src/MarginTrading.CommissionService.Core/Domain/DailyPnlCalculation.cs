@@ -6,6 +6,8 @@ namespace MarginTrading.CommissionService.Core.Domain
 {
     public class DailyPnlCalculation : IDailyPnlCalculation
     {
+        public string Id => GetId();
+        
         public string OperationId { get; }
         public string AccountId { get; }
         public string Instrument { get; }

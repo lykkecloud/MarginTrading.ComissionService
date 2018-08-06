@@ -56,8 +56,8 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
             if (ChargeCommissionSaga.SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
                 CommissionOperationState.Started))
             {
-                var result = await _commissionCalcService.CalculateOnBehalfCommissionAsync(command.OrderId);
-
+                var result = await _commissionCalcService.CalculateOnBehalfCommissionAsync(command.OrderId,
+command.AccountAssetId);
                 if (result.Commission == 0)
                     return CommandHandlingResult.Ok();
 
@@ -79,7 +79,7 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
                 
                 await _executionInfoRepository.Save(executionInfo);
             }
-
+            
             return CommandHandlingResult.Ok();
         }
     }

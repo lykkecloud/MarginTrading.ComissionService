@@ -7,6 +7,7 @@ using Lykke.SettingsReader;
 using MarginTrading.CommissionService.AzureRepositories;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
+using MarginTrading.CommissionService.Core.Domain.EventArgs;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
@@ -61,6 +62,18 @@ namespace MarginTrading.CommissionService.Modules
 
             RegisterRepositories(builder);
             RegisterServices(builder);
+            RegisterEventChannels(builder);
+        }
+
+        private void RegisterEventChannels(ContainerBuilder builder)
+        {
+            builder.RegisterType<EventChannel<DailyPnlChargedEventArgs>>()
+                .As<IEventChannel<DailyPnlChargedEventArgs>>()
+                .SingleInstance();
+
+            builder.RegisterType<EventChannel<OvernightSwapChargedEventArgs>>()
+                .As<IEventChannel<OvernightSwapChargedEventArgs>>()
+                .SingleInstance();
         }
 
         private void RegisterServices(ContainerBuilder builder)
@@ -113,6 +126,18 @@ namespace MarginTrading.CommissionService.Modules
                 .As<IFxRateCacheService>()
                 .SingleInstance()
                 .OnActivated(args => args.Instance.Start());
+
+            builder.RegisterType<OvernightSwapListener>()
+                .As<IOvernightSwapListener>()
+                .As<IEventConsumer<OvernightSwapChargedEventArgs>>()
+                .WithParameter(new TypedParameter(typeof(int), _settings.CurrentValue.CommissionService.OvernightSwapsChargingTimeoutSec))
+                .SingleInstance();
+
+            builder.RegisterType<DailyPnlListener>()
+                .As<IDailyPnlListener>()
+                .As<IEventConsumer<DailyPnlChargedEventArgs>>()
+                .WithParameter(new TypedParameter(typeof(int), _settings.CurrentValue.CommissionService.DailyPnlsChargingTimeoutSec))
+                .SingleInstance();
         }
 
         private void RegisterRepositories(ContainerBuilder builder)

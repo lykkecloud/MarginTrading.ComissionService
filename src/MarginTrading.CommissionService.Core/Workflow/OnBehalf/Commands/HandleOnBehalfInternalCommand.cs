@@ -29,27 +29,36 @@ namespace MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands
         [NotNull]
         [Key(2)]
         public string AccountId { get; }
+        
+        /// <summary>
+        /// Account asset ID
+        /// </summary>
+        [NotNull]
+        [Key(3)]
+        public string AccountAssetId { get; }
 
         /// <summary>
         /// Order ID
         /// </summary>
         [NotNull]
-        [Key(3)]
+        [Key(4)]
         public string OrderId { get; }
         
         /// <summary>
         /// Asset pair ID
         /// </summary>
         [NotNull]
-        [Key(4)]
+        [Key(5)]
         public string AssetPairId { get; }
 
         public HandleOnBehalfInternalCommand([NotNull] string operationId, DateTime createdTimestamp,
-            [NotNull] string accountId, [NotNull] string orderId, [NotNull] string assetPairId)
+            [NotNull] string accountId, [NotNull] string accountAssetId, [NotNull] string orderId, 
+            [NotNull] string assetPairId)
         {
             OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
             CreatedTimestamp = createdTimestamp;
             AccountId = accountId ?? throw new ArgumentNullException(nameof(accountId));
+            AccountAssetId = accountAssetId ?? throw new ArgumentNullException(nameof(accountAssetId));
             OrderId = orderId ?? throw new ArgumentNullException(nameof(orderId));
             AssetPairId = assetPairId ?? throw new ArgumentNullException(nameof(assetPairId));
         }

@@ -85,58 +85,33 @@ namespace MarginTrading.CommissionService.Services
             return commission;
         }
 
-        public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId)
+        public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId,
+            string accountAssetId)
         {
-            var orderEvents = await _orderEventsApi.OrderById(orderId, null, true);
+            var onBehalfEvents = (await _orderEventsApi.OrderById(orderId, null, false))
+                .Where(o => o.Originator == OriginatorTypeContract.OnBehalf).ToList();
 
-            var parentOrderCorrelationId = orderEvents.Single(x => 
-                x.Id == orderId && x.UpdateType == OrderUpdateTypeContract.Place).CorrelationId;
+            var changeEventsCount = onBehalfEvents.Count(o => o.UpdateType == OrderUpdateTypeContract.Change);
+
+            var placeEventCharged = !onBehalfEvents.Exists(o => o.UpdateType == OrderUpdateTypeContract.Place)
+                                    || onBehalfEvents.Exists(o => o.UpdateType == OrderUpdateTypeContract.Place
+                                                                  && !string.IsNullOrWhiteSpace(o.ParentOrderId)
+                                                                  && CorrelatesWithParent(o).Result)
+                ? 0
+                : 1;
+
+            var actionsNum = changeEventsCount + placeEventCharged;
             
-            var actionsNum = 0;
-            foreach (var orderEvent in orderEvents)
-            {
-                if (!TryExtractOnBehalf(orderEvent.AdditionalInfo))
-                    continue;
+            //use fx rates to convert to account asset
+            var quote = _cfdCalculatorService.GetQuote(_defaultRateSettings.DefaultOnBehalfSettings.CommissionAsset, 
+                accountAssetId, _defaultRateSettings.DefaultOnBehalfSettings.DefaultLegalEntity);
+            
+            //calculate commission
+            return (actionsNum, actionsNum * _defaultRateSettings.DefaultOnBehalfSettings.Commission * quote);
 
-                if (orderEvent.Type == OrderTypeContract.Market && orderEvent.UpdateType == OrderUpdateTypeContract.Place)
-                {
-                    actionsNum++; 
-                    continue;
-                }
-
-                if (new[]
-                {
-                    OrderTypeContract.Limit, OrderTypeContract.Stop, OrderTypeContract.StopLoss,
-                    OrderTypeContract.TakeProfit, OrderTypeContract.TrailingStop
-                }.Contains(orderEvent.Type))
-                {
-                    if (orderEvent.UpdateType == OrderUpdateTypeContract.Cancel
-                        || orderEvent.UpdateType == OrderUpdateTypeContract.Change)
-                    {
-                        actionsNum++; continue;
-                    }
-
-                    if (orderEvent.UpdateType == OrderUpdateTypeContract.Place)
-                    {
-                        if (parentOrderCorrelationId != orderEvent.CorrelationId)
-                            actionsNum++;
-                    }
-                }
-            }
-
-            return (actionsNum, actionsNum * _defaultRateSettings.DefaultOnBehalfSettings.Commission);
-        }
-
-        private bool TryExtractOnBehalf(string additionalInfo)
-        {
-            try
-            {
-                return JsonConvert.DeserializeAnonymousType(additionalInfo, new {IsOnBehalf = false}).IsOnBehalf;
-            }
-            catch
-            {
-                return false;
-            }
+            async Task<bool> CorrelatesWithParent(OrderEventContract order) =>
+                (await _orderEventsApi.OrderById(order.ParentOrderId, OrderStatusContract.Placed, false))
+                .Any(p => p.CorrelationId == order.CorrelationId);
         }
     }
 }

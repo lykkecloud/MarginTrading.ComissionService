@@ -4,6 +4,8 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
 {
     public interface IDailyPnlCalculation
     {
+        string Id { get; }
+        
         string OperationId { get; }
         string AccountId { get; }
         string Instrument { get; }
