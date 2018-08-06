@@ -182,7 +182,7 @@ namespace MarginTrading.CommissionService.Services
         public async Task<OnBehalfRate> GetOnBehalfRate()
         {
             //first we try to grab from Redis
-            var serializedData = await _redisDatabase.StringGetAsync(GetKey(LykkeConstants.OrderExecutionKey));
+            var serializedData = await _redisDatabase.StringGetAsync(GetKey(LykkeConstants.OnBehalfKey));
             var cachedData = serializedData.HasValue ? Deserialize<OnBehalfRate>(serializedData) : null;
 
             //now we try to refresh the cache from repository
