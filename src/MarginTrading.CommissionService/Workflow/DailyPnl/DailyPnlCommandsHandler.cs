@@ -39,7 +39,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
         private async Task<CommandHandlingResult> Handle(StartDailyPnlProcessCommand command,
             IEventPublisher publisher)
         {
-            //ensure idempotency
+            //ensure idempotency of the whole operation
             var executionInfo = await _executionInfoRepository.GetOrAddAsync(
                 operationName: OperationName, 
                 operationId: command.OperationId,
@@ -61,6 +61,21 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
 
                 foreach (var pnl in calculatedPnLs)
                 {
+                    //prepare state for sub operations
+                    await _executionInfoRepository.GetOrAddAsync(
+                        operationName: OperationName, 
+                        operationId: pnl.GetId(),
+                        factory: () => new OperationExecutionInfo<DailyPnlOperationData>(
+                            operationName: OperationName,
+                            id: pnl.GetId(),
+                            lastModified: _systemClock.UtcNow.UtcDateTime,
+                            data: new DailyPnlOperationData
+                            {
+                                TradingDay = command.CreationTimestamp,
+                                State = CommissionOperationState.Started,
+                            }
+                        ));
+                    
                     publisher.PublishEvent(new DailyPnlCalculatedInternalEvent(
                         operationId: pnl.OperationId,
                         creationTimestamp: _systemClock.UtcNow.DateTime,

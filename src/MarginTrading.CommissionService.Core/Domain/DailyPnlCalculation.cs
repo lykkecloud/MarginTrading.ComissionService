@@ -27,7 +27,8 @@ namespace MarginTrading.CommissionService.Core.Domain
             FxRate = fxRate;
             PositionId = positionId ?? throw new ArgumentNullException(nameof(operationId));
             Pnl = pnl;
-            ;
         }
+
+        public string GetId() => $"{OperationId}_{PositionId}";
     }
 }

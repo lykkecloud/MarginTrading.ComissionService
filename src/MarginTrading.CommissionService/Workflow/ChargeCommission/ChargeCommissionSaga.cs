@@ -150,11 +150,11 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 id: evt.OperationId
             );
 
-            if (SwitchState(executionInfo?.Data, executionInfo.Data.State, //todo do something with that!
+            if (SwitchState(executionInfo?.Data, CommissionOperationState.Started,
                 CommissionOperationState.Calculated))
             {
                 sender.SendCommand(new ChangeBalanceCommand(
-                        operationId: $"{evt.OperationId}_{evt.PositionId}",
+                        operationId: evt.OperationId,
                         clientId: null,
                         accountId: evt.AccountId,
                         amount: evt.Pnl,
