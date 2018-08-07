@@ -42,14 +42,16 @@ namespace MarginTrading.CommissionService.Services
         public async Task<OrderExecutionRate> GetOrderExecutionRate(string assetPairId)
         {
             //first we try to grab from Redis
-            var serializedData = await _redisDatabase.HashGetAsync(GetKey(LykkeConstants.OrderExecutionKey), assetPairId);
+            var serializedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OrderExecutionKey))
+                ? await _redisDatabase.HashGetAsync(GetKey(LykkeConstants.OrderExecutionKey), assetPairId)
+                : (RedisValue)string.Empty;
             var cachedData = serializedData.HasValue ? Deserialize<OrderExecutionRate>(serializedData) : null;
 
             //now we try to refresh the cache from repository
             if (cachedData == null)
             {
                 var repoData = await RefreshRedisFromRepo((List<OrderExecutionRate>)null);
-                if (repoData == null)
+                if (repoData == null || !repoData.Exists(x => x.AssetPairId == assetPairId))
                 {
                     await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOrderExecutionRate),
                         $"No order execution rate for {assetPairId}. Using the default one.");
@@ -63,8 +65,10 @@ namespace MarginTrading.CommissionService.Services
         
         public async Task<IReadOnlyList<OrderExecutionRate>> GetOrderExecutionRatesForApi()
         {
-            var cachedData = (await _redisDatabase.HashGetAllAsync(GetKey(LykkeConstants.OrderExecutionKey)))
-                .Select(x => Deserialize<OrderExecutionRate>(x.Value)).ToList();
+            var cachedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OrderExecutionKey))
+                ? (await _redisDatabase.HashGetAllAsync(GetKey(LykkeConstants.OrderExecutionKey)))
+                    .Select(x => Deserialize<OrderExecutionRate>(x.Value)).ToList()
+                : new List<OrderExecutionRate>();
 
             // Refresh the data from the repo if it is absent in Redis
             if (cachedData.Count == 0)
@@ -121,14 +125,16 @@ namespace MarginTrading.CommissionService.Services
         public async Task<OvernightSwapRate> GetOvernightSwapRate(string assetPairId)
         {
             //first we try to grab from Redis
-            var serializedData = await _redisDatabase.HashGetAsync(GetKey(LykkeConstants.OvernightSwapKey), assetPairId);
+            var serializedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OvernightSwapKey))
+                ? await _redisDatabase.HashGetAsync(GetKey(LykkeConstants.OvernightSwapKey), assetPairId)
+                : (RedisValue) string.Empty;
             var cachedData = serializedData.HasValue ? Deserialize<OvernightSwapRate>(serializedData) : null;
 
             //now we try to refresh the cache from repository
             if (cachedData == null)
             {
                 var repoData = await RefreshRedisFromRepo((List<OvernightSwapRate>)null);
-                if (repoData == null)
+                if (repoData == null || !repoData.Exists(x => x.AssetPairId == assetPairId))
                 {
                     await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOvernightSwapRate),
                         $"No overnight swap rate for {assetPairId}. Using the default one.");
@@ -142,8 +148,10 @@ namespace MarginTrading.CommissionService.Services
         
         public async Task<IReadOnlyList<OvernightSwapRate>> GetOvernightSwapRatesForApi()
         {
-            var cachedData = (await _redisDatabase.HashGetAllAsync(GetKey(LykkeConstants.OvernightSwapKey)))
-                .Select(x => Deserialize<OvernightSwapRate>(x.Value)).ToList();
+            var cachedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OvernightSwapKey))
+                ? (await _redisDatabase.HashGetAllAsync(GetKey(LykkeConstants.OvernightSwapKey)))
+                    .Select(x => Deserialize<OvernightSwapRate>(x.Value)).ToList()
+                : new List<OvernightSwapRate>();
 
             // Refresh the data from the repo if it is absent in Redis
             if (cachedData.Count == 0)
@@ -191,7 +199,9 @@ namespace MarginTrading.CommissionService.Services
         public async Task<OnBehalfRate> GetOnBehalfRate()
         {
             //first we try to grab from Redis
-            var serializedData = await _redisDatabase.StringGetAsync(GetKey(LykkeConstants.OnBehalfKey));
+            var serializedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OnBehalfKey))
+                ? await _redisDatabase.StringGetAsync(GetKey(LykkeConstants.OnBehalfKey))
+                : (RedisValue) string.Empty;
             var cachedData = serializedData.HasValue ? Deserialize<OnBehalfRate>(serializedData) : null;
 
             //now we try to refresh the cache from repository
@@ -212,7 +222,9 @@ namespace MarginTrading.CommissionService.Services
 
         public async Task<OnBehalfRate> GetOnBehalfRateApi()
         {
-            var cachedStr = await _redisDatabase.StringGetAsync(GetKey(LykkeConstants.OnBehalfKey));
+            var cachedStr = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OnBehalfKey))
+                ? await _redisDatabase.StringGetAsync(GetKey(LykkeConstants.OnBehalfKey))
+                : (RedisValue) string.Empty;
             var cachedData = string.IsNullOrEmpty(cachedStr) ? null : Deserialize<OnBehalfRate>(cachedStr);
 
             // Refresh the data from the repo if it is absent in Redis

@@ -34,9 +34,11 @@ namespace MarginTrading.CommissionService.Services.Caches
         public async Task<Account> GetAccount(string id)
         {
             //first we try to grab from Redis
-            var serializedData = await _redisDatabase.HashGetAsync(GetKey(LykkeConstants.AccountsKey), id);
+            var serializedData = await _redisDatabase.KeyExistsAsync(GetKey())
+                ? await _redisDatabase.HashGetAsync(GetKey(), id)
+                : (RedisValue)string.Empty;
             var cachedData = serializedData.HasValue ? Deserialize<Account>(serializedData) : null;
-
+            
             //now we try to refresh the cache from repository
             if (cachedData == null)
             {//todo now it is only used for account asset. possibly it might be needed to subscribe on account changed events..
@@ -48,8 +50,10 @@ namespace MarginTrading.CommissionService.Services.Caches
         
         public async Task<IReadOnlyList<Account>> GetAccounts()
         {
-            var cachedData = (await _redisDatabase.HashGetAllAsync(GetKey(LykkeConstants.AccountsKey)))
-                .Select(x => Deserialize<Account>(x.Value)).ToList();
+            var cachedData = await _redisDatabase.KeyExistsAsync(GetKey())
+                ? (await _redisDatabase.HashGetAllAsync(GetKey()))
+                    .Select(x => Deserialize<Account>(x.Value)).ToList()
+                : new List<Account>();
 
             // Refresh the data from the repo if it is absent in Redis
             if (cachedData.Count == 0)
@@ -66,7 +70,7 @@ namespace MarginTrading.CommissionService.Services.Caches
 
             if (repoData.Count != 0)
             {
-                await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.AccountsKey), 
+                await _redisDatabase.HashSetAsync(GetKey(), 
                     repoData.Select(x => new HashEntry(x.Id, Serialize(x))).ToArray());
                 cachedData = repoData;
             }
@@ -84,9 +88,9 @@ namespace MarginTrading.CommissionService.Services.Caches
             return JsonConvert.DeserializeObject<TMessage>(data);
         }
 
-        private string GetKey(string key)
+        private string GetKey()
         {
-            return $"CommissionService:{LykkeConstants.AccountsKey}:{key}";
+            return $"CommissionService:{LykkeConstants.AccountsKey}";
         }
     }
 }
