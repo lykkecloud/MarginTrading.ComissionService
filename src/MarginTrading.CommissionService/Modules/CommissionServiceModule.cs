@@ -148,6 +148,10 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<RateSettingsService>()
                 .As<IRateSettingsService>()
                 .SingleInstance();
+
+            builder.RegisterType<AccountRedisCache>()
+                .As<IAccountRedisCache>()
+                .SingleInstance();
         }
 
         private void RegisterRepositories(ContainerBuilder builder)
@@ -162,6 +166,11 @@ namespace MarginTrading.CommissionService.Modules
                         AzureRepoFactories.MarginTrading.CreateOvernightSwapHistoryRepository(
                             _settings.Nested(s => s.CommissionService.Db.StateConnString), _log))
                     .SingleInstance();
+
+                builder.Register<IInterestRatesRepository>(ctx =>
+                        AzureRepoFactories.MarginTrading.CreateInterestRatesRepository(
+                            _settings.Nested(s => s.CommissionService.Db.StateConnString), _log))
+                    .SingleInstance();
             } 
             else if (_settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.SqlServer)
             {
@@ -172,7 +181,10 @@ namespace MarginTrading.CommissionService.Modules
                 builder.RegisterType<OvernightSwapHistoryRepository>()
                     .As<IOvernightSwapHistoryRepository>()
                     .SingleInstance();
-                
+
+                builder.RegisterType<InterestRatesRepository>()
+                    .As<IInterestRatesRepository>()
+                    .SingleInstance();
             }
         }
 

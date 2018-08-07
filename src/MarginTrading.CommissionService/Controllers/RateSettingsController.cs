@@ -78,8 +78,7 @@ namespace MarginTrading.CommissionService.Controllers
         public async Task ReplaceOvernightSwapRates([FromBody] OvernightSwapRateContract[] rates)
         {
             if (rates == null || !rates.Any() || rates.Any(x => 
-                    string.IsNullOrWhiteSpace(x.AssetPairId)
-                    || string.IsNullOrWhiteSpace(x.CommissionAsset)))
+                    string.IsNullOrWhiteSpace(x.AssetPairId)))
             {
                 throw new ArgumentNullException(nameof(rates));
             }

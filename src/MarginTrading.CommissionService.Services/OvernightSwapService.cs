@@ -34,6 +34,7 @@ namespace MarginTrading.CommissionService.Services
 		private readonly ICommissionCalcService _commissionCalcService;
 		
 		private readonly IOvernightSwapHistoryRepository _overnightSwapHistoryRepository;
+		private readonly IInterestRatesRepository _interestRatesRepository;
 		private readonly IPositionReceiveService _positionReceiveService;
 		private readonly IThreadSwitcher _threadSwitcher;
 		private readonly ISystemClock _systemClock;
@@ -44,12 +45,14 @@ namespace MarginTrading.CommissionService.Services
 		private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
 		private DateTime _currentStartTimestamp;
+		private Dictionary<string, decimal> _currentInterestRates;
 
 		public OvernightSwapService(
 			IAssetPairsApi assetPairsApi,
 			ICommissionCalcService commissionCalcService,
 			
 			IOvernightSwapHistoryRepository overnightSwapHistoryRepository,
+			IInterestRatesRepository interestRatesRepository,
 			IPositionReceiveService positionReceiveService,
 			IThreadSwitcher threadSwitcher,
 			ISystemClock systemClock,
@@ -61,6 +64,7 @@ namespace MarginTrading.CommissionService.Services
 			_commissionCalcService = commissionCalcService;
 			
 			_overnightSwapHistoryRepository = overnightSwapHistoryRepository;
+			_interestRatesRepository = interestRatesRepository;
 			_positionReceiveService = positionReceiveService;
 			_threadSwitcher = threadSwitcher;
 			_systemClock = systemClock;
@@ -115,6 +119,8 @@ namespace MarginTrading.CommissionService.Services
 
 				var assetPairs = (await _assetPairsApi.List())
 					.Select(x => _convertService.Convert<AssetPairContract, AssetPair>(x)).ToList();
+				_currentInterestRates = (await _interestRatesRepository.GetAll())
+					.ToDictionary(x => x.AssetPairId, x=> x.Rate);
 				
 				foreach (var position in filteredPositions)
 				{
@@ -161,7 +167,7 @@ namespace MarginTrading.CommissionService.Services
 					direction: position.Direction,
 					time: _systemClock.UtcNow.DateTime,
 					volume: position.CurrentVolume,
-					swapValue: await _commissionCalcService.GetOvernightSwap(position, assetPair),
+					swapValue: await _commissionCalcService.GetOvernightSwap(_currentInterestRates, position, assetPair),
 					positionId: position.Id,
 					isSuccess: true)
 				: new OvernightSwapCalculation(

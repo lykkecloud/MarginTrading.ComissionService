@@ -15,6 +15,8 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
         public decimal CommissionRate { get; set; }
         
         [NotNull] public string CommissionAsset { get; set; }
+        
+        [CanBeNull] public string LegalEntity { get; set; }
 
         public static OrderExecutionRate FromDefault(DefaultOrderExecutionSettings defaultOrderExecutionSettings,
             string assetPairId)
@@ -26,6 +28,7 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
                 CommissionFloor = defaultOrderExecutionSettings.CommissionFloor,
                 CommissionRate = defaultOrderExecutionSettings.CommissionRate,
                 CommissionAsset = defaultOrderExecutionSettings.CommissionAsset,
+                LegalEntity = defaultOrderExecutionSettings.LegalEntity,
             };
         }
     }

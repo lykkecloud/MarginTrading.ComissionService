@@ -13,11 +13,9 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
         
         public decimal FixRate { get; set; }
         
-        public decimal VariableRateBase { get; set; }
+        [CanBeNull] public string VariableRateBase { get; set; }
         
-        public decimal VariableRateQuote { get; set; }
-        
-        [NotNull] public string CommissionAsset { get; set; }
+        [CanBeNull] public string VariableRateQuote { get; set; }
 
         public static OvernightSwapRate FromDefault(DefaultOvernightSwapSettings defaultOvernightSwapSettings,
             string assetPairId)
@@ -29,7 +27,6 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
                 FixRate = defaultOvernightSwapSettings.FixRate,
                 VariableRateBase = defaultOvernightSwapSettings.VariableRateBase,
                 VariableRateQuote = defaultOvernightSwapSettings.VariableRateQuote,
-                CommissionAsset = defaultOvernightSwapSettings.CommissionAsset,
             };
         }
     }

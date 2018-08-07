@@ -13,7 +13,5 @@ namespace Lykke.MarginTrading.CommissionService.Contracts.Models
         public decimal VariableRateBase { get; set; }
         
         public decimal VariableRateQuote { get; set; }
-        
-        [NotNull] public string CommissionAsset { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
@@ -19,52 +20,65 @@ namespace MarginTrading.CommissionService.Services
         private readonly ICfdCalculatorService _cfdCalculatorService;
         private readonly IRateSettingsService _rateSettingsService;
         private readonly IOrderEventsApi _orderEventsApi;
+        private readonly IAccountRedisCache _accountRedisCache;
         private readonly ILog _log;
 
         public CommissionCalcService(
             ICfdCalculatorService cfdCalculatorService,
             IRateSettingsService rateSettingsService,
             IOrderEventsApi orderEventsApi,
+            IAccountRedisCache accountRedisCache,
             ILog log)
         {
             _cfdCalculatorService = cfdCalculatorService;
             _rateSettingsService = rateSettingsService;
             _orderEventsApi = orderEventsApi;
+            _accountRedisCache = accountRedisCache;
             _log = log;
         }
 
         /// <summary>
         /// Value must be charged as it is, without negation
         /// </summary>
-        /// <param name="openPosition"></param>
-        /// <param name="assetPair"></param>
-        /// <returns></returns>
-        public async Task<decimal> GetOvernightSwap(IOpenPosition openPosition, IAssetPair assetPair)
+        public async Task<decimal> GetOvernightSwap(Dictionary<string, decimal> interestRates, 
+            IOpenPosition openPosition, IAssetPair assetPair)
         {
             var rateSettings = await _rateSettingsService.GetOvernightSwapRate(assetPair.Id);
-            var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(rateSettings.CommissionAsset,
+            var account = await _accountRedisCache.GetAccount(openPosition.AccountId);
+            
+            var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(account.BaseAssetId,
                                     openPosition.AssetPairId, assetPair.LegalEntity)
                                 * Math.Abs(openPosition.CurrentVolume);
+
+            interestRates.TryGetValue(rateSettings.VariableRateBase, out var variableRateBase);
+            interestRates.TryGetValue(rateSettings.VariableRateQuote, out var variableRateQuote);
+            
             var basisOfCalc = - rateSettings.FixRate
                 - (openPosition.Direction == PositionDirection.Short ? rateSettings.RepoSurchargePercent : 0)
-                + (rateSettings.VariableRateBase - rateSettings.VariableRateQuote)
+                + (variableRateBase - variableRateQuote)
                               * (openPosition.Direction == PositionDirection.Long ? 1 : -1);
+            
             return volumeInAsset * basisOfCalc / 365;
         }
 
-        public async Task<decimal> CalculateOrderExecutionCommission(string instrument, string legalEntity, decimal volume)
+        public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument, 
+            string legalEntity, decimal volume)
         {
             var rateSettings = await _rateSettingsService.GetOrderExecutionRate(instrument);
+            var account = await _accountRedisCache.GetAccount(accountId);
 
-            var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(rateSettings.CommissionAsset,
+            var volumeInCommissionAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(rateSettings.CommissionAsset,
                                     instrument, legalEntity)
                                 * Math.Abs(volume);
+            var commissionToAccountRate = _cfdCalculatorService.GetQuote(rateSettings.CommissionAsset, 
+                account.BaseAssetId, rateSettings.LegalEntity);
             
             var commission = Math.Min(
                 rateSettings.CommissionCap, 
                 Math.Max(
                     rateSettings.CommissionFloor,
-                    rateSettings.CommissionRate * volumeInAsset));
+                    rateSettings.CommissionRate * volumeInCommissionAsset))
+                * commissionToAccountRate;
 
             return commission;
         }

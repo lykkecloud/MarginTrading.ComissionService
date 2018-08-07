@@ -94,6 +94,15 @@ namespace MarginTrading.CommissionService.Services
 
         public async Task ReplaceOrderExecutionRates(List<OrderExecutionRate> rates)
         {
+            rates = rates.Select(x =>
+            {
+                if (string.IsNullOrWhiteSpace(x.LegalEntity))
+                {
+                    x.LegalEntity = _defaultRateSettings.DefaultOrderExecutionSettings.LegalEntity;
+                }
+                return x;
+            }).ToList();
+            
             await _blobRepository.WriteAsync(
                 blobContainer: LykkeConstants.RateSettingsBlobContainer,
                 key: LykkeConstants.OrderExecutionKey,
@@ -209,7 +218,7 @@ namespace MarginTrading.CommissionService.Services
             // Refresh the data from the repo if it is absent in Redis
             if (cachedData == null)
             {
-                cachedData = await RefreshRedisFromRepo(cachedData);
+                cachedData = await RefreshRedisFromRepo((OnBehalfRate) null);
             }
 
             return cachedData;
@@ -233,6 +242,11 @@ namespace MarginTrading.CommissionService.Services
 
         public async Task ReplaceOnBehalfRate(OnBehalfRate rate)
         {
+            if (string.IsNullOrWhiteSpace(rate.LegalEntity))
+            {
+                rate.LegalEntity = _defaultRateSettings.DefaultOrderExecutionSettings.LegalEntity;
+            }
+
             await _blobRepository.WriteAsync(
                 blobContainer: LykkeConstants.RateSettingsBlobContainer,
                 key: LykkeConstants.OnBehalfKey,
@@ -257,7 +271,7 @@ namespace MarginTrading.CommissionService.Services
 
         private string GetKey(string key)
         {
-            return $"RateSettings:{key}";
+            return $"CommissionService:RateSettings:{key}";
         }
     }
 }

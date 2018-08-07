@@ -9,5 +9,7 @@
         public static string OrderExecutionKey = "OrderExecution";
         public static string OnBehalfKey = "OnBehalf";
         public static string OvernightSwapKey = "OvernightSwap";
+        
+        public static string AccountsKey = "Accounts";
     }
 }
