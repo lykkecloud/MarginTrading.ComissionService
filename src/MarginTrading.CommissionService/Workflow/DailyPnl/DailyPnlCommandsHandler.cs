@@ -89,6 +89,13 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     return CommandHandlingResult.Ok();//no retries
                 }
 
+                publisher.PublishEvent(new DailyPnlsCalculatedEvent(
+                    operationId: command.OperationId,
+                    creationTimestamp: _systemClock.UtcNow.UtcDateTime,
+                    total: calculatedPnLs.Count,
+                    failed: 0 //todo not implemented: check
+                ));
+
                 _threadSwitcher.SwitchThread(() => _dailyPnlListener.TrackCharging(
                     operationId: command.OperationId, 
                     operationIds: calculatedPnLs.Select(x => x.Id), 
@@ -113,7 +120,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                         ));
                     
                     publisher.PublishEvent(new DailyPnlCalculatedInternalEvent(
-                        operationId: pnl.OperationId,
+                        operationId: pnl.GetId(),
                         creationTimestamp: _systemClock.UtcNow.DateTime,
                         accountId: pnl.AccountId,
                         positionId: pnl.PositionId,
@@ -128,13 +135,6 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                 }
                 
                 await _executionInfoRepository.Save(executionInfo);
-
-                publisher.PublishEvent(new DailyPnlsCalculatedEvent(
-                    operationId: command.OperationId,
-                    creationTimestamp: _systemClock.UtcNow.UtcDateTime,
-                    total: calculatedPnLs.Count,
-                    failed: 0 //todo not implemented: check
-                ));
             }
             
             return CommandHandlingResult.Ok();
