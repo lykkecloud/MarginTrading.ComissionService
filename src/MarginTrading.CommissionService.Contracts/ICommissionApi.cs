@@ -19,7 +19,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// <param name="from"></param>
         /// <param name="to"></param>
         /// <returns></returns>
-        [Post("api/overnightswap/history")]
+        [Post("/api/overnightswap/history")]
         Task<IEnumerable<OvernightSwapHistoryContract>> GetOvernightSwapHistory(
             [Query] DateTime from, [Query] DateTime to);
 

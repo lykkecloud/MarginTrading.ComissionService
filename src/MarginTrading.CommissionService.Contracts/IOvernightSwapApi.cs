@@ -15,7 +15,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// </summary>
         /// <param name="operationId"></param>
         /// <returns></returns>
-        [Post("api/overnightswap/start")]
+        [Post("/api/overnightswap/start")]
         Task StartOvernightSwapProcess([NotNull] string operationId);
     }
 }

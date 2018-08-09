@@ -16,13 +16,13 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// <summary>
         /// Get order execution rates
         /// </summary>
-        [Get("api/rates/get-order-exec")]
+        [Get("/api/rates/get-order-exec")]
         Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates();
 
         /// <summary>
         /// Insert or update existing order execution rates
         /// </summary>
-        [Post("api/rates/replace-order-exec")]
+        [Post("/api/rates/replace-order-exec")]
         Task ReplaceOrderExecutionRates([Body, NotNull] OrderExecutionRateContract[] rates);
         
         
@@ -30,13 +30,13 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// <summary>
         /// Get overnight swap rates
         /// </summary>
-        [Get("api/rates/get-overnight-swap")]
+        [Get("/api/rates/get-overnight-swap")]
         Task<IReadOnlyList<OvernightSwapRateContract>> GetOvernightSwapRates();
 
         /// <summary>
         /// Insert or update existing overnight swap rates
         /// </summary>
-        [Post("api/rates/replace-overnight-swap")]
+        [Post("/api/rates/replace-overnight-swap")]
         Task ReplaceOvernightSwapRates([Body, NotNull] OvernightSwapRateContract[] rates);
         
         
@@ -44,14 +44,14 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// <summary>
         /// Get on behalf rate
         /// </summary>
-        [Get("api/rates/get-on-behalf")]
+        [Get("/api/rates/get-on-behalf")]
         [ItemCanBeNull]
         Task<OnBehalfRateContract> GetOnBehalfRate();
 
         /// <summary>
         /// Insert or update existing on behalf rate
         /// </summary>
-        [Post("api/rates/replace-on-behalf")]
+        [Post("/api/rates/replace-on-behalf")]
         Task ReplaceOnBehalfRate([Body, NotNull] OnBehalfRateContract rate);
     }
 }
