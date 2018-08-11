@@ -63,7 +63,10 @@ namespace MarginTrading.CommissionService.Services
                 - (openPosition.Direction == PositionDirection.Short ? defaultSettings.RepoSurchargePercent : 0)
                 + (defaultSettings.VariableRateBase - defaultSettings.VariableRateQuote)
                               * (openPosition.Direction == PositionDirection.Long ? 1 : -1);
-            return volumeInAsset * basisOfCalc * numberOfFinancingDays / financingDaysPerYear;
+
+            var dayFactor = (decimal) numberOfFinancingDays / financingDaysPerYear;
+            
+            return volumeInAsset * basisOfCalc * dayFactor;
         }
 
         public decimal CalculateOrderExecutionCommission(string instrument, string legalEntity, decimal volume)
