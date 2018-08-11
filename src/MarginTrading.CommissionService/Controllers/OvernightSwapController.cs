@@ -9,7 +9,6 @@ using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Controllers
 {
-    
     [Route("api/overnightswap")]
     public class OvernightSwapController : Controller, IOvernightSwapApi
     {
@@ -28,12 +27,14 @@ namespace MarginTrading.CommissionService.Controllers
 
         [Route("start")]
         [HttpPost]
-        public Task StartOvernightSwapProcess(string operationId)
+        public Task StartOvernightSwapProcess(string operationId, int numberOfFinancingDays, int financingDaysPerYear)
         {
             _cqrsEngine.SendCommand(
                 new StartOvernightSwapsProcessCommand(
                     operationId.RequiredNotNullOrWhiteSpace(nameof(operationId)),
-                    _systemClock.UtcNow.DateTime),
+                    _systemClock.UtcNow.DateTime,
+                    numberOfFinancingDays.RequiredGreaterThan(0, nameof(numberOfFinancingDays)),
+                    financingDaysPerYear.RequiredGreaterThan(0, nameof(financingDaysPerYear))),
                 _cqrsContextNamesSettings.CommissionService,
                 _cqrsContextNamesSettings.CommissionService);
             
