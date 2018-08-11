@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Repositories;
+using MoreLinq;
 using Newtonsoft.Json;
 
 namespace MarginTrading.CommissionService.SqlRepositories.Repositories
@@ -33,6 +35,13 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
         public T Read<T>(string blobContainer, string key)
         {
             return ReadAsync<T>(blobContainer, key).GetAwaiter().GetResult();
+        }
+
+        public async Task MergeListAsync<T>(string blobContainer, string key, List<T> objects, Func<T, string> selector)
+        {
+            var existing = Read<IEnumerable<T>>(blobContainer, key)?.ToList() ?? new List<T>();
+
+            await WriteAsync(blobContainer, key, objects.Concat(existing.ExceptBy(objects, selector)));
         }
 
         public async Task<T> ReadAsync<T>(string blobContainer, string key)

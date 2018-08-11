@@ -107,10 +107,11 @@ namespace MarginTrading.CommissionService.Services
                 return x;
             }).ToList();
             
-            await _blobRepository.WriteAsync(
+            await _blobRepository.MergeListAsync(
                 blobContainer: LykkeConstants.RateSettingsBlobContainer,
                 key: LykkeConstants.OrderExecutionKey,
-                obj: rates);
+                objects: rates,
+                selector: x => x.AssetPairId);
             
             await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OrderExecutionKey), 
                 rates.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
@@ -181,10 +182,11 @@ namespace MarginTrading.CommissionService.Services
 
         public async Task ReplaceOvernightSwapRates(List<OvernightSwapRate> rates)
         {
-            await _blobRepository.WriteAsync(
+            await _blobRepository.MergeListAsync(
                 blobContainer: LykkeConstants.RateSettingsBlobContainer,
                 key: LykkeConstants.OvernightSwapKey,
-                obj: rates);
+                objects: rates,
+                selector: x => x.AssetPairId);
             
             await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OvernightSwapKey), 
                 rates.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
