@@ -45,7 +45,7 @@ namespace MarginTrading.CommissionService.Services
 				{
 					try
 					{
-						var calculation = await ProcessPosition(position, operationId, tradingDay);
+						var calculation = ProcessPosition(position, operationId, tradingDay);
 						if(calculation != null)
 							resultingCalculations.Add(calculation);
 					}
@@ -73,7 +73,7 @@ namespace MarginTrading.CommissionService.Services
 		/// <param name="operationId"></param>
 		/// <param name="tradingDay"></param>
 		/// <returns></returns>
-		private async Task<DailyPnlCalculation> ProcessPosition(IOpenPosition position,
+		private DailyPnlCalculation ProcessPosition(IOpenPosition position,
 			string operationId, DateTime tradingDay)
 		{
 			return new DailyPnlCalculation(

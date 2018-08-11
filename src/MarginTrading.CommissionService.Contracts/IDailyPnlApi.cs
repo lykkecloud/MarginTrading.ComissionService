@@ -16,7 +16,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// </summary>
         /// <param name="operationId"></param>
         /// <returns></returns>
-        [Post("api/daily-pnl/start")]
+        [Post("/api/daily-pnl/start")]
         Task StartDailyPnlProcess([NotNull] string operationId, DateTime tradingDay);
     }
 }

@@ -7,7 +7,6 @@ namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IEventSender
     {
-        Task SendHandleExecutedOrderInternalCommand(HandleOrderExecInternalCommand command);
-        Task SendHandleOnBehalfInternalCommand(HandleOnBehalfInternalCommand command);
+        Task SendRateSettingsChanged(CommissionType type);
     }
 }

@@ -6,6 +6,6 @@ namespace MarginTrading.CommissionService.Core.Settings.Rates
         
         public string CommissionAsset { get; set; }
         
-        public string DefaultLegalEntity { get; set; }
+        public string LegalEntity { get; set; }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Common.Log;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
@@ -16,71 +18,70 @@ namespace MarginTrading.CommissionService.Services
     public class CommissionCalcService : ICommissionCalcService
     {
         private readonly ICfdCalculatorService _cfdCalculatorService;
-        private readonly DefaultRateSettings _defaultRateSettings;
+        private readonly IRateSettingsService _rateSettingsService;
         private readonly IOrderEventsApi _orderEventsApi;
+        private readonly IAccountRedisCache _accountRedisCache;
+        private readonly ILog _log;
 
         public CommissionCalcService(
             ICfdCalculatorService cfdCalculatorService,
-            DefaultRateSettings defaultRateSettings,
-            IOrderEventsApi orderEventsApi)
+            IRateSettingsService rateSettingsService,
+            IOrderEventsApi orderEventsApi,
+            IAccountRedisCache accountRedisCache,
+            ILog log)
         {
             _cfdCalculatorService = cfdCalculatorService;
-            _defaultRateSettings = defaultRateSettings;
+            _rateSettingsService = rateSettingsService;
             _orderEventsApi = orderEventsApi;
-        }
-
-        private decimal CalculateSwaps(string accountAssetId, string instrument, DateTime? openDate, DateTime? closeDate,
-            decimal volume, decimal swapRate, string legalEntity)
-        {
-            decimal result = 0;
-
-//            if (openDate.HasValue)
-//            {
-//                var close = closeDate ?? DateTime.UtcNow;
-//                var seconds = (decimal) (close - openDate.Value).TotalSeconds;
-//
-//                const int secondsInYear = 31536000;
-//                var quote = _cfdCalculatorService.GetQuoteRateForBaseAsset(accountAssetId, instrument, legalEntity, 
-//                    volume * swapRate > 0);
-//                var swaps = quote * volume * swapRate * seconds / secondsInYear;
-//                result = Math.Round(swaps, _assetsCache.GetAssetAccuracy(accountAssetId));
-//            }
-
-            return result;
+            _accountRedisCache = accountRedisCache;
+            _log = log;
         }
 
         /// <summary>
         /// Value must be charged as it is, without negation
         /// </summary>
-        /// <param name="openPosition"></param>
-        /// <param name="assetPair"></param>
-        /// <returns></returns>
-        public decimal GetOvernightSwap(IOpenPosition openPosition, IAssetPair assetPair)
+        public async Task<decimal> GetOvernightSwap(Dictionary<string, decimal> interestRates, 
+            IOpenPosition openPosition, IAssetPair assetPair,
+            int numberOfFinancingDays, int financingDaysPerYear)
         {
-            var defaultSettings = _defaultRateSettings.DefaultOvernightSwapSettings;
-            var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(defaultSettings.CommissionAsset,
+            var rateSettings = await _rateSettingsService.GetOvernightSwapRate(assetPair.Id);
+            var account = await _accountRedisCache.GetAccount(openPosition.AccountId);
+            
+            var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(account.BaseAssetId,
                                     openPosition.AssetPairId, assetPair.LegalEntity)
                                 * Math.Abs(openPosition.CurrentVolume);
-            var basisOfCalc = - defaultSettings.FixRate
-                - (openPosition.Direction == PositionDirection.Short ? defaultSettings.RepoSurchargePercent : 0)
-                + (defaultSettings.VariableRateBase - defaultSettings.VariableRateQuote)
+
+            interestRates.TryGetValue(rateSettings.VariableRateBase, out var variableRateBase);
+            interestRates.TryGetValue(rateSettings.VariableRateQuote, out var variableRateQuote);
+            
+            var basisOfCalc = - rateSettings.FixRate
+                - (openPosition.Direction == PositionDirection.Short ? rateSettings.RepoSurchargePercent : 0)
+                + (variableRateBase - variableRateQuote)
                               * (openPosition.Direction == PositionDirection.Long ? 1 : -1);
-            return volumeInAsset * basisOfCalc / 365;
+
+            var dayFactor = (decimal) numberOfFinancingDays / financingDaysPerYear;
+            
+            return volumeInAsset * basisOfCalc * dayFactor;
         }
 
-        public decimal CalculateOrderExecutionCommission(string instrument, string legalEntity, decimal volume)
+        public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument, 
+            string legalEntity, decimal volume)
         {
-            var defaultSettings = _defaultRateSettings.DefaultOrderExecutionSettings;
+            var rateSettings = await _rateSettingsService.GetOrderExecutionRate(instrument);
+            var account = await _accountRedisCache.GetAccount(accountId);
 
-            var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(defaultSettings.CommissionAsset,
+            var volumeInCommissionAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(rateSettings.CommissionAsset,
                                     instrument, legalEntity)
                                 * Math.Abs(volume);
+            var commissionToAccountRate = _cfdCalculatorService.GetQuote(rateSettings.CommissionAsset, 
+                account.BaseAssetId, rateSettings.LegalEntity);
             
             var commission = Math.Min(
-                defaultSettings.CommissionCap, 
+                rateSettings.CommissionCap, 
                 Math.Max(
-                    defaultSettings.CommissionFloor,
-                    defaultSettings.CommissionRate * volumeInAsset));
+                    rateSettings.CommissionFloor,
+                    rateSettings.CommissionRate * volumeInCommissionAsset))
+                * commissionToAccountRate;
 
             return commission;
         }
@@ -89,7 +90,7 @@ namespace MarginTrading.CommissionService.Services
             string accountAssetId)
         {
             var onBehalfEvents = (await _orderEventsApi.OrderById(orderId, null, false))
-                .Where(o => o.Originator == OriginatorTypeContract.OnBehalf).ToList();
+                .Where(CheckOnBehalfFlag).ToList();
 
             var changeEventsCount = onBehalfEvents.Count(o => o.UpdateType == OrderUpdateTypeContract.Change);
 
@@ -101,17 +102,33 @@ namespace MarginTrading.CommissionService.Services
                 : 1;
 
             var actionsNum = changeEventsCount + placeEventCharged;
+
+            var rateSettings = await _rateSettingsService.GetOnBehalfRate(); 
             
             //use fx rates to convert to account asset
-            var quote = _cfdCalculatorService.GetQuote(_defaultRateSettings.DefaultOnBehalfSettings.CommissionAsset, 
-                accountAssetId, _defaultRateSettings.DefaultOnBehalfSettings.DefaultLegalEntity);
+            var quote = _cfdCalculatorService.GetQuote(rateSettings.CommissionAsset, accountAssetId, 
+                rateSettings.LegalEntity);
             
             //calculate commission
-            return (actionsNum, actionsNum * _defaultRateSettings.DefaultOnBehalfSettings.Commission * quote);
+            return (actionsNum, actionsNum * rateSettings.Commission * quote);
 
             async Task<bool> CorrelatesWithParent(OrderEventContract order) =>
                 (await _orderEventsApi.OrderById(order.ParentOrderId, OrderStatusContract.Placed, false))
                 .Any(p => p.CorrelationId == order.CorrelationId);
+        }
+
+        private bool CheckOnBehalfFlag(OrderEventContract orderEvent)
+        {
+            //used to be o => o.Originator == OriginatorTypeContract.OnBehalf
+            try
+            {
+                return JsonConvert.DeserializeAnonymousType(orderEvent.AdditionalInfo, new {IsOnBehalf = false})
+                    .IsOnBehalf;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

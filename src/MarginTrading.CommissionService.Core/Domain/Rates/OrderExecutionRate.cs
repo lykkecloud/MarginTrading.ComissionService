@@ -1,28 +1,35 @@
 ﻿using System;
 using JetBrains.Annotations;
+using MarginTrading.CommissionService.Core.Settings.Rates;
 
 namespace MarginTrading.CommissionService.Core.Domain.Rates
 {
     public class OrderExecutionRate
     {
-        public string AssetPairId { get; }
+        [NotNull] public string AssetPairId { get; set; }
         
-        public decimal CommissionCap { get; }
+        public decimal CommissionCap { get; set; }
         
-        public decimal CommissionFloor { get; }
+        public decimal CommissionFloor { get; set; }
         
-        public decimal CommissionRate { get; }
+        public decimal CommissionRate { get; set; }
         
-        public string CommissionAsset { get; }
+        [NotNull] public string CommissionAsset { get; set; }
+        
+        [CanBeNull] public string LegalEntity { get; set; }
 
-        public OrderExecutionRate(string assetPairId, decimal commissionCap, decimal commissionFloor, 
-            decimal commissionRate, [NotNull] string commissionAsset)
+        public static OrderExecutionRate FromDefault(DefaultOrderExecutionSettings defaultOrderExecutionSettings,
+            string assetPairId)
         {
-            AssetPairId = assetPairId ?? throw new ArgumentNullException(nameof(assetPairId));
-            CommissionCap = commissionCap;
-            CommissionFloor = commissionFloor;
-            CommissionRate = commissionRate;
-            CommissionAsset = commissionAsset ?? throw new ArgumentNullException(nameof(commissionAsset));
+            return new OrderExecutionRate
+            {
+                AssetPairId = assetPairId,
+                CommissionCap = defaultOrderExecutionSettings.CommissionCap,
+                CommissionFloor = defaultOrderExecutionSettings.CommissionFloor,
+                CommissionRate = defaultOrderExecutionSettings.CommissionRate,
+                CommissionAsset = defaultOrderExecutionSettings.CommissionAsset,
+                LegalEntity = defaultOrderExecutionSettings.LegalEntity,
+            };
         }
     }
 }

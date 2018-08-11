@@ -26,5 +26,19 @@ namespace MarginTrading.CommissionService.SqlRepositories
                 connection.Close();
             }
         }
+
+        public static void CheckIfTableExists(this IDbConnection connection, string tableName)
+        {
+            connection.Open();
+            try
+            {
+                // Check if table exists
+                connection.ExecuteScalar($"select top 1 * from {tableName}");
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
     }
 }

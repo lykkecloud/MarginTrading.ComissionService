@@ -20,5 +20,6 @@
     <PackageReference Include="morelinq" Version="2.10.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
     <PackageReference Include="Lykke.Cqrs" Version="4.6.1" />
+    <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
   </ItemGroup>
 </Project>

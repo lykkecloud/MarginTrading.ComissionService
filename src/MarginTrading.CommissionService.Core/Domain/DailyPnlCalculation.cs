@@ -6,7 +6,7 @@ namespace MarginTrading.CommissionService.Core.Domain
 {
     public class DailyPnlCalculation : IDailyPnlCalculation
     {
-        public string Id => GetId(OperationId, PositionId);
+        public string Id => GetId();
         
         public string OperationId { get; }
         public string AccountId { get; }
@@ -31,6 +31,6 @@ namespace MarginTrading.CommissionService.Core.Domain
             Pnl = pnl;
         }
 
-        public static string GetId(string operationId, string positionId) => $"{operationId}_{positionId}";
+        public string GetId() => $"{OperationId}_{PositionId}";
     }
 }
