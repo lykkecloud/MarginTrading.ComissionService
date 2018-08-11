@@ -18,6 +18,7 @@ namespace MarginTrading.CommissionService.Core.Domain
 		public decimal Volume { get; }
 		public decimal SwapValue { get; }
 		public string PositionId { get; }
+		public string Details { get; }
 
 		public bool IsSuccess { get; }
 		public Exception Exception { get; }
@@ -26,8 +27,8 @@ namespace MarginTrading.CommissionService.Core.Domain
 
 		public OvernightSwapCalculation([NotNull] string operationId, [NotNull] string accountId,
 			[NotNull] string instrument, [NotNull] PositionDirection? direction, DateTime time, decimal volume, 
-			decimal swapValue, [NotNull] string positionId, bool isSuccess, [CanBeNull] Exception exception = null, 
-			bool wasCharged = false)
+			decimal swapValue, [NotNull] string positionId, [CanBeNull] string details, bool isSuccess, 
+			[CanBeNull] Exception exception = null, bool wasCharged = false)
 		{
 			OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
 			AccountId = accountId ?? throw new ArgumentNullException(nameof(accountId));
@@ -37,6 +38,7 @@ namespace MarginTrading.CommissionService.Core.Domain
 			Volume = volume;
 			SwapValue = swapValue;
 			PositionId = positionId ?? throw new ArgumentNullException(nameof(positionId));
+			Details = details;
 			IsSuccess = isSuccess;
 			Exception = exception;
 			WasCharged = wasCharged;

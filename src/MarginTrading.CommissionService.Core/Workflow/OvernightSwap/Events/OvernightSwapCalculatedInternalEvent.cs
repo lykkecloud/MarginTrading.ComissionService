@@ -36,9 +36,13 @@ namespace MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events
         
         [Key(5)]
         public decimal SwapAmount { get; }
+        
+        [Key(6)]
+        public string Details { get; }
 
         public OvernightSwapCalculatedInternalEvent([NotNull] string operationId, DateTime creationTimestamp,
-            [NotNull] string accountId, [NotNull] string positionId, [NotNull] string assetPairId, decimal swapAmount)
+            [NotNull] string accountId, [NotNull] string positionId, [NotNull] string assetPairId, decimal swapAmount,
+            string details)
         {
             OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
             CreationTimestamp = creationTimestamp;
@@ -46,6 +50,7 @@ namespace MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events
             PositionId = positionId ?? throw new ArgumentNullException(nameof(positionId));
             AssetPairId = assetPairId ?? throw new ArgumentNullException(nameof(assetPairId));
             SwapAmount = swapAmount;
+            Details = details;
         }
     }
 }

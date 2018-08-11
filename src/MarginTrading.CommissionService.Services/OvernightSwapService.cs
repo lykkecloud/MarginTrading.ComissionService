@@ -152,35 +152,46 @@ namespace MarginTrading.CommissionService.Services
 		}
 
 		/// <summary>
-		/// Calculate overnight swaps for account/instrument/direction order package.
+		/// Calculate overnight swap
 		/// </summary>
 		private async Task<IOvernightSwapCalculation> ProcessPosition(IOpenPosition position, IAssetPair assetPair,
 			string operationId, int numberOfFinancingDays, int financingDaysPerYear, Exception exception = null)
 		{
-			var calculation = exception == null
-				? new OvernightSwapCalculation(
+			IOvernightSwapCalculation calculation;
+			
+			if (exception == null)
+			{
+				var swapData = await _commissionCalcService.GetOvernightSwap(_currentInterestRates, position, assetPair,
+					numberOfFinancingDays, financingDaysPerYear);
+				
+				calculation = new OvernightSwapCalculation(
 					operationId: operationId,
 					accountId: position.AccountId,
 					instrument: position.AssetPairId,
 					direction: position.Direction,
 					time: _systemClock.UtcNow.DateTime,
 					volume: position.CurrentVolume,
-					swapValue: await _commissionCalcService.GetOvernightSwap(_currentInterestRates, position, assetPair, 
-						numberOfFinancingDays, financingDaysPerYear),
+					swapValue: swapData.Swap,
 					positionId: position.Id,
-					isSuccess: true)
-				: new OvernightSwapCalculation(
+					details: swapData.Details,
+					isSuccess: true);
+			}
+			else
+			{
+				calculation = new OvernightSwapCalculation(
 					operationId: operationId,
 					accountId: position.AccountId,
 					instrument: position.AssetPairId,
 					direction: position.Direction,
 					time: _systemClock.UtcNow.DateTime,
 					volume: position.CurrentVolume,
-					swapValue: default(decimal),
+					swapValue: default,
 					positionId: position.Id,
+					details: null,
 					isSuccess: false,
 					exception: exception);
-			
+			}
+
 			await _overnightSwapHistoryRepository.AddAsync(calculation);
 			
 			return calculation;

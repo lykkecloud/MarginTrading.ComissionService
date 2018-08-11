@@ -20,7 +20,8 @@ namespace MarginTrading.CommissionService.SqlRepositories.Entities
         public decimal Volume { get; set; }
         public decimal SwapValue { get; set; }
         public string PositionId { get; set; }
-		
+        public string Details { get; set; }
+
         public bool IsSuccess { get; set; }
         public string Exception { get; set; }
         Exception IOvernightSwapCalculation.Exception => JsonConvert.DeserializeObject<Exception>(Exception);
@@ -39,6 +40,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Entities
                 Volume = obj.Volume,
                 SwapValue = obj.SwapValue,
                 PositionId = obj.PositionId,
+                Details = obj.Details,
                 IsSuccess = obj.IsSuccess,
                 Exception = JsonConvert.SerializeObject(obj.Exception, new JsonSerializerSettings
                 { 

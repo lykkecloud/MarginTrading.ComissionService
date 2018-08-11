@@ -40,28 +40,28 @@ namespace MarginTrading.CommissionService.Services
         /// <summary>
         /// Value must be charged as it is, without negation
         /// </summary>
-        public async Task<decimal> GetOvernightSwap(Dictionary<string, decimal> interestRates, 
-            IOpenPosition openPosition, IAssetPair assetPair,
-            int numberOfFinancingDays, int financingDaysPerYear)
+        public async Task<(decimal Swap, string Details)> GetOvernightSwap(Dictionary<string, decimal> interestRates,
+            IOpenPosition openPosition, IAssetPair assetPair, int numberOfFinancingDays, int financingDaysPerYear)
         {
             var rateSettings = await _rateSettingsService.GetOvernightSwapRate(assetPair.Id);
             var account = await _accountRedisCache.GetAccount(openPosition.AccountId);
             
-            var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(account.BaseAssetId,
+            var calculationBasis = _cfdCalculatorService.GetQuoteRateForQuoteAsset(account.BaseAssetId,
                                     openPosition.AssetPairId, assetPair.LegalEntity)
                                 * Math.Abs(openPosition.CurrentVolume);
 
             interestRates.TryGetValue(rateSettings.VariableRateBase, out var variableRateBase);
             interestRates.TryGetValue(rateSettings.VariableRateQuote, out var variableRateQuote);
             
-            var basisOfCalc = - rateSettings.FixRate
+            var financingRate = - rateSettings.FixRate
                 - (openPosition.Direction == PositionDirection.Short ? rateSettings.RepoSurchargePercent : 0)
                 + (variableRateBase - variableRateQuote)
                               * (openPosition.Direction == PositionDirection.Long ? 1 : -1);
 
-            var dayFactor = (decimal) numberOfFinancingDays / financingDaysPerYear;
-            
-            return volumeInAsset * basisOfCalc * dayFactor;
+            var dayFactor = numberOfFinancingDays / financingDaysPerYear;
+
+            return (calculationBasis * financingRate * dayFactor,
+                    $"<calculation_basis>{calculationBasis}</calculation_basis><financing_rate>{financingRate}</financing_rate><day_factor>{dayFactor}</day_factor><fix_rate>{rateSettings.FixRate}</fix_rate>");
         }
 
         public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument, 

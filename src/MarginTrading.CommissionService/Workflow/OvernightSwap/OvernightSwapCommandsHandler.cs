@@ -82,7 +82,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
 
             _threadSwitcher.SwitchThread(() => _overnightSwapListener.TrackCharging(
                 operationId: command.OperationId, 
-                operationIds: calculatedSwaps.Where(x => x.IsSuccess).Select(x => x.Id), 
+                operationIds: calculatedSwaps.Where(x => x.IsSuccess).Select(x => x.Id),
                 publisher: publisher
             ));
             
@@ -94,9 +94,8 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     accountId: swap.AccountId,
                     positionId: swap.PositionId,
                     assetPairId: swap.Instrument,
-                    swapAmount: swap.SwapValue));
-                
-//                _chaosKitty.Meow(nameof(OvernightSwapCommandsHandler));
+                    swapAmount: swap.SwapValue,
+                    details: swap.Details));
             }
             
             return CommandHandlingResult.Ok();
