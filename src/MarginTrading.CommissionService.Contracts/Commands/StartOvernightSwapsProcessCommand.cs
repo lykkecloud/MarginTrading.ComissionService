@@ -35,12 +35,13 @@ namespace Lykke.MarginTrading.CommissionService.Contracts.Commands
         public int FinancingDaysPerYear { get; }
 
         public StartOvernightSwapsProcessCommand([NotNull] string operationId, DateTime creationTimestamp,
-            int numberOfFinancingDays, int financingDaysPerYear)
+            int numberOfFinancingDays = 0, int financingDaysPerYear = 0)
         {
             OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
             CreationTimestamp = creationTimestamp;
-            NumberOfFinancingDays = numberOfFinancingDays > 0 ? numberOfFinancingDays : throw new ArgumentOutOfRangeException(nameof(numberOfFinancingDays));
-            FinancingDaysPerYear = financingDaysPerYear > 0 ? financingDaysPerYear : throw new ArgumentOutOfRangeException(nameof(financingDaysPerYear));
+            //TODO this hardcode may be removed after integration is finished
+            NumberOfFinancingDays = numberOfFinancingDays > 0 ? numberOfFinancingDays : 1;
+            FinancingDaysPerYear = financingDaysPerYear > 0 ? financingDaysPerYear : 365;
         }
     }
 }

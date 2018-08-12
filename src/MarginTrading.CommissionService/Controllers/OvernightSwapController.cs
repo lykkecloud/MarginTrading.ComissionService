@@ -27,14 +27,15 @@ namespace MarginTrading.CommissionService.Controllers
 
         [Route("start")]
         [HttpPost]
-        public Task StartOvernightSwapProcess(string operationId, int numberOfFinancingDays, int financingDaysPerYear)
+        public Task StartOvernightSwapProcess(string operationId, 
+            int numberOfFinancingDays = 0, int financingDaysPerYear = 0)
         {
             _cqrsEngine.SendCommand(
                 new StartOvernightSwapsProcessCommand(
                     operationId.RequiredNotNullOrWhiteSpace(nameof(operationId)),
                     _systemClock.UtcNow.DateTime,
-                    numberOfFinancingDays.RequiredGreaterThan(0, nameof(numberOfFinancingDays)),
-                    financingDaysPerYear.RequiredGreaterThan(0, nameof(financingDaysPerYear))),
+                    numberOfFinancingDays,
+                    financingDaysPerYear),
                 _cqrsContextNamesSettings.CommissionService,
                 _cqrsContextNamesSettings.CommissionService);
             
