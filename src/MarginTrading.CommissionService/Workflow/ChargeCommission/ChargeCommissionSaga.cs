@@ -127,9 +127,9 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                     clientId: null,
                     accountId: evt.AccountId, 
                     amount: evt.SwapAmount,
-                    reasonType: AccountBalanceChangeReasonTypeContract.Swap, 
-                    reason: $"OvernightSwap commission: {evt.Details}", 
-                    auditLog: null,
+                    reasonType: AccountBalanceChangeReasonTypeContract.Swap,
+                    reason: nameof(OvernightSwapCalculatedInternalEvent),
+                    auditLog: evt.Details,
                     eventSourceId: evt.PositionId,
                     assetPairId: evt.AssetPairId),
                 _contextNames.AccountsManagement);

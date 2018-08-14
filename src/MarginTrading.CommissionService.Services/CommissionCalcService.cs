@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Common;
 using Common.Log;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
@@ -61,7 +62,14 @@ namespace MarginTrading.CommissionService.Services
             var dayFactor = numberOfFinancingDays / financingDaysPerYear;
 
             return (calculationBasis * financingRate * dayFactor,
-                    $"<calculation_basis>{calculationBasis}</calculation_basis><financing_rate>{financingRate}</financing_rate><day_factor>{dayFactor}</day_factor><fix_rate>{rateSettings.FixRate}</fix_rate>");
+                new
+                {
+                    CalculationBasis = calculationBasis,
+                    FinancingRate = financingRate,
+                    DayFactor = dayFactor,
+                    FixRate = rateSettings.FixRate
+                }.ToJson()
+            );
         }
 
         public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument, 
