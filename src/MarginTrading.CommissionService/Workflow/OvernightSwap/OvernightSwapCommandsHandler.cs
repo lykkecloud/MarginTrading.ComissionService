@@ -59,7 +59,8 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
             IReadOnlyList<IOvernightSwapCalculation> calculatedSwaps = null;
             try
             {
-                calculatedSwaps = await _overnightSwapService.Calculate(command.OperationId, command.CreationTimestamp);
+                calculatedSwaps = await _overnightSwapService.Calculate(command.OperationId, command.CreationTimestamp, 
+                    command.NumberOfFinancingDays, command.FinancingDaysPerYear);
             }
             catch (Exception exception)
             {

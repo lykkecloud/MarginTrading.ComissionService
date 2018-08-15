@@ -99,7 +99,8 @@ namespace MarginTrading.CommissionService.Services
 			return filteredOrders.ToList();
 		}
 
-		public async Task<IReadOnlyList<IOvernightSwapCalculation>> Calculate(string operationId, DateTime creationTimestamp)
+		public async Task<IReadOnlyList<IOvernightSwapCalculation>> Calculate(string operationId,
+			DateTime creationTimestamp, int numberOfFinancingDays, int financingDaysPerYear)
 		{
 			_currentStartTimestamp = _systemClock.UtcNow.DateTime;
 
@@ -121,13 +122,15 @@ namespace MarginTrading.CommissionService.Services
 					try
 					{
 						var assetPair = assetPairs.First(x => x.Id == position.AssetPairId);
-						var calculation = await ProcessPosition(position, assetPair, operationId);
+						var calculation = await ProcessPosition(position, assetPair, operationId, 
+							numberOfFinancingDays, financingDaysPerYear);
 						if(calculation != null)
 							resultingCalculations.Add(calculation);
 					}
 					catch (Exception ex)
 					{
-						resultingCalculations.Add(await ProcessPosition(position, null, operationId, ex));
+						resultingCalculations.Add(await ProcessPosition(position, null, operationId, 
+							numberOfFinancingDays, financingDaysPerYear, ex));
 					}
 				}
 				
@@ -145,13 +148,8 @@ namespace MarginTrading.CommissionService.Services
 		/// <summary>
 		/// Calculate overnight swaps for account/instrument/direction order package.
 		/// </summary>
-		/// <param name="position"></param>
-		/// <param name="assetPair"></param>
-		/// <param name="operationId"></param>
-		/// <param name="exception"></param>
-		/// <returns></returns>
 		private async Task<IOvernightSwapCalculation> ProcessPosition(IOpenPosition position, IAssetPair assetPair,
-			string operationId, Exception exception = null)
+			string operationId, int numberOfFinancingDays, int financingDaysPerYear, Exception exception = null)
 		{
 			var calculation = exception == null
 				? new OvernightSwapCalculation(
@@ -161,7 +159,8 @@ namespace MarginTrading.CommissionService.Services
 					direction: position.Direction,
 					time: _systemClock.UtcNow.DateTime,
 					volume: position.CurrentVolume,
-					swapValue: _commissionCalcService.GetOvernightSwap(position, assetPair),
+					swapValue: _commissionCalcService.GetOvernightSwap(position, assetPair, 
+						numberOfFinancingDays, financingDaysPerYear),
 					positionId: position.Id,
 					isSuccess: true)
 				: new OvernightSwapCalculation(

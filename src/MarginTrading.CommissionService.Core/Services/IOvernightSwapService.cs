@@ -16,8 +16,11 @@ namespace MarginTrading.CommissionService.Core.Services
         /// </summary>
         /// <param name="operationId"></param>
         /// <param name="creationTimestamp"></param>
+        /// <param name="numberOfFinancingDays"></param>
+        /// <param name="financingDaysPerYear"></param>
         /// <returns></returns>
-        Task<IReadOnlyList<IOvernightSwapCalculation>> Calculate(string operationId, DateTime creationTimestamp);
+        Task<IReadOnlyList<IOvernightSwapCalculation>> Calculate(string operationId, DateTime creationTimestamp,
+            int numberOfFinancingDays, int financingDaysPerYear);
 
         /// <summary>
         /// True if operation with <param name="operationId"/> was never called before.

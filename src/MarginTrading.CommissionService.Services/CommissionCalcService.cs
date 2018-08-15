@@ -52,10 +52,8 @@ namespace MarginTrading.CommissionService.Services
         /// <summary>
         /// Value must be charged as it is, without negation
         /// </summary>
-        /// <param name="openPosition"></param>
-        /// <param name="assetPair"></param>
-        /// <returns></returns>
-        public decimal GetOvernightSwap(IOpenPosition openPosition, IAssetPair assetPair)
+        public decimal GetOvernightSwap(IOpenPosition openPosition, IAssetPair assetPair,
+            int numberOfFinancingDays, int financingDaysPerYear)
         {
             var defaultSettings = _defaultRateSettings.DefaultOvernightSwapSettings;
             var volumeInAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(defaultSettings.CommissionAsset,
@@ -65,7 +63,10 @@ namespace MarginTrading.CommissionService.Services
                 - (openPosition.Direction == PositionDirection.Short ? defaultSettings.RepoSurchargePercent : 0)
                 + (defaultSettings.VariableRateBase - defaultSettings.VariableRateQuote)
                               * (openPosition.Direction == PositionDirection.Long ? 1 : -1);
-            return volumeInAsset * basisOfCalc / 365;
+
+            var dayFactor = (decimal) numberOfFinancingDays / financingDaysPerYear;
+            
+            return volumeInAsset * basisOfCalc * dayFactor;
         }
 
         public decimal CalculateOrderExecutionCommission(string instrument, string legalEntity, decimal volume)
