@@ -14,5 +14,7 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
         decimal FxRate { get; }
         string PositionId { get; }
         decimal Pnl { get; }
+
+        string GetId();
     }
 }
