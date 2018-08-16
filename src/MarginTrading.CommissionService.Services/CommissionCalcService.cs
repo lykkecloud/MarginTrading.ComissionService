@@ -90,7 +90,7 @@ namespace MarginTrading.CommissionService.Services
             string accountAssetId)
         {
             var onBehalfEvents = (await _orderEventsApi.OrderById(orderId, null, false))
-                .Where(o => o.Originator == OriginatorTypeContract.OnBehalf).ToList();
+                .Where(CheckOnBehalfFlag).ToList();
 
             var changeEventsCount = onBehalfEvents.Count(o => o.UpdateType == OrderUpdateTypeContract.Change);
 
@@ -113,6 +113,20 @@ namespace MarginTrading.CommissionService.Services
             async Task<bool> CorrelatesWithParent(OrderEventContract order) =>
                 (await _orderEventsApi.OrderById(order.ParentOrderId, OrderStatusContract.Placed, false))
                 .Any(p => p.CorrelationId == order.CorrelationId);
+        }
+
+        private bool CheckOnBehalfFlag(OrderEventContract orderEvent)
+        {
+            //used to be o => o.Originator == OriginatorTypeContract.OnBehalf
+            try
+            {
+                return JsonConvert.DeserializeAnonymousType(orderEvent.AdditionalInfo, new {IsOnBehalf = false})
+                    .IsOnBehalf;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
