@@ -63,9 +63,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             if (ChargeCommissionSaga.SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
                 CommissionOperationState.Started))
             {
-
-                var commissionAmount = _commissionCalcService.CalculateOrderExecutionCommission(
-                    command.Instrument, command.LegalEntity, command.Volume);
+                var commissionAmount = await _commissionCalcService.CalculateOrderExecutionCommission(
+                  command.AccountId, command.Instrument, command.LegalEntity, command.Volume);
 
                 //no failure handling.. so operation will be retried on fail
 

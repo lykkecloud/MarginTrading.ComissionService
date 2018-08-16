@@ -144,7 +144,7 @@ namespace MarginTrading.CommissionService.Services
         {
             try
             {
-                await _blobRepository.Write(LykkeConstants.StateBlobContainer, BlobName, GetAllQuotes());
+                await _blobRepository.WriteAsync(LykkeConstants.StateBlobContainer, BlobName, GetAllQuotes());
             }
             catch (Exception ex)
             {

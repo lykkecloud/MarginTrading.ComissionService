@@ -23,6 +23,13 @@ namespace MarginTrading.CommissionService.AzureRepositories
                     "OvernightSwapHistory", log));
             }
 
+            public static InterestRatesRepository CreateInterestRatesRepository(IReloadingManager<string> connString,
+                ILog log)
+            {
+                return new InterestRatesRepository(AzureTableStorage<InterestRateEntity>.Create(connString,
+                    "ClosingInterestRates", log));
+            }
+
             public static OperationExecutionInfoRepository CreateOperationExecutionInfoRepository(
                 IReloadingManager<string> connString, ILog log, ISystemClock systemClock)
             {
