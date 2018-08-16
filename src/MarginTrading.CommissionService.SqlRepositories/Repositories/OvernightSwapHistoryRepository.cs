@@ -28,6 +28,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
                                                  "[Volume] float NOT NULL, " +
                                                  "[SwapValue] float NOT NULL, " +
                                                  "[PositionId] [nvarchar] (64) NOT NULL, " +
+                                                 "[Details] [nvarchar] (MAX) NULL," +
                                                  "[IsSuccess] [bit] NOT NULL, " +
                                                  "[Exception] [nvarchar] (MAX) NULL," +
                                                  "[WasCharged] [bit] NOT NULL," +
