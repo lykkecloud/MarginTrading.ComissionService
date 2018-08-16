@@ -55,8 +55,14 @@ namespace MarginTrading.CommissionService.Services
                 {
                     await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOrderExecutionRate),
                         $"No order execution rate for {assetPairId}. Using the default one.");
+
+                    var rateFromDefault =
+                        OrderExecutionRate.FromDefault(_defaultRateSettings.DefaultOrderExecutionSettings, assetPairId);
                     
-                    return OrderExecutionRate.FromDefault(_defaultRateSettings.DefaultOrderExecutionSettings, assetPairId);
+                    await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OrderExecutionKey), 
+                         new [] {new HashEntry(assetPairId, Serialize(rateFromDefault))});
+                    
+                    return rateFromDefault;
                 }
             }
 
@@ -140,7 +146,13 @@ namespace MarginTrading.CommissionService.Services
                     await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOvernightSwapRate),
                         $"No overnight swap rate for {assetPairId}. Using the default one.");
                     
-                    return OvernightSwapRate.FromDefault(_defaultRateSettings.DefaultOvernightSwapSettings, assetPairId);
+                    var rateFromDefault =
+                        OvernightSwapRate.FromDefault(_defaultRateSettings.DefaultOvernightSwapSettings, assetPairId);
+                    
+                    await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OvernightSwapKey), 
+                        new [] {new HashEntry(assetPairId, Serialize(rateFromDefault))});
+                    
+                    return rateFromDefault;
                 }
             }
 
