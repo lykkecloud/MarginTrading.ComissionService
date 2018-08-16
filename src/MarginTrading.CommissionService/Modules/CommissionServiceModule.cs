@@ -168,8 +168,12 @@ namespace MarginTrading.CommissionService.Modules
                     .SingleInstance();
 
                 builder.Register<IInterestRatesRepository>(ctx =>
-                        AzureRepoFactories.MarginTrading.CreateInterestRatesRepository(
-                            _settings.Nested(s => s.CommissionService.Db.StateConnString), _log))
+                    AzureRepoFactories.MarginTrading.CreateInterestRatesRepository(
+                        _settings.Nested(s => s.CommissionService.Db.StateConnString), _log));
+                
+                builder.Register<IOperationExecutionInfoRepository>(ctx =>
+                        AzureRepoFactories.MarginTrading.CreateOperationExecutionInfoRepository(
+                            _settings.Nested(s => s.CommissionService.Db.StateConnString), _log, ctx.Resolve<ISystemClock>()))
                     .SingleInstance();
             } 
             else if (_settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.SqlServer)
@@ -184,6 +188,10 @@ namespace MarginTrading.CommissionService.Modules
 
                 builder.RegisterType<InterestRatesRepository>()
                     .As<IInterestRatesRepository>()
+                    .SingleInstance();
+
+                builder.RegisterType<OperationExecutionInfoRepository>()
+                    .As<IOperationExecutionInfoRepository>()
                     .SingleInstance();
             }
         }

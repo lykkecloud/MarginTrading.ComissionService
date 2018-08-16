@@ -41,30 +41,30 @@ namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Command
         /// Order ID
         /// </summary>
         [Key(2)]
-        public string OrderId { get; set; }
+        public string OrderId { get; }
         
         /// <summary>
         /// Digit order code
         /// </summary>
         [Key(3)]
-        public long OrderCode { get; set; }
+        public long OrderCode { get; }
         
         /// <summary>
         /// Asset Pair ID (eg. EURUSD) 
         /// </summary>
         [Key(4)]
-        public string Instrument { get; set; }
+        public string Instrument { get; }
         
         /// <summary>
         /// LegalEntity
         /// </summary>
         [Key(5)]
-        public string LegalEntity { get; set; }
+        public string LegalEntity { get; }
         
         /// <summary>
         /// Order size 
         /// </summary>
         [Key(6)]
-        public decimal Volume { get; set; }
+        public decimal Volume { get; }
     }
 }
