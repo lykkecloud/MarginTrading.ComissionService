@@ -41,7 +41,8 @@ namespace MarginTrading.CommissionService.Services
         /// Value must be charged as it is, without negation
         /// </summary>
         public async Task<decimal> GetOvernightSwap(Dictionary<string, decimal> interestRates, 
-            IOpenPosition openPosition, IAssetPair assetPair)
+            IOpenPosition openPosition, IAssetPair assetPair,
+            int numberOfFinancingDays, int financingDaysPerYear)
         {
             var rateSettings = await _rateSettingsService.GetOvernightSwapRate(assetPair.Id);
             var account = await _accountRedisCache.GetAccount(openPosition.AccountId);
@@ -57,8 +58,10 @@ namespace MarginTrading.CommissionService.Services
                 - (openPosition.Direction == PositionDirection.Short ? rateSettings.RepoSurchargePercent : 0)
                 + (variableRateBase - variableRateQuote)
                               * (openPosition.Direction == PositionDirection.Long ? 1 : -1);
+
+            var dayFactor = (decimal) numberOfFinancingDays / financingDaysPerYear;
             
-            return volumeInAsset * basisOfCalc / 365;
+            return volumeInAsset * basisOfCalc * dayFactor;
         }
 
         public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument, 
@@ -87,7 +90,7 @@ namespace MarginTrading.CommissionService.Services
             string accountAssetId)
         {
             var onBehalfEvents = (await _orderEventsApi.OrderById(orderId, null, false))
-                .Where(o => o.Originator == OriginatorTypeContract.OnBehalf).ToList();
+                .Where(CheckOnBehalfFlag).ToList();
 
             var changeEventsCount = onBehalfEvents.Count(o => o.UpdateType == OrderUpdateTypeContract.Change);
 
@@ -112,6 +115,20 @@ namespace MarginTrading.CommissionService.Services
             async Task<bool> CorrelatesWithParent(OrderEventContract order) =>
                 (await _orderEventsApi.OrderById(order.ParentOrderId, OrderStatusContract.Placed, false))
                 .Any(p => p.CorrelationId == order.CorrelationId);
+        }
+
+        private bool CheckOnBehalfFlag(OrderEventContract orderEvent)
+        {
+            //used to be o => o.Originator == OriginatorTypeContract.OnBehalf
+            try
+            {
+                return JsonConvert.DeserializeAnonymousType(orderEvent.AdditionalInfo, new {IsOnBehalf = false})
+                    .IsOnBehalf;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

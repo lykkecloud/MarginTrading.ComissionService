@@ -21,11 +21,27 @@ namespace Lykke.MarginTrading.CommissionService.Contracts.Commands
         /// </summary>
         [Key(1)]
         public DateTime CreationTimestamp { get; }
+        
+        /// <summary>
+        /// Number of financing days to be used in calculation
+        /// </summary>
+        [Key(2)]
+        public int NumberOfFinancingDays { get; }
+        
+        /// <summary>
+        /// Total number of days in the year
+        /// </summary>
+        [Key(3)]
+        public int FinancingDaysPerYear { get; }
 
-        public StartOvernightSwapsProcessCommand([NotNull] string operationId, DateTime creationTimestamp)
+        public StartOvernightSwapsProcessCommand([NotNull] string operationId, DateTime creationTimestamp,
+            int numberOfFinancingDays = 0, int financingDaysPerYear = 0)
         {
             OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
             CreationTimestamp = creationTimestamp;
+            //TODO this hardcode may be removed after integration is finished
+            NumberOfFinancingDays = numberOfFinancingDays > 0 ? numberOfFinancingDays : 1;
+            FinancingDaysPerYear = financingDaysPerYear > 0 ? financingDaysPerYear : 365;
         }
     }
 }
