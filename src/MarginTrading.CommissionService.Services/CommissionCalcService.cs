@@ -130,8 +130,8 @@ namespace MarginTrading.CommissionService.Services
             //used to be o => o.Originator == OriginatorTypeContract.OnBehalf
             try
             {
-                return JsonConvert.DeserializeAnonymousType(orderEvent.AdditionalInfo, new {IsOnBehalf = false})
-                    .IsOnBehalf;
+                return JsonConvert.DeserializeAnonymousType(orderEvent.AdditionalInfo, new {WithOnBehalfFees = false})
+                    .WithOnBehalfFees;
             }
             catch
             {
