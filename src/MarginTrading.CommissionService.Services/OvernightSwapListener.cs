@@ -13,11 +13,11 @@ namespace MarginTrading.CommissionService.Services
 {
     [UsedImplicitly]
     public class OvernightSwapListener: IOvernightSwapListener,
-        IEventConsumer<OvernightSwapChargedEventArgs>
+        IEventConsumer<OvernightSwapChargedEventArgs>, IEventConsumer<OvernightSwapChargeFailedEventArgs>
     {
         private readonly int _timeoutMs;
         private readonly ISystemClock _systemClock;
-        private Dictionary<string, bool> _cache;
+        private Dictionary<string, bool?> _cache;
         private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
         private CancellationTokenSource _cancellationTokenSource;
 
@@ -32,7 +32,7 @@ namespace MarginTrading.CommissionService.Services
         {
             await _semaphoreSlim.WaitAsync();
             
-            _cache = operationIds.ToDictionary(x => x, x => false);
+            _cache = operationIds.ToDictionary(x => x, x => (bool?)null);
             _cancellationTokenSource = new CancellationTokenSource(_timeoutMs);
 
             try
@@ -48,22 +48,32 @@ namespace MarginTrading.CommissionService.Services
                 operationId: operationId,
                 creationTimestamp: _systemClock.UtcNow.UtcDateTime,
                 total: _cache.Count,
-                failed: _cache.Values.Count(x => !x)
+                failed: _cache.Values.Count(x => x != true)
             ));
             
-            _cache = new Dictionary<string, bool>();
+            _cache = new Dictionary<string, bool?>();
 
             _semaphoreSlim.Release();
         }
 
         public void ConsumeEvent(object sender, OvernightSwapChargedEventArgs ea)
         {
-            if(!_cache.ContainsKey(ea.OperationId))
+            Handler(ea.OperationId, true);
+        }
+
+        public void ConsumeEvent(object sender, OvernightSwapChargeFailedEventArgs ea)
+        {
+            Handler(ea.OperationId, false);
+        }
+
+        private void Handler(string operationId, bool type)
+        {
+            if(!_cache.ContainsKey(operationId))
                 return;
-
-            _cache[ea.OperationId] = true;
-
-            if (_cache.All(x => x.Value))
+            
+            _cache[operationId] = type;
+            
+            if (_cache.All(x => x.Value.HasValue))
             {
                 _cancellationTokenSource.Cancel();
             }

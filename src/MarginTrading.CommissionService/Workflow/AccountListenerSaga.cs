@@ -14,13 +14,16 @@ namespace MarginTrading.CommissionService.Workflow
     {
         private readonly IEventChannel<DailyPnlChargedEventArgs> _dailyPnlChargedEventChannel;
         private readonly IEventChannel<OvernightSwapChargedEventArgs> _overnightSwapChargedEventChannel;
+        private readonly IEventChannel<OvernightSwapChargeFailedEventArgs> _overnightSwapChargeFailedEventChannel;
         
         public AccountListenerSaga(
             IEventChannel<DailyPnlChargedEventArgs> dailyPnlChargedEventChannel,
-            IEventChannel<OvernightSwapChargedEventArgs> overnightSwapChargedEventChannel)
+            IEventChannel<OvernightSwapChargedEventArgs> overnightSwapChargedEventChannel,
+            IEventChannel<OvernightSwapChargeFailedEventArgs> overnightSwapChargeFailedEventChannel)
         {
             _dailyPnlChargedEventChannel = dailyPnlChargedEventChannel;
             _overnightSwapChargedEventChannel = overnightSwapChargedEventChannel;
+            _overnightSwapChargeFailedEventChannel = overnightSwapChargeFailedEventChannel;
         }
 
         /// <summary>
@@ -50,6 +53,18 @@ namespace MarginTrading.CommissionService.Workflow
                     });
                     break;
             }
+        }
+
+        /// <summary>
+        /// Grab AccountBalanceChangeFailedEvents for OvernightSwapListener
+        /// </summary>
+        [UsedImplicitly]
+        private void Handle(AccountBalanceChangeFailedEvent evt, ICommandSender sender)
+        {
+            _overnightSwapChargeFailedEventChannel.SendEvent(this, new OvernightSwapChargeFailedEventArgs
+            {
+                OperationId = evt.OperationId,
+            });
         }
     }
 }

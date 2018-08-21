@@ -80,6 +80,10 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<EventChannel<OvernightSwapChargedEventArgs>>()
                 .As<IEventChannel<OvernightSwapChargedEventArgs>>()
                 .SingleInstance();
+
+            builder.RegisterType<EventChannel<OvernightSwapChargeFailedEventArgs>>()
+                .As<IEventChannel<OvernightSwapChargeFailedEventArgs>>()
+                .SingleInstance();
         }
 
         private void RegisterServices(ContainerBuilder builder)
