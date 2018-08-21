@@ -120,7 +120,7 @@ namespace MarginTrading.CommissionService.Services
 
 				var assetPairs = (await _assetPairsApi.List())
 					.Select(x => _convertService.Convert<AssetPairContract, AssetPair>(x)).ToList();
-				_currentInterestRates = (await _interestRatesRepository.GetAll())
+				_currentInterestRates = (await _interestRatesRepository.GetAllLatest())
 					.ToDictionary(x => x.AssetPairId, x=> x.Rate);
 				
 				foreach (var position in filteredPositions)

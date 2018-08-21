@@ -21,5 +21,11 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
         {
             return (await _tableStorage.GetDataAsync()).ToList();
         }
+
+        public async Task<IReadOnlyList<IInterestRate>> GetAllLatest()
+        {
+            return (await _tableStorage.GetDataAsync()).GroupBy(x => x.PartitionKey)
+                .Select(x => x.OrderByDescending(z => z.Timestamp).First()).ToList();
+        }
     }
 }

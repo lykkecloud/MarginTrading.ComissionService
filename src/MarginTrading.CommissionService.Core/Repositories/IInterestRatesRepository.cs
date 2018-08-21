@@ -7,5 +7,6 @@ namespace MarginTrading.CommissionService.Core.Repositories
     public interface IInterestRatesRepository
     {
         Task<IReadOnlyList<IInterestRate>> GetAll();
+        Task<IReadOnlyList<IInterestRate>> GetAllLatest();
     }
 }
