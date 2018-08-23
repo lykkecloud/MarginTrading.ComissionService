@@ -23,11 +23,13 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
         public OnBehalfCommandsHandler(
             ICommissionCalcService commissionCalcService,
             IChaosKitty chaosKitty,
-            ISystemClock systemClock)
+            ISystemClock systemClock, 
+            IOperationExecutionInfoRepository executionInfoRepository)
         {
             _commissionCalcService = commissionCalcService;
             _chaosKitty = chaosKitty;
             _systemClock = systemClock;
+            _executionInfoRepository = executionInfoRepository;
         }
         
         /// <summary>
