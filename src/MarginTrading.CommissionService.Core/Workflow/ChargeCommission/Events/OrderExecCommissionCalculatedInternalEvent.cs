@@ -10,7 +10,7 @@ namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events
     {
         public OrderExecCommissionCalculatedInternalEvent([NotNull] string operationId, [NotNull] string accountId, 
             [NotNull] string orderId, [CanBeNull] string assetPairId, decimal amount, CommissionType commissionType,
-            [NotNull] string reason)
+            [NotNull] string reason, DateTime tradingDay)
         {
             OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
             AccountId = accountId ?? throw new ArgumentNullException(nameof(accountId));
@@ -19,6 +19,7 @@ namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events
             Amount = amount;
             CommissionType = commissionType;
             Reason = reason ?? throw new ArgumentNullException(nameof(reason));
+            TradingDay = tradingDay;
         }
 
         /// <summary>
@@ -67,5 +68,11 @@ namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events
         [NotNull]
         [Key(6)]
         public string Reason { get; }
+        
+        /// <summary>
+        /// Trading day.
+        /// </summary>
+        [Key(7)]
+        public DateTime TradingDay { get; }
     }
 }

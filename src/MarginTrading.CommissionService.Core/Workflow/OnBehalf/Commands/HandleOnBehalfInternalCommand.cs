@@ -50,10 +50,16 @@ namespace MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands
         [NotNull]
         [Key(5)]
         public string AssetPairId { get; }
+        
+        /// <summary>
+        /// Trading day. If not passed current DateTime.UtcNow will be used.
+        /// </summary>
+        [Key(6)]
+        public DateTime TradingDay { get; }
 
         public HandleOnBehalfInternalCommand([NotNull] string operationId, DateTime createdTimestamp,
             [NotNull] string accountId, [NotNull] string accountAssetId, [NotNull] string orderId, 
-            [NotNull] string assetPairId)
+            [NotNull] string assetPairId, DateTime tradingDay = default)
         {
             OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
             CreatedTimestamp = createdTimestamp;
@@ -61,6 +67,7 @@ namespace MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands
             AccountAssetId = accountAssetId ?? throw new ArgumentNullException(nameof(accountAssetId));
             OrderId = orderId ?? throw new ArgumentNullException(nameof(orderId));
             AssetPairId = assetPairId ?? throw new ArgumentNullException(nameof(assetPairId));
+            TradingDay = tradingDay == default ? DateTime.UtcNow : tradingDay;
         }
     }
 }

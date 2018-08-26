@@ -52,10 +52,16 @@ namespace MarginTrading.CommissionService.Core.Workflow.OnBehalf.Events
         /// </summary>
         [Key(6)]
         public decimal Commission { get; }
+        
+        /// <summary>
+        /// Trading day.
+        /// </summary>
+        [Key(7)]
+        public DateTime TradingDay { get; }
 
         public OnBehalfCalculatedInternalEvent([NotNull] string operationId, DateTime createdTimestamp,
             [NotNull] string accountId, [NotNull] string orderId, [NotNull] string assetPairId, int numberOfActions, 
-            decimal commission)
+            decimal commission, DateTime tradingDay)
         {
             OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
             CreatedTimestamp = createdTimestamp;
@@ -64,6 +70,7 @@ namespace MarginTrading.CommissionService.Core.Workflow.OnBehalf.Events
             AssetPairId = assetPairId ?? throw new ArgumentNullException(nameof(assetPairId));
             NumberOfActions = numberOfActions;
             Commission = commission;
+            TradingDay = tradingDay;
         }
     }
 }

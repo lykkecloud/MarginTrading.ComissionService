@@ -67,7 +67,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                         reason: evt.Reason,
                         auditLog: null,
                         eventSourceId: evt.OrderId,
-                        assetPairId: evt.AssetPairId),
+                        assetPairId: evt.AssetPairId,
+                        tradingDay: evt.TradingDay),
                     _contextNames.AccountsManagement);
                 
                 _chaosKitty.Meow(evt.OperationId);
@@ -97,10 +98,11 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                         accountId: evt.AccountId,
                         amount: -evt.Commission,
                         reasonType: AccountBalanceChangeReasonTypeContract.OnBehalf,
-                        reason: nameof(OnBehalfCalculatedInternalEvent),
+                        reason: $"OnBehalf commission for order #{evt.OrderId}",
                         auditLog: null,
                         eventSourceId: evt.OrderId,
-                        assetPairId: evt.AssetPairId),
+                        assetPairId: evt.AssetPairId,
+                        tradingDay: evt.TradingDay),
                     _contextNames.AccountsManagement);
                 
                 _chaosKitty.Meow(evt.OperationId);
@@ -128,10 +130,11 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                     accountId: evt.AccountId, 
                     amount: evt.SwapAmount,
                     reasonType: AccountBalanceChangeReasonTypeContract.Swap,
-                    reason: $"OvernightSwap commission: {evt.PositionId}",
+                    reason: $"OvernightSwap commission for position #{evt.PositionId}",
                     auditLog: evt.Details,
                     eventSourceId: evt.PositionId,
-                    assetPairId: evt.AssetPairId),
+                    assetPairId: evt.AssetPairId,
+                    tradingDay: evt.TradingDay),
                 _contextNames.AccountsManagement);
             //todo what if Meow occurs here ?
             
@@ -159,10 +162,11 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                         accountId: evt.AccountId,
                         amount: evt.Pnl,
                         reasonType: AccountBalanceChangeReasonTypeContract.UnrealizedDailyPnL,
-                        reason: nameof(DailyPnlCalculatedInternalEvent),
+                        reason: $"Daily Pnl for account {evt.AccountId}",
                         auditLog: null,
                         eventSourceId: evt.PositionId,
-                        assetPairId: evt.AssetPairId),
+                        assetPairId: evt.AssetPairId,
+                        tradingDay: evt.TradingDay),
                     _contextNames.AccountsManagement);
                 
                 _chaosKitty.Meow(evt.OperationId);
