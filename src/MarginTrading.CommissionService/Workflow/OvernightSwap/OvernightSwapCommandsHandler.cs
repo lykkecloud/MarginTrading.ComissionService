@@ -80,13 +80,15 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                 failed: calculatedSwaps.Count(x => !x.IsSuccess) 
             ));
 
+            var swapsToCharge = calculatedSwaps.Where(x => x.IsSuccess && x.SwapValue > 0);
+
             _threadSwitcher.SwitchThread(() => _overnightSwapListener.TrackCharging(
                 operationId: command.OperationId, 
-                operationIds: calculatedSwaps.Where(x => x.IsSuccess).Select(x => x.Id),
+                operationIds: swapsToCharge.Select(x => x.Id),
                 publisher: publisher
             ));
             
-            foreach(var swap in calculatedSwaps.Where(x => x.IsSuccess))
+            foreach(var swap in swapsToCharge)
             {
                 publisher.PublishEvent(new OvernightSwapCalculatedInternalEvent(
                     operationId: swap.Id,
