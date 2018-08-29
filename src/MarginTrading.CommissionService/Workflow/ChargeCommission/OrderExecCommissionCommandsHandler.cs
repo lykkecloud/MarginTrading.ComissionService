@@ -77,8 +77,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                     assetPairId: command.Instrument,
                     amount: commissionAmount,
                     commissionType: CommissionType.OrderExecution,
-                    reason:
-                    $"{CommissionType.OrderExecution.ToString()} commission for {command.Instrument} order #{command.OrderCode}, id: {command.OrderId}, volume: {command.Volume}"
+                    reason: $"{CommissionType.OrderExecution.ToString()} commission for {command.Instrument} order #{command.OrderCode}, id: {command.OrderId}, volume: {command.Volume}",
+                    tradingDay: command.TradingDay
                 ));
                 
                 _chaosKitty.Meow(command.OperationId);

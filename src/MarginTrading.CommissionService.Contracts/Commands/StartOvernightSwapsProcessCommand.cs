@@ -33,15 +33,23 @@ namespace Lykke.MarginTrading.CommissionService.Contracts.Commands
         /// </summary>
         [Key(3)]
         public int FinancingDaysPerYear { get; }
+        
+        /// <summary>
+        /// Trading day for overnight swaps. If not passed current DateTime.UtcNow will be used.
+        /// </summary>
+        [Key(4)]
+        public DateTime TradingDay { get; }
 
-        public StartOvernightSwapsProcessCommand([NotNull] string operationId, DateTime creationTimestamp,
-            int numberOfFinancingDays = 0, int financingDaysPerYear = 0)
+        public StartOvernightSwapsProcessCommand([NotNull] string operationId, DateTime creationTimestamp, 
+            int numberOfFinancingDays = 0, int financingDaysPerYear = 0, DateTime tradingDay = default)
         {
             OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
             CreationTimestamp = creationTimestamp;
             //TODO this hardcode may be removed after integration is finished
             NumberOfFinancingDays = numberOfFinancingDays > 0 ? numberOfFinancingDays : 1;
             FinancingDaysPerYear = financingDaysPerYear > 0 ? financingDaysPerYear : 365;
+            
+            TradingDay = tradingDay == default ? DateTime.UtcNow : tradingDay;
         }
     }
 }

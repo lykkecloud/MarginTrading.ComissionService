@@ -74,7 +74,8 @@ command.AccountAssetId);
                     orderId: command.OrderId,
                     assetPairId: command.AssetPairId,
                     numberOfActions: result.ActionsNum,
-                    commission: result.Commission
+                    commission: result.Commission,
+                    tradingDay: command.TradingDay
                 ));
                 
                 _chaosKitty.Meow(command.OperationId);

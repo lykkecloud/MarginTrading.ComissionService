@@ -57,17 +57,19 @@ namespace MarginTrading.CommissionService.Services
                     accountId: order.AccountId,
                     accountAssetId: order.AccountAssetId,
                     orderId: order.Id,
-                    assetPairId: order.AssetPairId
+                    assetPairId: order.AssetPairId,
+                    tradingDay: order.ModifiedTimestamp
                 )),
                 //order exec commission
                 _cqrsMessageSender.SendHandleExecutedOrderInternalCommand(new HandleOrderExecInternalCommand(
-                    $"{order.Id}-{OrderExecPostfix}",
-                    order.AccountId.RequiredNotNullOrWhiteSpace(nameof(order.AccountId)),
-                    order.Id.RequiredNotNullOrWhiteSpace(nameof(order.Id)),
-                    order.Code.RequiredGreaterThan(default(long), nameof(order.Code)),
-                    order.AssetPairId.RequiredNotNullOrWhiteSpace(nameof(order.AssetPairId)),
-                    order.LegalEntity.RequiredNotNullOrWhiteSpace(nameof(order.LegalEntity)),
-                    order.Volume.RequiredNotNull(nameof(order.Volume)))
+                    operationId: $"{order.Id}-{OrderExecPostfix}",
+                    accountId: order.AccountId.RequiredNotNullOrWhiteSpace(nameof(order.AccountId)),
+                    orderId: order.Id.RequiredNotNullOrWhiteSpace(nameof(order.Id)),
+                    orderCode: order.Code.RequiredGreaterThan(default(long), nameof(order.Code)),
+                    instrument: order.AssetPairId.RequiredNotNullOrWhiteSpace(nameof(order.AssetPairId)),
+                    legalEntity: order.LegalEntity.RequiredNotNullOrWhiteSpace(nameof(order.LegalEntity)),
+                    volume: order.Volume.RequiredNotNull(nameof(order.Volume)),
+                    tradingDay: order.ModifiedTimestamp)
                 )
             }.ForEach(task => Task.Run(async () =>
             {

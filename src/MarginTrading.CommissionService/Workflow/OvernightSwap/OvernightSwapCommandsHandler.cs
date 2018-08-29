@@ -97,7 +97,8 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     positionId: swap.PositionId,
                     assetPairId: swap.Instrument,
                     swapAmount: swap.SwapValue,
-                    details: swap.Details));
+                    details: swap.Details,
+                    tradingDay: command.TradingDay));
             }
             
             return CommandHandlingResult.Ok();
