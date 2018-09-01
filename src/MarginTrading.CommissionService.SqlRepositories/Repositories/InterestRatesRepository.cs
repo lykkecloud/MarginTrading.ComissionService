@@ -57,5 +57,22 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
                 return data.ToList();
             }
         }
+
+        public async Task<IReadOnlyList<IInterestRate>> GetAllLatest()
+        {
+            using (var conn = new SqlConnection(_settings.Db.StateConnString))
+            {
+                var data = await conn.QueryAsync<InterestRate>(
+                    string.Format(@";with cteRowNumber as (select MdsCode, ClosePrice, Timestamp, row_number() 
+ over(partition by MdsCode order by Timestamp desc) as RowNum
+ from {0}
+ )
+ select MdsCode, ClosePrice, Timestamp
+ from cteRowNumber
+ where RowNum = 1", TableName));
+                
+                return data.ToList();
+            }
+        }
     }
 }
