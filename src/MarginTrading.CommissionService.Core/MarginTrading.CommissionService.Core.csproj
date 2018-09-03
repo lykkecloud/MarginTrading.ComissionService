@@ -15,5 +15,6 @@
     <PackageReference Include="Lykke.RabbitMqBroker" Version="7.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="Lykke.Cqrs" Version="4.6.1" />
+    <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
   </ItemGroup>
 </Project>
