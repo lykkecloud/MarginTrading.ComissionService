@@ -28,8 +28,19 @@ namespace MarginTrading.CommissionService.Services
             _systemClock = systemClock;
         }
         
-        public async Task TrackCharging(string operationId, IEnumerable<string> operationIds, IEventPublisher publisher)
+        public async Task TrackCharging(string operationId, List<string> operationIds, IEventPublisher publisher)
         {
+            if (!operationIds.Any())
+            {
+                publisher.PublishEvent(new OvernightSwapsChargedEvent(
+                    operationId: operationId,
+                    creationTimestamp: _systemClock.UtcNow.UtcDateTime,
+                    total: 0,
+                    failed: 0
+                ));
+                return;
+            }
+            
             await _semaphoreSlim.WaitAsync();
             
             _cache = operationIds.ToDictionary(x => x, x => (bool?)null);

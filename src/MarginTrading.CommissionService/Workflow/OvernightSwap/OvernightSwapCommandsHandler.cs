@@ -84,7 +84,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
 
             _threadSwitcher.SwitchThread(() => _overnightSwapListener.TrackCharging(
                 operationId: command.OperationId, 
-                operationIds: swapsToCharge.Select(x => x.Id),
+                operationIds: swapsToCharge.Select(x => x.Id).ToList(),
                 publisher: publisher
             ));
             

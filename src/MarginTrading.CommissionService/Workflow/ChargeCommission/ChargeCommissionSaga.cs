@@ -115,9 +115,9 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         /// Send charge command to AccountManagement service
         /// </summary>
         [UsedImplicitly]
-        private void Handle(OvernightSwapCalculatedInternalEvent evt, ICommandSender sender)
+        private async Task Handle(OvernightSwapCalculatedInternalEvent evt, ICommandSender sender)
         {
-            if (!_overnightSwapService.CheckPositionOperationIsNew(evt.OperationId).GetAwaiter().GetResult())
+            if (!await _overnightSwapService.CheckPositionOperationIsNew(evt.OperationId))
             {
                 _log.WriteInfo(nameof(ChargeCommissionSaga), nameof(Handle), 
                     $"Duplicate OvernightSwapCalculatedInternalEvent arrived with OperationId = {evt.OperationId}");
@@ -138,7 +138,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 _contextNames.AccountsManagement);
             //todo what if Meow occurs here ?
             
-            _overnightSwapService.SetWasCharged(evt.OperationId).GetAwaiter().GetResult();
+            await _overnightSwapService.SetWasCharged(evt.OperationId);
         }
         
         /// <summary>
