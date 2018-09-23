@@ -10,6 +10,8 @@ using JetBrains.Annotations;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Logs;
+using Lykke.Logs.MsSql;
+using Lykke.Logs.MsSql.Repositories;
 using Lykke.MarginTrading.CommissionService.Contracts.Api;
 using Lykke.SettingsReader;
 using MarginTrading.Backend.Contracts.Events;
