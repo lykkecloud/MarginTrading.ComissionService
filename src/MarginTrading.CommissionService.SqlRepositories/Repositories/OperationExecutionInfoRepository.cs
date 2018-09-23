@@ -21,7 +21,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
     {
         private const string TableName = "CommissionExecutionInfo";
         private const string CreateTableScript = "CREATE TABLE [{0}](" +
-                                                 "[Id] [nvarchar] (64) NOT NULL PRIMARY KEY," +
+                                                 "[Id] [nvarchar] (128) NOT NULL PRIMARY KEY," +
                                                  "[LastModified] [datetime] NOT NULL, " +
                                                  "[OperationName] [nvarchar] (64) NULL, " +
                                                  "[Version] [nvarchar] (64) NULL, " +
