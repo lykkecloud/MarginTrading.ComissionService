@@ -16,19 +16,16 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         public const string OperationName = "ExecutedOrderCommission";
         private readonly ICommissionCalcService _commissionCalcService;
         private readonly IChaosKitty _chaosKitty;
-        private readonly IConvertService _convertService;
         private readonly IOperationExecutionInfoRepository _executionInfoRepository;
         private readonly ISystemClock _systemClock;
 
         public OrderExecCommissionCommandsHandler(ICommissionCalcService commissionCalcService,
             IChaosKitty chaosKitty, 
-            IConvertService convertService,
             IOperationExecutionInfoRepository executionInfoRepository,
             ISystemClock systemClock)
         {
             _commissionCalcService = commissionCalcService;
             _chaosKitty = chaosKitty;
-            _convertService = convertService;
             _executionInfoRepository = executionInfoRepository;
             _systemClock = systemClock;
         }
@@ -59,7 +56,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                         State = CommissionOperationState.Initiated,
                     }
                 ));
-            
+
             if (ChargeCommissionSaga.SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
                 CommissionOperationState.Started))
             {
@@ -68,8 +65,6 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
 
                 //no failure handling.. so operation will be retried on fail
 
-                _chaosKitty.Meow(command.OperationId);
-
                 publisher.PublishEvent(new OrderExecCommissionCalculatedInternalEvent(
                     operationId: command.OperationId,
                     accountId: command.AccountId,
@@ -77,7 +72,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                     assetPairId: command.Instrument,
                     amount: commissionAmount,
                     commissionType: CommissionType.OrderExecution,
-                    reason: $"{CommissionType.OrderExecution.ToString()} commission for {command.Instrument} order #{command.OrderCode}, id: {command.OrderId}, volume: {command.Volume}",
+                    reason:
+                    $"{CommissionType.OrderExecution.ToString()} commission for {command.Instrument} order #{command.OrderCode}, id: {command.OrderId}, volume: {command.Volume}",
                     tradingDay: command.TradingDay
                 ));
                 

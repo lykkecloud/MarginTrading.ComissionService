@@ -136,7 +136,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                     assetPairId: evt.AssetPairId,
                     tradingDay: evt.TradingDay),
                 _contextNames.AccountsManagement);
-            //todo what if Meow occurs here ?
+            
+            _chaosKitty.Meow(evt.OperationId);
             
             _overnightSwapService.SetWasCharged(evt.OperationId).GetAwaiter().GetResult();
         }

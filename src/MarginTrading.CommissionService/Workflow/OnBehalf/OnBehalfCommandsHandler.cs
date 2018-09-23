@@ -59,13 +59,12 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
                 CommissionOperationState.Started))
             {
                 var result = await _commissionCalcService.CalculateOnBehalfCommissionAsync(command.OrderId,
-command.AccountAssetId);
+                    command.AccountAssetId);
+                
                 if (result.Commission == 0)
                     return CommandHandlingResult.Ok();
 
                 //no failure handling.. so operation will be retried on fail
-
-                _chaosKitty.Meow(command.OperationId);
 
                 publisher.PublishEvent(new OnBehalfCalculatedInternalEvent(
                     operationId: command.OperationId,
@@ -77,12 +76,12 @@ command.AccountAssetId);
                     commission: result.Commission,
                     tradingDay: command.TradingDay
                 ));
-                
+
                 _chaosKitty.Meow(command.OperationId);
-                
+
                 await _executionInfoRepository.Save(executionInfo);
             }
-            
+
             return CommandHandlingResult.Ok();
         }
     }

@@ -96,11 +96,15 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     failed: 0 //todo not implemented: check
                 ));
 
+                _chaosKitty.Meow(command.OperationId);
+
                 _threadSwitcher.SwitchThread(() => _dailyPnlListener.TrackCharging(
                     operationId: command.OperationId, 
                     operationIds: calculatedPnLs.Select(x => x.Id), 
                     publisher: publisher
                 ));
+
+                _chaosKitty.Meow(command.OperationId);
 
                 foreach (var pnl in calculatedPnLs)
                 {
@@ -131,7 +135,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                         fxRate: pnl.FxRate
                     ));
 
-                    _chaosKitty.Meow(nameof(OvernightSwapCommandsHandler));
+                    _chaosKitty.Meow(pnl.GetId());
                 }
                 
                 await _executionInfoRepository.Save(executionInfo);
