@@ -135,7 +135,8 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                         fxRate: pnl.FxRate
                     ));
 
-                    _chaosKitty.Meow(pnl.GetId());
+                    //todo think about it
+                    //_chaosKitty.Meow(pnl.GetId());
                 }
                 
                 await _executionInfoRepository.Save(executionInfo);
