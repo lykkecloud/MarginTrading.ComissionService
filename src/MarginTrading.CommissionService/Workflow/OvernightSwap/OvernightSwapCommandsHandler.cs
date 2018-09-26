@@ -84,13 +84,14 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
 
             var swapsToCharge = calculatedSwaps.Where(x => x.IsSuccess && x.SwapValue > 0);
 
+            //TODO: replace in-memory tracking by subscription on event
             _threadSwitcher.SwitchThread(() => _overnightSwapListener.TrackCharging(
                 operationId: command.OperationId, 
                 operationIds: swapsToCharge.Select(x => x.Id),
                 publisher: publisher
             ));
             
-            _chaosKitty.Meow(command.OperationId);
+            //_chaosKitty.Meow(command.OperationId);
             
             foreach(var swap in swapsToCharge)
             {
@@ -105,7 +106,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     tradingDay: command.TradingDay));
             }
             
-            _chaosKitty.Meow(command.OperationId);
+            //_chaosKitty.Meow(command.OperationId);
             
             return CommandHandlingResult.Ok();
         }

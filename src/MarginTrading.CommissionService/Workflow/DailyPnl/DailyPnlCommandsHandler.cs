@@ -98,13 +98,14 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
 
                 _chaosKitty.Meow(command.OperationId);
 
+                //TODO: replace in-memory tracking by subscription on event 
                 _threadSwitcher.SwitchThread(() => _dailyPnlListener.TrackCharging(
                     operationId: command.OperationId, 
                     operationIds: calculatedPnLs.Select(x => x.Id), 
                     publisher: publisher
                 ));
 
-                _chaosKitty.Meow(command.OperationId);
+                //_chaosKitty.Meow(command.OperationId);
 
                 foreach (var pnl in calculatedPnLs)
                 {
