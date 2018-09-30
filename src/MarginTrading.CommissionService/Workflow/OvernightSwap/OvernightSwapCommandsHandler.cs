@@ -87,7 +87,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
             //TODO: replace in-memory tracking by subscription on event
             _threadSwitcher.SwitchThread(() => _overnightSwapListener.TrackCharging(
                 operationId: command.OperationId, 
-                operationIds: swapsToCharge.Select(x => x.Id),
+                operationIds: swapsToCharge.Select(x => x.Id).ToList(),
                 publisher: publisher
             ));
             
