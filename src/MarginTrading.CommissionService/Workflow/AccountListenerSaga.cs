@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using JetBrains.Annotations;
+using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using MarginTrading.AccountsManagement.Contracts.Events;
 using MarginTrading.AccountsManagement.Contracts.Models;
@@ -15,15 +16,19 @@ namespace MarginTrading.CommissionService.Workflow
         private readonly IEventChannel<DailyPnlChargedEventArgs> _dailyPnlChargedEventChannel;
         private readonly IEventChannel<OvernightSwapChargedEventArgs> _overnightSwapChargedEventChannel;
         private readonly IEventChannel<OvernightSwapChargeFailedEventArgs> _overnightSwapChargeFailedEventChannel;
+
+        private readonly IChaosKitty _chaosKitty;
         
         public AccountListenerSaga(
             IEventChannel<DailyPnlChargedEventArgs> dailyPnlChargedEventChannel,
             IEventChannel<OvernightSwapChargedEventArgs> overnightSwapChargedEventChannel,
-            IEventChannel<OvernightSwapChargeFailedEventArgs> overnightSwapChargeFailedEventChannel)
+            IEventChannel<OvernightSwapChargeFailedEventArgs> overnightSwapChargeFailedEventChannel,
+            IChaosKitty chaosKitty)
         {
             _dailyPnlChargedEventChannel = dailyPnlChargedEventChannel;
             _overnightSwapChargedEventChannel = overnightSwapChargedEventChannel;
             _overnightSwapChargeFailedEventChannel = overnightSwapChargeFailedEventChannel;
+            _chaosKitty = chaosKitty;
         }
 
         /// <summary>
@@ -53,6 +58,8 @@ namespace MarginTrading.CommissionService.Workflow
                     });
                     break;
             }
+            
+            _chaosKitty.Meow(evt.BalanceChange.Id);
         }
 
         /// <summary>
@@ -65,6 +72,8 @@ namespace MarginTrading.CommissionService.Workflow
             {
                 OperationId = evt.OperationId,
             });
+            
+            _chaosKitty.Meow(evt.OperationId);
         }
     }
 }
