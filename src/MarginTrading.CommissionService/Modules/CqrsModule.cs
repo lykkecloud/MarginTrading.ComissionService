@@ -20,6 +20,7 @@ using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Events;
 using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
+using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Workflow;
 using MarginTrading.CommissionService.Workflow.ChargeCommission;
 using MarginTrading.CommissionService.Workflow.OnBehalf;
@@ -55,17 +56,23 @@ namespace MarginTrading.CommissionService.Modules
             {
                 Uri = _settings.ConnectionString
             };
-            var messagingEngine = new MessagingEngine(_log,
-                new TransportResolver(new Dictionary<string, TransportInfo>
-                {
+           
+            var messagingEngine= new DefaultHeadersMessagingEngine(
+                new MessagingEngine(_log,
+                    new TransportResolver(new Dictionary<string, TransportInfo>
                     {
-                        "RabbitMq",
-                        new TransportInfo(rabbitMqSettings.Endpoint.ToString(), rabbitMqSettings.UserName,
-                            rabbitMqSettings.Password, "None", "RabbitMq")
-                    }
-                }),
-                new RabbitMqTransportFactory());
-
+                        {
+                            "RabbitMq",
+                            new TransportInfo(rabbitMqSettings.Endpoint.ToString(), rabbitMqSettings.UserName,
+                                rabbitMqSettings.Password, "None", "RabbitMq")
+                        }
+                    }),
+                    new RabbitMqTransportFactory()),
+                new Dictionary<string, string>()
+                {
+                    { "Content-Type", "application/vnd.lykke+msgpack" }
+                });
+            
             // Sagas & command handlers
             builder.RegisterAssemblyTypes(GetType().Assembly)
                 .Where(t => t.Name.EndsWith("Saga") || t.Name.EndsWith("CommandsHandler"))
