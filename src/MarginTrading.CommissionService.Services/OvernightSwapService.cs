@@ -137,6 +137,8 @@ namespace MarginTrading.CommissionService.Services
 					{
 						resultingCalculations.Add(await ProcessPosition(position, null, operationId, 
 							numberOfFinancingDays, financingDaysPerYear, ex));
+						await _log.WriteErrorAsync(nameof(OvernightSwapService), nameof(Calculate),
+							$"Calculation failed for position: {position?.ToJson()}. Operation : {operationId}", ex);
 					}
 				}
 				
