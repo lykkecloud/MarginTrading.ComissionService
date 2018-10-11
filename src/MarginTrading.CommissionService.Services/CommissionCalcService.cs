@@ -51,8 +51,8 @@ namespace MarginTrading.CommissionService.Services
                                     openPosition.AssetPairId, assetPair.LegalEntity)
                                 * Math.Abs(openPosition.CurrentVolume);
 
-            interestRates.TryGetValue(rateSettings.VariableRateBase, out var variableRateBase);
-            interestRates.TryGetValue(rateSettings.VariableRateQuote, out var variableRateQuote);
+            interestRates.TryGetValue(rateSettings.VariableRateBase ?? string.Empty, out var variableRateBase);
+            interestRates.TryGetValue(rateSettings.VariableRateQuote ?? string.Empty, out var variableRateQuote);
             
             var financingRate = - rateSettings.FixRate
                 - (openPosition.Direction == PositionDirection.Short ? rateSettings.RepoSurchargePercent : 0)

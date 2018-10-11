@@ -141,7 +141,8 @@ namespace MarginTrading.CommissionService.Services
             if (cachedData == null)
             {
                 var repoData = await RefreshRedisFromRepo((List<OvernightSwapRate>)null);
-                if (repoData == null || !repoData.Exists(x => x.AssetPairId == assetPairId))
+                cachedData = repoData?.FirstOrDefault(x => x.AssetPairId == assetPairId);
+                if (cachedData == null)
                 {
                     await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOvernightSwapRate),
                         $"No overnight swap rate for {assetPairId}. Using the default one.");
