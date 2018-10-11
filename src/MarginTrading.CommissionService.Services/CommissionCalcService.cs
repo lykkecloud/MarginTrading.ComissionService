@@ -59,7 +59,7 @@ namespace MarginTrading.CommissionService.Services
                 + (variableRateBase - variableRateQuote)
                               * (openPosition.Direction == PositionDirection.Long ? 1 : -1);
 
-            var dayFactor = numberOfFinancingDays / financingDaysPerYear;
+            var dayFactor = (decimal) numberOfFinancingDays / financingDaysPerYear;
 
             return (calculationBasis * financingRate * dayFactor,
                 new
