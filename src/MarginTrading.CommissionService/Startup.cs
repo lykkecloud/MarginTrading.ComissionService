@@ -127,7 +127,7 @@ namespace MarginTrading.CommissionService
             }
         }
 
-        private async Task StartApplication()
+        private Task StartApplication()
         {
             try
             {
@@ -165,6 +165,8 @@ namespace MarginTrading.CommissionService
                 Log?.WriteFatalErrorAsync(nameof(Startup), nameof(StartApplication), "", ex).Wait();
                 throw;
             }
+            
+            return Task.CompletedTask;
         }
 
         private async Task StopApplication()

@@ -12,7 +12,8 @@ namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Command
     {
         public HandleOrderExecInternalCommand([NotNull] string operationId,
             [NotNull] string accountId, [NotNull] string orderId, long orderCode, 
-            [NotNull] string instrument, [NotNull] string legalEntity, decimal volume, DateTime tradingDay)
+            [NotNull] string instrument, [NotNull] string legalEntity, decimal volume, 
+            DateTime tradingDay, decimal orderExecutionPrice)
         {
             OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
             AccountId = accountId ?? throw new ArgumentNullException(nameof(accountId));
@@ -21,6 +22,7 @@ namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Command
             Instrument = instrument ?? throw new ArgumentNullException(nameof(instrument));
             LegalEntity = legalEntity ?? throw new ArgumentNullException(nameof(legalEntity));
             Volume = volume;
+            OrderExecutionPrice = orderExecutionPrice;
             TradingDay = tradingDay == default ? DateTime.UtcNow : tradingDay;
         }
 
@@ -73,5 +75,11 @@ namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Command
         /// </summary>
         [Key(7)]
         public DateTime TradingDay { get; }
+        
+        /// <summary>
+        /// Order execution price
+        /// </summary>
+        [Key(8)]
+        public decimal OrderExecutionPrice { get; }
     }
 }
