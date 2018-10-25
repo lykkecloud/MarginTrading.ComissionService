@@ -22,6 +22,7 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
         public decimal SwapValue { get; set; }
         public string PositionId { get; set; }
         public string Details { get; set; }
+        public DateTime TradingDay { get; set; }
 
         public bool IsSuccess { get; set; }
         public string Exception { get; set; }
@@ -45,6 +46,7 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
                 SwapValue = obj.SwapValue,
                 PositionId = obj.PositionId,
                 Details = obj.Details,
+                TradingDay = obj.TradingDay,
                 IsSuccess = obj.IsSuccess,
                 Exception = JsonConvert.SerializeObject(obj.Exception),
                 WasCharged = false,

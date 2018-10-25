@@ -14,6 +14,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts.Models
         decimal Value { get; }
         decimal SwapRate { get; }
         List<string> OpenOrderIds { get; }
+        DateTime TradingDay { get; }
         
         bool IsSuccess { get; }
         Exception Exception { get; }
