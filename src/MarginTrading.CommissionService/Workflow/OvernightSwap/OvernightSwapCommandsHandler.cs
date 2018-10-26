@@ -56,8 +56,8 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                 return CommandHandlingResult.Ok(); //idempotency violated - no need to retry
             }
 
-            var yesterday = DateTime.UtcNow.Date.AddDays(-1);
-            if (command.TradingDay < yesterday)
+            var now = _systemClock.UtcNow.UtcDateTime;
+            if (command.TradingDay < now.Date.AddDays(-1) || command.TradingDay > now)
             {
                 publisher.PublishEvent(new OvernightSwapsStartFailedEvent(
                     operationId: command.OperationId,
