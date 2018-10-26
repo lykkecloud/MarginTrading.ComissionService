@@ -80,7 +80,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     creationTimestamp: _systemClock.UtcNow.UtcDateTime,
                     failReason: exception.Message
                 ));
-                await _log.WriteErrorAsync(nameof(DailyPnlCommandsHandler), nameof(Handle), exception, _systemClock.UtcNow.UtcDateTime);
+                await _log.WriteErrorAsync(nameof(OvernightSwapCommandsHandler), nameof(Handle), exception, _systemClock.UtcNow.UtcDateTime);
                 return CommandHandlingResult.Ok();//no retries
             }
             
