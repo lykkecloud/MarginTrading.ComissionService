@@ -46,10 +46,10 @@ namespace MarginTrading.CommissionService.Services
         {
             var rateSettings = await _rateSettingsService.GetOvernightSwapRate(assetPair.Id);
             var account = await _accountRedisCache.GetAccount(openPosition.AccountId);
-            
-            var calculationBasis = _cfdCalculatorService.GetQuoteRateForQuoteAsset(account.BaseAssetId,
-                                    openPosition.AssetPairId, assetPair.LegalEntity)
-                                * Math.Abs(openPosition.CurrentVolume);
+
+            var calculationBasis = _cfdCalculatorService.GetFxRateForAssetPair(account.BaseAssetId,
+                                       openPosition.AssetPairId, assetPair.LegalEntity)
+                                   * Math.Abs(openPosition.CurrentVolume) * openPosition.ClosePrice;
 
             interestRates.TryGetValue(rateSettings.VariableRateBase ?? string.Empty, out var variableRateBase);
             interestRates.TryGetValue(rateSettings.VariableRateQuote ?? string.Empty, out var variableRateQuote);
@@ -72,16 +72,16 @@ namespace MarginTrading.CommissionService.Services
             );
         }
 
-        public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument, 
-            string legalEntity, decimal volume)
+        public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument,
+            string legalEntity, decimal volume, decimal orderExecutionPrice)
         {
             var rateSettings = await _rateSettingsService.GetOrderExecutionRate(instrument);
             var account = await _accountRedisCache.GetAccount(accountId);
 
-            var volumeInCommissionAsset = _cfdCalculatorService.GetQuoteRateForQuoteAsset(rateSettings.CommissionAsset,
-                                    instrument, legalEntity)
-                                * Math.Abs(volume);
-            var commissionToAccountRate = _cfdCalculatorService.GetQuote(rateSettings.CommissionAsset, 
+            var volumeInCommissionAsset = _cfdCalculatorService.GetFxRateForAssetPair(rateSettings.CommissionAsset,
+                                              instrument, legalEntity)
+                                          * Math.Abs(volume) * orderExecutionPrice;
+            var commissionToAccountRate = _cfdCalculatorService.GetFxRate(rateSettings.CommissionAsset, 
                 account.BaseAssetId, rateSettings.LegalEntity);
             
             var commission = Math.Min(
@@ -114,7 +114,7 @@ namespace MarginTrading.CommissionService.Services
             var rateSettings = await _rateSettingsService.GetOnBehalfRate(); 
             
             //use fx rates to convert to account asset
-            var quote = _cfdCalculatorService.GetQuote(rateSettings.CommissionAsset, accountAssetId, 
+            var quote = _cfdCalculatorService.GetFxRate(rateSettings.CommissionAsset, accountAssetId, 
                 rateSettings.LegalEntity);
             
             //calculate commission

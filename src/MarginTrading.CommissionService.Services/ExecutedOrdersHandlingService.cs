@@ -69,7 +69,8 @@ namespace MarginTrading.CommissionService.Services
                     instrument: order.AssetPairId.RequiredNotNullOrWhiteSpace(nameof(order.AssetPairId)),
                     legalEntity: order.LegalEntity.RequiredNotNullOrWhiteSpace(nameof(order.LegalEntity)),
                     volume: order.Volume.RequiredNotNull(nameof(order.Volume)),
-                    tradingDay: order.ModifiedTimestamp)
+                    tradingDay: order.ModifiedTimestamp,
+                    orderExecutionPrice: order.ExecutionPrice.RequiredNotNull(nameof(order.ExecutionPrice)))
                 )
             }.ForEach(task => Task.Run(async () =>
             {
