@@ -15,6 +15,7 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
         decimal SwapValue { get; }
         string PositionId { get; }
         string Details { get; }
+        DateTime TradingDay { get; }
         
         bool IsSuccess { get; }
         Exception Exception { get; }
