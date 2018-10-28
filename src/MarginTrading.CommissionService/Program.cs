@@ -2,11 +2,13 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.PlatformAbstractions;
 
 namespace MarginTrading.CommissionService
 {
+    [UsedImplicitly]
     class Program
     {
         static void Main()

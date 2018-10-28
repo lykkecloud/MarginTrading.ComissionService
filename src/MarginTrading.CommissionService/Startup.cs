@@ -12,6 +12,7 @@ using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Logs;
 using Lykke.Logs.MsSql;
 using Lykke.Logs.MsSql.Repositories;
+using Lykke.Logs.Serilog;
 using Lykke.MarginTrading.CommissionService.Contracts.Api;
 using Lykke.SettingsReader;
 using MarginTrading.Backend.Contracts.Events;
@@ -47,6 +48,7 @@ namespace MarginTrading.CommissionService
                 {
                     {"SettingsUrl", Path.Combine(env.ContentRootPath, "appsettings.dev.json")}
                 })
+                .AddSerilogJson(env)
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
             Environment = env;
@@ -78,7 +80,7 @@ namespace MarginTrading.CommissionService
 
                 var builder = new ContainerBuilder();
                 var appSettings = Configuration.LoadSettings<AppSettings>();
-                Log = CreateLog(services, appSettings);
+                Log = CreateLog(Configuration, services, appSettings);
 
                 builder.RegisterModule(new CommissionServiceModule(appSettings, Log));
                 builder.RegisterModule(new CommissionServiceExternalModule(appSettings));
@@ -211,14 +213,19 @@ namespace MarginTrading.CommissionService
             }
         }
 
-        private static ILog CreateLog(IServiceCollection services, IReloadingManager<AppSettings> settings)
+        private static ILog CreateLog(IConfiguration configuration, IServiceCollection services, 
+            IReloadingManager<AppSettings> settings)
         {
             var consoleLogger = new LogToConsole();
             var aggregateLogger = new AggregateLogger();
 
             aggregateLogger.AddLog(consoleLogger);
 
-            if (settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.SqlServer)
+            if (settings.CurrentValue.CommissionService.UseSerilog)
+            {
+                aggregateLogger.AddLog(new SerilogLogger(typeof(Startup).Assembly, configuration));
+            }
+            else if (settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.SqlServer)
             {
                 aggregateLogger.AddLog(new LogToSql(new SqlLogRepository("CommissionServiceLog",
                     settings.CurrentValue.CommissionService.Db.LogsConnString)));
