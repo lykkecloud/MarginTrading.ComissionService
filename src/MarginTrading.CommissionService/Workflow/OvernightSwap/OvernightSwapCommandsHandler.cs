@@ -56,11 +56,22 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                 return CommandHandlingResult.Ok(); //idempotency violated - no need to retry
             }
 
+            var now = _systemClock.UtcNow.UtcDateTime;
+            if (command.TradingDay < now.Date.AddDays(-1) || command.TradingDay > now)
+            {
+                publisher.PublishEvent(new OvernightSwapsStartFailedEvent(
+                    operationId: command.OperationId,
+                    creationTimestamp: _systemClock.UtcNow.UtcDateTime,
+                    failReason: $"TradingDay {command.TradingDay} is invalid. Must be today or yesterday."
+                ));
+                return CommandHandlingResult.Ok();//no retries 
+            }
+
             IReadOnlyList<IOvernightSwapCalculation> calculatedSwaps = null;
             try
             {
                 calculatedSwaps = await _overnightSwapService.Calculate(command.OperationId, command.CreationTimestamp, 
-                    command.NumberOfFinancingDays, command.FinancingDaysPerYear);
+                    command.NumberOfFinancingDays, command.FinancingDaysPerYear, command.TradingDay);
             }
             catch (Exception exception)
             {
@@ -69,7 +80,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     creationTimestamp: _systemClock.UtcNow.UtcDateTime,
                     failReason: exception.Message
                 ));
-                await _log.WriteErrorAsync(nameof(DailyPnlCommandsHandler), nameof(Handle), exception, _systemClock.UtcNow.UtcDateTime);
+                await _log.WriteErrorAsync(nameof(OvernightSwapCommandsHandler), nameof(Handle), exception, _systemClock.UtcNow.UtcDateTime);
                 return CommandHandlingResult.Ok();//no retries
             }
             

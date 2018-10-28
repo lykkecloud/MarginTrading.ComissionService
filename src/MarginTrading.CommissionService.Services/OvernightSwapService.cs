@@ -77,17 +77,26 @@ namespace MarginTrading.CommissionService.Services
 		/// Filter orders that are already calculated
 		/// </summary>
 		/// <returns></returns>
-		private async Task<IReadOnlyList<OpenPosition>> GetOrdersForCalculationAsync()
+		private async Task<IReadOnlyList<OpenPosition>> GetOrdersForCalculationAsync(DateTime tradingDay)
 		{
 			var openPositions = (await _positionReceiveService.GetActive()).ToList();
 			
-			//prepare the list of orders
-			var lastInvocationTime = CalcLastInvocationTime();
+			//prepare the list of orders. Explicit end of the day is ok for DateTime From by requirements.
+			var allLast = await _overnightSwapHistoryRepository.GetAsync(tradingDay, null);
 
-			var allLast = await _overnightSwapHistoryRepository.GetAsync(lastInvocationTime, null);
+			if (allLast.Any())
+			{
+				var lastMaxCalcTime = allLast.Max(x => x.TradingDay);
+				
+				if (lastMaxCalcTime.Date > tradingDay)
+				{
+					throw new Exception($"Calculation started for {tradingDay:d}, but there already was calculation for a newer date {lastMaxCalcTime:d}");
+				}
+			}
+			
 			var calculatedIds = allLast.Where(x => x.IsSuccess).Select(x => x.PositionId).ToHashSet();
 			//select only non-calculated positions, changed before current invocation time
-			var filteredOrders = openPositions.Where(x => !calculatedIds.Contains(x.Id));
+			var filteredOrders = openPositions.Where(x => !calculatedIds.Contains(x.Id) && x.OpenTimestamp > tradingDay);
 
 			//detect orders for which last calculation failed and it was closed
 			var failedClosedOrders = allLast.Where(x => !x.IsSuccess)
@@ -104,11 +113,11 @@ namespace MarginTrading.CommissionService.Services
 		}
 
 		public async Task<IReadOnlyList<IOvernightSwapCalculation>> Calculate(string operationId,
-			DateTime creationTimestamp, int numberOfFinancingDays, int financingDaysPerYear)
+			DateTime creationTimestamp, int numberOfFinancingDays, int financingDaysPerYear, DateTime tradingDay)
 		{
 			_currentStartTimestamp = _systemClock.UtcNow.DateTime;
 
-			var filteredPositions = await GetOrdersForCalculationAsync();
+			var filteredPositions = await GetOrdersForCalculationAsync(tradingDay);
 			
 			await _semaphore.WaitAsync();
 
@@ -129,14 +138,14 @@ namespace MarginTrading.CommissionService.Services
 					{
 						var assetPair = assetPairs.First(x => x.Id == position.AssetPairId);
 						var calculation = await ProcessPosition(position, assetPair, operationId, 
-							numberOfFinancingDays, financingDaysPerYear);
+							numberOfFinancingDays, financingDaysPerYear, tradingDay);
 						if(calculation != null)
 							resultingCalculations.Add(calculation);
 					}
 					catch (Exception ex)
 					{
 						resultingCalculations.Add(await ProcessPosition(position, null, operationId, 
-							numberOfFinancingDays, financingDaysPerYear, ex));
+							numberOfFinancingDays, financingDaysPerYear, tradingDay, ex));
 						await _log.WriteErrorAsync(nameof(OvernightSwapService), nameof(Calculate),
 							$"Calculation failed for position: {position?.ToJson()}. Operation : {operationId}", ex);
 					}
@@ -157,7 +166,8 @@ namespace MarginTrading.CommissionService.Services
 		/// Calculate overnight swap
 		/// </summary>
 		private async Task<IOvernightSwapCalculation> ProcessPosition(IOpenPosition position, IAssetPair assetPair,
-			string operationId, int numberOfFinancingDays, int financingDaysPerYear, Exception exception = null)
+			string operationId, int numberOfFinancingDays, int financingDaysPerYear, DateTime tradingDay,
+			Exception exception = null)
 		{
 			IOvernightSwapCalculation calculation;
 			
@@ -176,6 +186,7 @@ namespace MarginTrading.CommissionService.Services
 					swapValue: swapData.Swap,
 					positionId: position.Id,
 					details: swapData.Details,
+					tradingDay: tradingDay,
 					isSuccess: true);
 			}
 			else
@@ -190,6 +201,7 @@ namespace MarginTrading.CommissionService.Services
 					swapValue: default,
 					positionId: position.Id,
 					details: null,
+					tradingDay: tradingDay,
 					isSuccess: false,
 					exception: exception);
 			}
@@ -197,21 +209,6 @@ namespace MarginTrading.CommissionService.Services
 			await _overnightSwapHistoryRepository.AddAsync(calculation);
 			
 			return calculation;
-		}
-
-		/// <summary>
-		/// Return last invocation time.
-		/// </summary>
-		private DateTime CalcLastInvocationTime()
-		{
-			var dt = _currentStartTimestamp;
-			(int Hours, int Minutes) settingsCalcTime = (_marginSettings.CurrentValue.EodSettings.EndOfDayTime.Hours,
-				_marginSettings.CurrentValue.EodSettings.EndOfDayTime.Minutes);
-			
-			var result = new DateTime(dt.Year, dt.Month, dt.Day, settingsCalcTime.Hours, settingsCalcTime.Minutes, 0)
-				.AddDays(dt.Hour > settingsCalcTime.Hours || (dt.Hour == settingsCalcTime.Hours && dt.Minute >= settingsCalcTime.Minutes) 
-					? 0 : -1);
-			return result;
 		}
 
 		public async Task<bool> CheckOperationIsNew(string operationId)

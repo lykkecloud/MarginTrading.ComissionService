@@ -21,8 +21,6 @@ namespace MarginTrading.CommissionService.Core.Settings
         public ChaosSettings ChaosKitty { get; set; }
         
         public DefaultRateSettings DefaultRateSettings { get; set; }
-        
-        public EodSettings EodSettings { get; set; }
 
         [UsedImplicitly(ImplicitUseKindFlags.Assign)]
         public RedisSettings RedisSettings { get; set; }

@@ -32,7 +32,8 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
                                                  "[IsSuccess] [bit] NOT NULL, " +
                                                  "[Exception] [nvarchar] (MAX) NULL," +
                                                  "[WasCharged] [bit] NOT NULL," +
-                                                 "INDEX IX_OSH NONCLUSTERED (OperationId, PositionId, WasCharged)" +
+                                                 "[TradingDay] [DATETIME] NOT NULL," +
+                                                 "INDEX IX_OSH NONCLUSTERED (Time, TradingDay, AccountId, OperationId, PositionId, WasCharged)" +
                                                  ");";
         
         private static Type DataType => typeof(IOvernightSwapCalculation);

@@ -49,7 +49,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts.Commands
             NumberOfFinancingDays = numberOfFinancingDays > 0 ? numberOfFinancingDays : 1;
             FinancingDaysPerYear = financingDaysPerYear > 0 ? financingDaysPerYear : 365;
             
-            TradingDay = tradingDay == default ? DateTime.UtcNow : tradingDay;
+            TradingDay = tradingDay == default ? DateTime.UtcNow.Date : tradingDay.Date;
         }
     }
 }
