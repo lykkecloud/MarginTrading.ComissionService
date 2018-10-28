@@ -12,6 +12,7 @@ using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Logs;
 using Lykke.Logs.MsSql;
 using Lykke.Logs.MsSql.Repositories;
+using Lykke.Logs.Serilog;
 using Lykke.MarginTrading.CommissionService.Contracts.Api;
 using Lykke.SettingsReader;
 using MarginTrading.Backend.Contracts.Events;
@@ -39,25 +40,21 @@ namespace MarginTrading.CommissionService
 {
     public class Startup
     {
-        public Startup(IHostingEnvironment env)
-        {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
-                .AddInMemoryCollection(new Dictionary<string, string>
-                {
-                    {"SettingsUrl", Path.Combine(env.ContentRootPath, "appsettings.dev.json")}
-                })
-                .AddEnvironmentVariables();
-            Configuration = builder.Build();
-            Environment = env;
-        }
-
         public static string ServiceName { get; } = PlatformServices.Default.Application.ApplicationName;
 
         private IHostingEnvironment Environment { get; }
         private IContainer ApplicationContainer { get; set; }
         private IConfigurationRoot Configuration { get; }
         [CanBeNull] private ILog Log { get; set; }
+        
+        public Startup(IHostingEnvironment env)
+        {
+            Configuration = new ConfigurationBuilder()
+                .SetBasePath(env.ContentRootPath)
+                .AddEnvironmentVariables()
+                .Build();
+            Environment = env;
+        }
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
@@ -78,7 +75,7 @@ namespace MarginTrading.CommissionService
 
                 var builder = new ContainerBuilder();
                 var appSettings = Configuration.LoadSettings<AppSettings>();
-                Log = CreateLog(services, appSettings);
+                Log = CreateLog(Configuration, services, appSettings);
 
                 builder.RegisterModule(new CommissionServiceModule(appSettings, Log));
                 builder.RegisterModule(new CommissionServiceExternalModule(appSettings));
@@ -96,6 +93,7 @@ namespace MarginTrading.CommissionService
             }
         }
 
+        [UsedImplicitly]
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
         {
             try
@@ -104,13 +102,10 @@ namespace MarginTrading.CommissionService
                 {
                     app.UseDeveloperExceptionPage();
                 }
-
-#if DEBUG
-                app.UseLykkeMiddleware(ServiceName, ex => ex.ToString());
-#else
-                app.UseLykkeMiddleware(ServiceName, ex => new ErrorResponse {ErrorMessage = "Technical problem", Details
- = ex.Message});
-#endif
+                else
+                {
+                    app.UseHsts();
+                }
                 
                 app.UseMvc();
                 app.UseSwagger();
@@ -190,7 +185,7 @@ namespace MarginTrading.CommissionService
         {
             try
             {
-                // NOTE: Service can't recieve and process requests here, so you can destroy all resources
+                // NOTE: Service can't receive and process requests here, so you can destroy all resources
 
                 if (Log != null)
                 {
@@ -211,7 +206,8 @@ namespace MarginTrading.CommissionService
             }
         }
 
-        private static ILog CreateLog(IServiceCollection services, IReloadingManager<AppSettings> settings)
+        private static ILog CreateLog(IConfiguration configuration, IServiceCollection services, 
+            IReloadingManager<AppSettings> settings)
         {
             var consoleLogger = new LogToConsole();
             var aggregateLogger = new AggregateLogger();
@@ -228,6 +224,8 @@ namespace MarginTrading.CommissionService
                 aggregateLogger.AddLog(services.UseLogToAzureStorage(settings.Nested(s => s.CommissionService.Db.LogsConnString),
                     null, "CommissionServiceLog", consoleLogger));
             }
+
+            LogLocator.Log = aggregateLogger;
             
             return aggregateLogger;
         }
