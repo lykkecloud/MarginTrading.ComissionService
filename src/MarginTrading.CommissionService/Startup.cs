@@ -40,26 +40,22 @@ namespace MarginTrading.CommissionService
 {
     public class Startup
     {
-        public Startup(IHostingEnvironment env)
-        {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
-                .AddInMemoryCollection(new Dictionary<string, string>
-                {
-                    {"SettingsUrl", Path.Combine(env.ContentRootPath, "appsettings.dev.json")}
-                })
-                .AddSerilogJson(env)
-                .AddEnvironmentVariables();
-            Configuration = builder.Build();
-            Environment = env;
-        }
-
         public static string ServiceName { get; } = PlatformServices.Default.Application.ApplicationName;
 
         private IHostingEnvironment Environment { get; }
         private IContainer ApplicationContainer { get; set; }
         private IConfigurationRoot Configuration { get; }
         [CanBeNull] private ILog Log { get; set; }
+        
+        public Startup(IHostingEnvironment env)
+        {
+            Configuration = new ConfigurationBuilder()
+                .SetBasePath(env.ContentRootPath)
+                .AddSerilogJson(env)
+                .AddEnvironmentVariables()
+                .Build();
+            Environment = env;
+        }
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
@@ -98,6 +94,7 @@ namespace MarginTrading.CommissionService
             }
         }
 
+        [UsedImplicitly]
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
         {
             try
@@ -106,12 +103,15 @@ namespace MarginTrading.CommissionService
                 {
                     app.UseDeveloperExceptionPage();
                 }
+                else
+                {
+                    app.UseHsts();
+                }
 
 #if DEBUG
                 app.UseLykkeMiddleware(ServiceName, ex => ex.ToString());
 #else
-                app.UseLykkeMiddleware(ServiceName, ex => new ErrorResponse {ErrorMessage = "Technical problem", Details
- = ex.Message});
+                app.UseLykkeMiddleware(ServiceName, ex => new ErrorResponse {ErrorMessage = "Technical problem", Details = ex.Message});
 #endif
                 
                 app.UseMvc();
@@ -192,7 +192,7 @@ namespace MarginTrading.CommissionService
         {
             try
             {
-                // NOTE: Service can't recieve and process requests here, so you can destroy all resources
+                // NOTE: Service can't receive and process requests here, so you can destroy all resources
 
                 if (Log != null)
                 {
@@ -235,6 +235,8 @@ namespace MarginTrading.CommissionService
                 aggregateLogger.AddLog(services.UseLogToAzureStorage(settings.Nested(s => s.CommissionService.Db.LogsConnString),
                     null, "CommissionServiceLog", consoleLogger));
             }
+
+            LogLocator.Log = aggregateLogger;
             
             return aggregateLogger;
         }

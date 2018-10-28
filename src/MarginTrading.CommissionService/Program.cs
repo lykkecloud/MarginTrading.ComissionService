@@ -3,69 +3,56 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using MarginTrading.CommissionService.Services;
+using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.PlatformAbstractions;
 
 namespace MarginTrading.CommissionService
 {
     [UsedImplicitly]
-    class Program
+    internal class Program
     {
-        static void Main()
+        public static async Task Main()
         {
-            Console.WriteLine($"{Startup.ServiceName} version {PlatformServices.Default.Application.ApplicationVersion}");
-#if DEBUG
-            Console.WriteLine("Is DEBUG");
-#else
-            Console.WriteLine("Is RELEASE");
-#endif
-            Console.WriteLine($"ENV_INFO: {Environment.GetEnvironmentVariable("ENV_INFO")}");
+            Console.WriteLine($"{PlatformServices.Default.Application.ApplicationName} version {PlatformServices.Default.Application.ApplicationVersion}");
 
-            void RunHost() =>
-                new WebHostBuilder()
-                    .UseKestrel()
-                    .UseUrls("http://*:5050")
-                    .UseContentRoot(Directory.GetCurrentDirectory())
-                    .UseStartup<Startup>()
-                    .UseApplicationInsights()
-                    .Build()
-                    .Run();
+            var restartAttemptsLeft = int.TryParse(Environment.GetEnvironmentVariable("RESTART_ATTEMPTS_NUMBER"),
+                out var restartAttemptsFromEnv) 
+                ? restartAttemptsFromEnv
+                : int.MaxValue;
+            var restartAttemptsInterval = int.TryParse(Environment.GetEnvironmentVariable("RESTART_ATTEMPTS_INTERVAL_MS"),
+                out var restartAttemptsIntervalFromEnv) 
+                ? restartAttemptsIntervalFromEnv
+                : 10000;
 
-            StartWithRetries(RunHost);
-        }
-
-        private static void StartWithRetries(Action runHost)
-        {
-            var restartAttempsLeft = 5;
-            while (restartAttempsLeft > 0)
+            while (restartAttemptsLeft > 0)
             {
                 try
                 {
-                    runHost();
-                    break;
+                    var configuration = new ConfigurationBuilder()
+                        .AddJsonFile("appsettings.json", optional: true)
+                        .AddUserSecrets<Startup>()
+                        .AddEnvironmentVariables()
+                        .Build();
+                    
+                    var host = WebHost.CreateDefaultBuilder()
+                        .UseConfiguration(configuration)
+                        .UseStartup<Startup>()
+                        .UseApplicationInsights()
+                        .Build();
+
+                    await host.RunAsync();
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Error: {e.Message}{Environment.NewLine}{e.StackTrace}{Environment.NewLine}Restarting (attempts left: {restartAttempsLeft})...");
-                    restartAttempsLeft--;
-                    Thread.Sleep(10000);
+                    Console.WriteLine($"Error: {e.Message}{Environment.NewLine}{e.StackTrace}{Environment.NewLine}Restarting...");
+                    LogLocator.Log?.WriteFatalErrorAsync(
+                        "MT CommissionService", "Restart host", $"Attempts left: {restartAttemptsLeft}", e);
+                    restartAttemptsLeft--;
+                    Thread.Sleep(restartAttemptsInterval);
                 }
-            }
-
-            if (restartAttempsLeft <= 0)
-            {
-                Console.WriteLine("Fatal error, retries count exceeded.");
-
-                // Lets devops to see startup error in console between restarts in the Kubernetes
-                var delay = TimeSpan.FromMinutes(1);
-
-                Console.WriteLine();
-                Console.WriteLine($"Process will be terminated in {delay}. Press any key to terminate immediately.");
-
-                Task.WhenAny(
-                        Task.Delay(delay),
-                        Task.Run(() => Console.ReadKey(true)))
-                    .Wait();
             }
 
             Console.WriteLine("Terminated");
