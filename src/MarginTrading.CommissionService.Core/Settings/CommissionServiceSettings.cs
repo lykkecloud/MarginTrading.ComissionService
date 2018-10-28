@@ -6,11 +6,15 @@ using MarginTrading.CommissionService.Core.Settings.Rates;
 
 namespace MarginTrading.CommissionService.Core.Settings
 {
+    [UsedImplicitly]
     public class CommissionServiceSettings
     {
         public DbSettings Db { get; set; }
+        
         public RabbitMqSettings RabbitMq { get; set; }
+        
         public ServicesSettings Services { get; set; }
+        
         public CqrsSettings Cqrs { get; set; }
 
         [Optional, CanBeNull]
@@ -22,6 +26,10 @@ namespace MarginTrading.CommissionService.Core.Settings
         public RedisSettings RedisSettings { get; set; }
         
         public int OvernightSwapsChargingTimeoutSec { get; set; }
+        
         public int DailyPnlsChargingTimeoutSec { get; set; }
+        
+        [Optional]
+        public bool UseSerilog { get; set; }
     }
 }

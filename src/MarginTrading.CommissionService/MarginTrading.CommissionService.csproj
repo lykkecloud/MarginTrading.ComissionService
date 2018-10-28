@@ -30,6 +30,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <Target Name="CopySerilogConfig" AfterTargets="AfterBuild">
+    <Copy SourceFiles="appsettings.Serilog.json" DestinationFolder="$(OutDir)" />
+  </Target>
+  <Target Name="CopySerilogConfigOnPublish" AfterTargets="Publish">
+    <Copy SourceFiles="appsettings.Serilog.json" DestinationFolder="$(PublishDir)" />
+  </Target>
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="7.0.1" />
     <PackageReference Include="JetBrains.Annotations" Version="11.1.0" />

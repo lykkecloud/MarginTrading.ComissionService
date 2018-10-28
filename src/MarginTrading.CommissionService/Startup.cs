@@ -51,6 +51,7 @@ namespace MarginTrading.CommissionService
         {
             Configuration = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
+                .AddSerilogJson(env)
                 .AddEnvironmentVariables()
                 .Build();
             Environment = env;
@@ -214,7 +215,11 @@ namespace MarginTrading.CommissionService
 
             aggregateLogger.AddLog(consoleLogger);
 
-            if (settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.SqlServer)
+            if (settings.CurrentValue.CommissionService.UseSerilog)
+            {
+                aggregateLogger.AddLog(new SerilogLogger(typeof(Startup).Assembly, configuration));
+            }
+            else if (settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.SqlServer)
             {
                 aggregateLogger.AddLog(new LogToSql(new SqlLogRepository("CommissionServiceLog",
                     settings.CurrentValue.CommissionService.Db.LogsConnString)));
