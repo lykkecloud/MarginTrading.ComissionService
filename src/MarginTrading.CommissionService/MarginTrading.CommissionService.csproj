@@ -14,7 +14,6 @@
   <PropertyGroup>
     <NoWarn>1701;1702;1705;CA2007</NoWarn>
     <UserSecretsId>F7428201-B7F7-4571-9ABD-75ADABF81615</UserSecretsId>
-    <AssemblyName>MarginTrading.TradingHistory</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <None Update="Dockerfile">
@@ -70,9 +69,6 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.1.1" />
     <PackageReference Include="morelinq" Version="2.10.0" />
     <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
-  </ItemGroup>
-  <ItemGroup>
-    <DotNetCliToolReference Include="Microsoft.Extensions.SecretManager.Tools" Version="2.1.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MarginTrading.CommissionService.AzureRepositories\MarginTrading.CommissionService.AzureRepositories.csproj" />
