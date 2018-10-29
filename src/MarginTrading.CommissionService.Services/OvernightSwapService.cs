@@ -96,7 +96,8 @@ namespace MarginTrading.CommissionService.Services
 			
 			var calculatedIds = allLast.Where(x => x.IsSuccess).Select(x => x.PositionId).ToHashSet();
 			//select only non-calculated positions, changed before current invocation time
-			var filteredOrders = openPositions.Where(x => !calculatedIds.Contains(x.Id) && x.OpenTimestamp > tradingDay);
+			var filteredOrders = openPositions.Where(x => !calculatedIds.Contains(x.Id) 
+			                                              && x.OpenTimestamp.Date <= tradingDay.Date);
 
 			//detect orders for which last calculation failed and it was closed
 			var failedClosedOrders = allLast.Where(x => !x.IsSuccess)
