@@ -16,7 +16,6 @@ namespace MarginTrading.CommissionService.Core.Services
         Task ReplaceOvernightSwapRates(List<OvernightSwapRate> rates);
 
         Task<OnBehalfRate> GetOnBehalfRate();
-        Task<OnBehalfRate> GetOnBehalfRateApi();
         Task ReplaceOnBehalfRate(OnBehalfRate rate);
     }
 }

@@ -51,7 +51,8 @@ namespace MarginTrading.CommissionService.Services
             if (cachedData == null)
             {
                 var repoData = await RefreshRedisFromRepo((List<OrderExecutionRate>)null);
-                if (repoData == null || !repoData.Exists(x => x.AssetPairId == assetPairId))
+                cachedData = repoData?.FirstOrDefault(x => x.AssetPairId == assetPairId);
+                if (cachedData == null)
                 {
                     await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOrderExecutionRate),
                         $"No order execution rate for {assetPairId}. Using the default one.");
@@ -222,30 +223,16 @@ namespace MarginTrading.CommissionService.Services
             //now we try to refresh the cache from repository
             if (cachedData == null)
             {
-                var repoData = await RefreshRedisFromRepo((OnBehalfRate)null);
-                if (repoData == null)
+                cachedData = await RefreshRedisFromRepo((OnBehalfRate)null);
+                if (cachedData == null)
                 {
                     await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOnBehalfRate),
                         $"No OnBehalf rate saved, using the default one.");
                     
-                    return OnBehalfRate.FromDefault(_defaultRateSettings.DefaultOnBehalfSettings);
+                    cachedData = OnBehalfRate.FromDefault(_defaultRateSettings.DefaultOnBehalfSettings);
+                    
+                    await _redisDatabase.StringSetAsync(GetKey(LykkeConstants.OnBehalfKey), Serialize(cachedData));
                 }
-            }
-
-            return cachedData;
-        }
-
-        public async Task<OnBehalfRate> GetOnBehalfRateApi()
-        {
-            var cachedStr = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OnBehalfKey))
-                ? await _redisDatabase.StringGetAsync(GetKey(LykkeConstants.OnBehalfKey))
-                : (RedisValue) string.Empty;
-            var cachedData = string.IsNullOrEmpty(cachedStr) ? null : Deserialize<OnBehalfRate>(cachedStr);
-
-            // Refresh the data from the repo if it is absent in Redis
-            if (cachedData == null)
-            {
-                cachedData = await RefreshRedisFromRepo((OnBehalfRate) null);
             }
 
             return cachedData;
