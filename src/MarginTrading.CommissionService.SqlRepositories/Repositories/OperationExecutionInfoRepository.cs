@@ -27,7 +27,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
                                                  "[Version] [nvarchar] (64) NULL, " +
                                                  "[Data] [nvarchar] (MAX) NOT NULL," +
                                                  "CONSTRAINT [C_{0}_Id] UNIQUE NONCLUSTERED ([Id], [OperationName])," +
-                                                 "INDEX IX_{0}_Base (Id, OperationId, LastModified)" +
+                                                 "INDEX IX_{0}_Base (Id, OperationName, LastModified)" +
                                                  ");";
         
         private static Type DataType => typeof(IOperationExecutionInfo<object>);
