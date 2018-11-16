@@ -95,7 +95,7 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpGet("get-on-behalf")]
         public async Task<OnBehalfRateContract> GetOnBehalfRate()
         {
-            var item = await _rateSettingsService.GetOnBehalfRateApi();
+            var item = await _rateSettingsService.GetOnBehalfRate();
             return item == null ? null : _convertService.Convert<OnBehalfRate, OnBehalfRateContract>(item);
         }
 
