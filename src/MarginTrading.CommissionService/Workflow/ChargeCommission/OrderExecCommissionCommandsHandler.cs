@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Repositories;
@@ -15,17 +14,14 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
     {
         public const string OperationName = "ExecutedOrderCommission";
         private readonly ICommissionCalcService _commissionCalcService;
-        private readonly IChaosKitty _chaosKitty;
         private readonly IOperationExecutionInfoRepository _executionInfoRepository;
         private readonly ISystemClock _systemClock;
 
         public OrderExecCommissionCommandsHandler(ICommissionCalcService commissionCalcService,
-            IChaosKitty chaosKitty, 
             IOperationExecutionInfoRepository executionInfoRepository,
             ISystemClock systemClock)
         {
             _commissionCalcService = commissionCalcService;
-            _chaosKitty = chaosKitty;
             _executionInfoRepository = executionInfoRepository;
             _systemClock = systemClock;
         }
@@ -37,7 +33,6 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         private async Task<CommandHandlingResult> Handle(HandleOrderExecInternalCommand command,
             IEventPublisher publisher)
         {
-            //ensure idempotency
             var executionInfo = await _executionInfoRepository.GetOrAddAsync(
                 operationName: OperationName,
                 operationId: command.OperationId,
@@ -57,8 +52,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                     }
                 ));
 
-            if (ChargeCommissionSaga.SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
-                CommissionOperationState.Started))
+            if (executionInfo?.Data?.State == CommissionOperationState.Initiated)
             {
                 var commissionAmount = await _commissionCalcService.CalculateOrderExecutionCommission(
                   command.AccountId, command.Instrument, command.LegalEntity, command.Volume, command.OrderExecutionPrice);
@@ -76,10 +70,6 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                     $"{CommissionType.OrderExecution.ToString()} commission for {command.Instrument} order #{command.OrderCode}, id: {command.OrderId}, volume: {command.Volume}",
                     tradingDay: command.TradingDay
                 ));
-                
-                _chaosKitty.Meow(command.OperationId);
-                
-                await _executionInfoRepository.Save(executionInfo);
             }
 
             return CommandHandlingResult.Ok();

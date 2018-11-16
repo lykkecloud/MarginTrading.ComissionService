@@ -4,12 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
-using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
-using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Services;
-using MarginTrading.CommissionService.Core.Settings.Rates;
 using MarginTrading.TradingHistory.Client;
 using MarginTrading.TradingHistory.Client.Models;
 using Newtonsoft.Json;
@@ -97,8 +94,23 @@ namespace MarginTrading.CommissionService.Services
         public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId,
             string accountAssetId)
         {
-            var onBehalfEvents = (await _orderEventsApi.OrderById(orderId, null, false))
-                .Where(CheckOnBehalfFlag).ToList();
+            var events = await _orderEventsApi.OrderById(orderId, null, false);
+
+            if (events.All(e => e.UpdateType != OrderUpdateTypeContract.Executed))
+            {
+                if (events.Any(e => e.UpdateType == OrderUpdateTypeContract.Reject ||
+                                    e.UpdateType == OrderUpdateTypeContract.Cancel))
+                {
+                    _log.WriteWarning(nameof(CalculateOnBehalfCommissionAsync), events.ToJson(),
+                        $"Order {orderId} for instrument {accountAssetId} was not executed and on-behalf will not be charged");
+                    return (0, 0);
+                }
+
+                throw new Exception(
+                    $"Order {orderId} for instrument {accountAssetId} was not executed or rejected/cancelled. On-behalf can not be calculated");
+            }
+
+            var onBehalfEvents = events.Where(CheckOnBehalfFlag).ToList();
 
             var changeEventsCount = onBehalfEvents.Count(o => o.UpdateType == OrderUpdateTypeContract.Change);
 

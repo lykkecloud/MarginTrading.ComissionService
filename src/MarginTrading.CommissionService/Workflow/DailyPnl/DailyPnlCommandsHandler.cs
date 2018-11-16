@@ -70,8 +70,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     }
                 ));
 
-            if (ChargeCommissionSaga.SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
-                CommissionOperationState.Started))
+            if (executionInfo?.Data?.State == CommissionOperationState.Initiated)
             {
                 IReadOnlyList<IDailyPnlCalculation> calculatedPnLs = null;
                 try
@@ -120,7 +119,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                             data: new DailyPnlOperationData
                             {
                                 TradingDay = command.CreationTimestamp,
-                                State = CommissionOperationState.Started,
+                                State = CommissionOperationState.Initiated,
                             }
                         ));
                     
@@ -139,8 +138,6 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     //todo think about it
                     //_chaosKitty.Meow(pnl.GetId());
                 }
-                
-                await _executionInfoRepository.Save(executionInfo);
             }
             
             return CommandHandlingResult.Ok();
