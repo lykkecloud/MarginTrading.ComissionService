@@ -4,15 +4,12 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
-using MarginTrading.AccountsManagement.Contracts;
 using MarginTrading.AccountsManagement.Contracts.Commands;
 using MarginTrading.AccountsManagement.Contracts.Models;
-using MarginTrading.Backend.Contracts.Events;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
-using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
 using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Events;
@@ -49,13 +46,12 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         [UsedImplicitly]
         private async Task Handle(OrderExecCommissionCalculatedInternalEvent evt, ICommandSender sender)
         {
-            //ensure operation idempotency
             var executionInfo = await _executionInfoRepository.GetAsync<ExecutedOrderOperationData>(
                 operationName: OrderExecCommissionCommandsHandler.OperationName,
                 id: evt.OperationId
             );
 
-            if (SwitchState(executionInfo?.Data, CommissionOperationState.Started,
+            if (SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
                 CommissionOperationState.Calculated))
             {
                 sender.SendCommand(new ChangeBalanceCommand(
@@ -83,13 +79,12 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         [UsedImplicitly]
         private async Task Handle(OnBehalfCalculatedInternalEvent evt, ICommandSender sender)
         {
-            //ensure operation idempotency
             var executionInfo = await _executionInfoRepository.GetAsync<OnBehalfOperationData>(
                 operationName: OnBehalfCommandsHandler.OperationName,
                 id: evt.OperationId
             );
             
-            if (SwitchState(executionInfo?.Data, CommissionOperationState.Started,
+            if (SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
                 CommissionOperationState.Calculated))
             {
                 sender.SendCommand(new ChangeBalanceCommand(
@@ -121,7 +116,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             {
                 _log.WriteInfo(nameof(ChargeCommissionSaga), nameof(Handle), 
                     $"Duplicate OvernightSwapCalculatedInternalEvent arrived with OperationId = {evt.OperationId}");
-                return; //idempotency violated
+                return;
             }
             
             sender.SendCommand(new ChangeBalanceCommand(
@@ -148,13 +143,12 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         [UsedImplicitly]
         private async Task Handle(DailyPnlCalculatedInternalEvent evt, ICommandSender sender)
         {
-            //ensure operation idempotency
             var executionInfo = await _executionInfoRepository.GetAsync<DailyPnlOperationData>(
                 operationName: DailyPnlCommandsHandler.OperationName,
                 id: evt.OperationId
             );
 
-            if (SwitchState(executionInfo?.Data, CommissionOperationState.Started,
+            if (SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
                 CommissionOperationState.Calculated))
             {
                 sender.SendCommand(new ChangeBalanceCommand(

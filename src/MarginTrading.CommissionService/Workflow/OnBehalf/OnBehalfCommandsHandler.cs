@@ -7,7 +7,6 @@ using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Events;
-using MarginTrading.CommissionService.Workflow.ChargeCommission;
 using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Workflow.OnBehalf
@@ -16,18 +15,15 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
     {
         public const string OperationName = "OnBehalfCommission";
         private readonly ICommissionCalcService _commissionCalcService;
-        private readonly IChaosKitty _chaosKitty;
         private readonly ISystemClock _systemClock;
         private readonly IOperationExecutionInfoRepository _executionInfoRepository;
 
         public OnBehalfCommandsHandler(
             ICommissionCalcService commissionCalcService,
-            IChaosKitty chaosKitty,
             ISystemClock systemClock, 
             IOperationExecutionInfoRepository executionInfoRepository)
         {
             _commissionCalcService = commissionCalcService;
-            _chaosKitty = chaosKitty;
             _systemClock = systemClock;
             _executionInfoRepository = executionInfoRepository;
         }
@@ -55,8 +51,7 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
                     }
                 ));
 
-            if (ChargeCommissionSaga.SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
-                CommissionOperationState.Started))
+            if (executionInfo?.Data?.State == CommissionOperationState.Initiated)
             {
                 var result = await _commissionCalcService.CalculateOnBehalfCommissionAsync(command.OrderId,
                     command.AccountAssetId);
@@ -76,10 +71,6 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
                     commission: result.Commission,
                     tradingDay: command.TradingDay
                 ));
-
-                _chaosKitty.Meow(command.OperationId);
-
-                await _executionInfoRepository.Save(executionInfo);
             }
 
             return CommandHandlingResult.Ok();
