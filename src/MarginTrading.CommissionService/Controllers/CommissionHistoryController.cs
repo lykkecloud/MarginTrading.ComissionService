@@ -10,36 +10,28 @@ using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MarginTrading.CommissionService.Core.Extensions;
 
 namespace MarginTrading.CommissionService.Controllers
 {
+	/// <inheritdoc cref="ICommissionHistoryApi" />
 	[Route("api/commission")]
 	public class CommissionHistoryController : Controller, ICommissionHistoryApi
 	{
-		private readonly IConvertService _convertService;
-		
 		private readonly IOvernightSwapHistoryRepository _overnightSwapHistoryRepository;
 		
 		public CommissionHistoryController(
-			IConvertService convertService,
 			IOvernightSwapHistoryRepository overnightSwapHistoryRepository)
 		{
-			_convertService = convertService;
-			
 			_overnightSwapHistoryRepository = overnightSwapHistoryRepository;
 		}
-		
-		/// <summary>
-		/// Retrieve overnight swap calculation history from storage between selected dates.
-		/// </summary>
-		/// <param name="from"></param>
-		/// <param name="to"></param>
-		/// <returns></returns>
+
+		/// <inheritdoc />
 		[Route("history")]
-		[ProducesResponseType(typeof(IEnumerable<IOvernightSwapCalculation>), 200)]
+		[ProducesResponseType(typeof(List<OvernightSwapHistoryContract>), 200)]
 		[ProducesResponseType(400)]
-		[HttpPost]
-		public async Task<IEnumerable<OvernightSwapHistoryContract>> GetOvernightSwapHistory(
+		[HttpGet]
+		public async Task<List<OvernightSwapHistoryContract>> GetOvernightSwapHistory(
 			[FromQuery] DateTime from, [FromQuery] DateTime to)
 		{
 			if (to < from)
@@ -47,21 +39,28 @@ namespace MarginTrading.CommissionService.Controllers
 			
 			var data = await _overnightSwapHistoryRepository.GetAsync(from, to);
 
-			return data.Select(x => _convertService.Convert<IOvernightSwapCalculation, OvernightSwapHistoryContract>(x));
+			return data.Select(Convert).ToList();
 		}
 
-//		/// <summary>
-//		/// Invoke recalculation of account/instrument/direction order packages that were not calculated successfully last time.
-//		/// </summary>
-//		/// <returns></returns>
-//		[Route("recalc.failed.orders")]
-//		[ProducesResponseType(200)]
-//		[ProducesResponseType(400)]
-//		[HttpPost]
-//		public Task RecalculateFailedOrders()
-//		{
-//			MtServiceLocator.OvernightSwapService.CalculateAndChargeSwaps();
-//			return Task.CompletedTask;
-//		}
+		private OvernightSwapHistoryContract Convert(IOvernightSwapCalculation overnightSwapCalculation)
+		{
+			return new OvernightSwapHistoryContract
+			{
+				Id = overnightSwapCalculation.Id,
+				OperationId = overnightSwapCalculation.OperationId,
+				AccountId = overnightSwapCalculation.AccountId,
+				Instrument = overnightSwapCalculation.Instrument,
+				Direction = overnightSwapCalculation.Direction?.ToType<PositionDirectionContract>(),
+				Time = overnightSwapCalculation.Time,
+				Volume = overnightSwapCalculation.Volume,
+				SwapValue = overnightSwapCalculation.SwapValue,
+				PositionId = overnightSwapCalculation.PositionId,
+				Details = overnightSwapCalculation.Details,
+				TradingDay = overnightSwapCalculation.TradingDay,
+				IsSuccess = overnightSwapCalculation.IsSuccess,
+				Exception = overnightSwapCalculation.Exception,
+				WasCharged = overnightSwapCalculation.WasCharged,
+			};
+		}
 	}
 }

@@ -5,18 +5,21 @@ namespace Lykke.MarginTrading.CommissionService.Contracts.Models
 {
     public class OvernightSwapHistoryContract
     {
-        string ClientId { get; }
-        string AccountId { get; }
-        string Instrument { get; }
-        string Direction { get; }
-        DateTime Time { get; }
-        decimal Volume { get; }
-        decimal Value { get; }
-        decimal SwapRate { get; }
-        List<string> OpenOrderIds { get; }
-        DateTime TradingDay { get; }
+        public string Id { get; set; }
+        public string OperationId { get; set; }
+        public string AccountId { get; set; }
+        public string Instrument { get; set; }
+        public PositionDirectionContract? Direction { get; set; }
+        public DateTime Time { get; set; }
+        public decimal Volume { get; set; }
+        public decimal SwapValue { get; set; }
+        public string PositionId { get; set; }
+        public string Details { get; set; }
+        public DateTime TradingDay { get; set; }
         
-        bool IsSuccess { get; }
-        Exception Exception { get; }
+        public bool IsSuccess { get; set; }
+        public Exception Exception { get; set; }
+        
+        public bool WasCharged { get; set; }
     }
 }
