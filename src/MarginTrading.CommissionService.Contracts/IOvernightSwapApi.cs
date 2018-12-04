@@ -13,7 +13,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// <summary>
         /// Starts overnight swap process
         /// </summary>
-        [Post("api/overnightswap/start")]
+        [Post("/api/overnightswap/start")]
         Task StartOvernightSwapProcess([NotNull] string operationId, 
             int numberOfFinancingDays = 0, int financingDaysPerYear = 0);
     }
