@@ -4,9 +4,11 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
+using Lykke.MarginTrading.CommissionService.Contracts.Events;
 using MarginTrading.AccountsManagement.Contracts.Commands;
 using MarginTrading.AccountsManagement.Contracts.Models;
 using MarginTrading.CommissionService.Core.Domain;
+using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
@@ -51,7 +53,12 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 id: evt.OperationId
             );
 
-            if (SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
+            if (executionInfo == null)
+            {
+                return;
+            }
+
+            if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
                 CommissionOperationState.Calculated))
             {
                 sender.SendCommand(new ChangeBalanceCommand(
@@ -83,8 +90,13 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 operationName: OnBehalfCommandsHandler.OperationName,
                 id: evt.OperationId
             );
-            
-            if (SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
+
+            if (executionInfo == null)
+            {
+                return;
+            }
+
+            if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
                 CommissionOperationState.Calculated))
             {
                 sender.SendCommand(new ChangeBalanceCommand(
@@ -147,8 +159,13 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 operationName: DailyPnlCommandsHandler.OperationName,
                 id: evt.OperationId
             );
+            
+            if (executionInfo == null)
+            {
+                return;
+            }
 
-            if (SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
+            if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
                 CommissionOperationState.Calculated))
             {
                 sender.SendCommand(new ChangeBalanceCommand(
@@ -170,6 +187,64 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             }
         }
 
+        /// <summary>
+        /// OvernightSwaps failed
+        /// </summary>
+        private async Task Handle(OvernightSwapsStartFailedEvent evt, ICommandSender sender)
+        {
+            //nothing to do
+        }
+
+        /// <summary>
+        /// OvernightSwaps succeeded
+        /// </summary>
+        private async Task Handle(OvernightSwapsChargedEvent evt, ICommandSender sender)
+        {
+            //nothing to do
+        }
+
+        /// <summary>
+        /// DailyPnls failed, save the state
+        /// </summary>
+        private async Task Handle(DailyPnlsStartFailedEvent evt, ICommandSender sender)
+        {
+            var executionInfo = await _executionInfoRepository.GetAsync<DailyPnlOperationData>(
+                operationName: DailyPnlCommandsHandler.OperationName,
+                id: evt.OperationId);
+
+            if (executionInfo == null)
+            {
+                return;
+            }
+
+            if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
+                CommissionOperationState.Failed))
+            {
+                await _executionInfoRepository.Save(executionInfo);
+            }
+        }
+
+        /// <summary>
+        /// DailyPnls succeeded, save the state
+        /// </summary>
+        private async Task Handle(DailyPnlsChargedEvent evt, ICommandSender sender)
+        {
+            var executionInfo = await _executionInfoRepository.GetAsync<DailyPnlOperationData>(
+                operationName: DailyPnlCommandsHandler.OperationName,
+                id: evt.OperationId);
+
+            if (executionInfo == null)
+            {
+                return;
+            }
+
+            if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
+                CommissionOperationState.Succeeded))
+            {
+                await _executionInfoRepository.Save(executionInfo);
+            }
+        }
+
         private AccountBalanceChangeReasonTypeContract GetReasonType(CommissionType evtCommissionType)
         {
             switch (evtCommissionType)
@@ -181,32 +256,6 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 default:
                     throw new ArgumentOutOfRangeException(nameof(evtCommissionType), evtCommissionType, null);
             }
-        }
-
-        public static bool SwitchState(CommissionOperationData data, 
-            CommissionOperationState expectedState, CommissionOperationState nextState)
-        {
-            if (data == null)
-            {
-                throw new InvalidOperationException("Operation execution data was not properly initialized.");
-            }
-            
-            if (data.State < expectedState)
-            {
-                // Throws to retry and wait until the operation will be in the required state
-                throw new InvalidOperationException(
-                    $"Operation execution state can't be switched: {data.State} -> {nextState}. Waiting for the {expectedState} state.");
-            }
-
-            if (data.State > expectedState)
-            {
-                // Already in the next state, so this event can be just ignored
-                return false;
-            }
-
-            data.State = nextState;
-
-            return true;
         }
     }
 }

@@ -1,6 +1,6 @@
 namespace MarginTrading.CommissionService.Core.Domain
 {
-    public class ExecutedOrderOperationData : CommissionOperationData
+    public class ExecutedOrderOperationData : OperationDataBase<CommissionOperationState>
     {
         public string AccountId { get; set; }
         

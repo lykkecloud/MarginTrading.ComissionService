@@ -136,7 +136,13 @@ namespace MarginTrading.CommissionService.Modules
                     typeof(OrderExecCommissionCalculatedInternalEvent),
                     typeof(OnBehalfCalculatedInternalEvent),
                     typeof(OvernightSwapCalculatedInternalEvent),
-                    typeof(DailyPnlCalculatedInternalEvent))
+                    typeof(DailyPnlCalculatedInternalEvent),
+                    
+                    typeof(OvernightSwapsStartFailedEvent),
+                    typeof(OvernightSwapsChargedEvent),
+                    typeof(DailyPnlsStartFailedEvent),
+                    typeof(DailyPnlsChargedEvent)
+                )
                 .From(_contextNames.CommissionService)
                 .On(DefaultRoute)
                 .PublishingCommands(
