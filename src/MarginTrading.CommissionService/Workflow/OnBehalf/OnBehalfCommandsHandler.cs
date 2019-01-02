@@ -32,7 +32,7 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
         /// Calculate commission size
         /// </summary>
         [UsedImplicitly]
-        private async Task<CommandHandlingResult> Handle(HandleOnBehalfInternalCommand command,
+        private async Task Handle(HandleOnBehalfInternalCommand command,
             IEventPublisher publisher)
         {
             //ensure idempotency
@@ -53,11 +53,8 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
 
             if (executionInfo?.Data?.State == CommissionOperationState.Initiated)
             {
-                var result = await _commissionCalcService.CalculateOnBehalfCommissionAsync(command.OrderId,
-                    command.AccountAssetId);
-                
-                if (result.Commission == 0)
-                    return CommandHandlingResult.Ok();
+                var (actionsNum, commission) = await _commissionCalcService.CalculateOnBehalfCommissionAsync(
+                    command.OrderId, command.AccountAssetId);
 
                 //no failure handling.. so operation will be retried on fail
 
@@ -67,13 +64,11 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
                     accountId: command.AccountId,
                     orderId: command.OrderId,
                     assetPairId: command.AssetPairId,
-                    numberOfActions: result.ActionsNum,
-                    commission: result.Commission,
+                    numberOfActions: actionsNum,
+                    commission: commission,
                     tradingDay: command.TradingDay
                 ));
             }
-
-            return CommandHandlingResult.Ok();
         }
     }
 }

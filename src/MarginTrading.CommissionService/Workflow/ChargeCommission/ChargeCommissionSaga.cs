@@ -87,7 +87,9 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             if (SwitchState(executionInfo?.Data, CommissionOperationState.Initiated,
                 CommissionOperationState.Calculated))
             {
-                sender.SendCommand(new ChangeBalanceCommand(
+                if (evt.Commission != 0)
+                {
+                    sender.SendCommand(new ChangeBalanceCommand(
                         operationId: evt.OperationId,
                         clientId: null,
                         accountId: evt.AccountId,
@@ -99,6 +101,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                         assetPairId: evt.AssetPairId,
                         tradingDay: evt.TradingDay),
                     _contextNames.AccountsManagement);
+                }
                 
                 _chaosKitty.Meow(evt.OperationId);
 
