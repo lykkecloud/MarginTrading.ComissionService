@@ -27,40 +27,51 @@ namespace MarginTrading.CommissionService.Modules
         {
             RegisterClientWithName<IPositionsApi>(builder,
                 "MT Trading Core",
-                _settings.CurrentValue.CommissionService.Services.Backend.Url);
+                _settings.CurrentValue.CommissionService.Services.Backend);
             
             RegisterClientWithName<IOrderEventsApi>(builder,
                 "MT Trading History",
-                _settings.CurrentValue.CommissionService.Services.TradingHistory.Url);
+                _settings.CurrentValue.CommissionService.Services.TradingHistory);
 
             RegisterClientWithName<IAccountsApi>(builder,
                 "MT Accounts Management",
-                _settings.CurrentValue.CommissionService.Services.AccountManagement.Url);
+                _settings.CurrentValue.CommissionService.Services.AccountManagement);
             
             RegisterClientWithName<IAssetsApi>(builder,
                 "MT Settings",
-                _settings.CurrentValue.CommissionService.Services.SettingsService.Url);
+                _settings.CurrentValue.CommissionService.Services.SettingsService);
             
             RegisterClientWithName<IAssetPairsApi>(builder,
                 "MT Settings",
-                _settings.CurrentValue.CommissionService.Services.SettingsService.Url);
+                _settings.CurrentValue.CommissionService.Services.SettingsService);
             
             RegisterClientWithName<ITradingConditionsApi>(builder,
                 "MT Settings",
-                _settings.CurrentValue.CommissionService.Services.SettingsService.Url);
+                _settings.CurrentValue.CommissionService.Services.SettingsService);
             
             RegisterClientWithName<ITradingInstrumentsApi>(builder,
                 "MT Settings",
-                _settings.CurrentValue.CommissionService.Services.SettingsService.Url);
+                _settings.CurrentValue.CommissionService.Services.SettingsService);
             
             builder.Populate(_services);
         }
 
-        private void RegisterClientWithName<TApi>(ContainerBuilder builder, string name, string uri)
+        private static void RegisterClientWithName<TApi>(ContainerBuilder builder, string name, 
+            ServiceSettings serviceSettings)
             where TApi : class
         {
-            builder.RegisterClient<TApi>(uri,
-                config => config.WithServiceName<LykkeErrorResponse>($"{name} [{uri}]"));
+            builder.RegisterClient<TApi>(serviceSettings.Url,
+                config =>
+                {
+                    var httpClientGeneratorBuilder = config.WithServiceName<LykkeErrorResponse>($"{name} [{serviceSettings.Url}]");
+
+                    if (!string.IsNullOrEmpty(serviceSettings.ApiKey))
+                    {
+                        httpClientGeneratorBuilder = httpClientGeneratorBuilder.WithApiKey(serviceSettings.ApiKey);
+                    }
+                    
+                    return httpClientGeneratorBuilder;
+                });
         }
     }
 }
