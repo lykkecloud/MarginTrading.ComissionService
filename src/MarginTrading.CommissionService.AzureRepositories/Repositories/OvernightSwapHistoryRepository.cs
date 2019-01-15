@@ -45,16 +45,6 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
                 .OrderByDescending(item => item.Time).ToList();
         }
 
-        public async Task<bool> CheckOperationIsNew(string operationId)
-        {
-            return (await _tableStorage.GetDataAsync(x => x.OperationId == operationId)).Count == 0;
-        }
-
-        public async Task<bool> CheckPositionOperationIsNew(string positionOperationId)
-        {//TODO very unoptimal. Optimize if Azure impl is used.
-            return (await _tableStorage.GetDataAsync(x => x.Id == positionOperationId && x.WasCharged)).Count == 0;
-        }
-
         public async Task DeleteAsync(IOvernightSwapCalculation obj)
         {
             await _tableStorage.DeleteAsync(OvernightSwapEntity.Create(obj));

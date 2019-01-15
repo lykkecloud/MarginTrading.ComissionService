@@ -16,6 +16,7 @@ using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
 using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Events;
 using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
+using MarginTrading.CommissionService.Workflow.DailyPnl;
 using MarginTrading.CommissionService.Workflow.OnBehalf;
 using MarginTrading.CommissionService.Workflow.OvernightSwap;
 
@@ -124,29 +125,37 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         [UsedImplicitly]
         private async Task Handle(OvernightSwapCalculatedInternalEvent evt, ICommandSender sender)
         {
-            if (!await _overnightSwapService.CheckPositionOperationIsNew(evt.OperationId))
+            var executionInfo = await _executionInfoRepository.GetAsync<OvernightSwapOperationData>(
+                operationName: OvernightSwapCommandsHandler.OperationName,
+                id: evt.OperationId
+            );
+            
+            if (executionInfo == null)
             {
-                _log.WriteInfo(nameof(ChargeCommissionSaga), nameof(Handle), 
-                    $"Duplicate OvernightSwapCalculatedInternalEvent arrived with OperationId = {evt.OperationId}");
                 return;
             }
+
+            if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
+                CommissionOperationState.Calculated))
+            {
+                sender.SendCommand(new ChangeBalanceCommand(
+                        operationId: evt.OperationId,
+                        clientId: null,
+                        accountId: evt.AccountId, 
+                        amount: evt.SwapAmount,
+                        reasonType: AccountBalanceChangeReasonTypeContract.Swap,
+                        reason: $"OvernightSwap commission for position #{evt.PositionId}",
+                        auditLog: evt.Details,
+                        eventSourceId: evt.PositionId,
+                        assetPairId: evt.AssetPairId,
+                        tradingDay: evt.TradingDay),
+                    _contextNames.AccountsManagement);
             
-            sender.SendCommand(new ChangeBalanceCommand(
-                    operationId: evt.OperationId,
-                    clientId: null,
-                    accountId: evt.AccountId, 
-                    amount: evt.SwapAmount,
-                    reasonType: AccountBalanceChangeReasonTypeContract.Swap,
-                    reason: $"OvernightSwap commission for position #{evt.PositionId}",
-                    auditLog: evt.Details,
-                    eventSourceId: evt.PositionId,
-                    assetPairId: evt.AssetPairId,
-                    tradingDay: evt.TradingDay),
-                _contextNames.AccountsManagement);
+                _chaosKitty.Meow(evt.OperationId);
             
-            _chaosKitty.Meow(evt.OperationId);
-            
-            await _overnightSwapService.SetWasCharged(evt.OperationId);
+                await _overnightSwapService.SetWasCharged(evt.OperationId);
+                await _executionInfoRepository.Save(executionInfo);
+            }
         }
         
         /// <summary>
@@ -190,22 +199,51 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         /// <summary>
         /// OvernightSwaps failed
         /// </summary>
+        [UsedImplicitly]
         private async Task Handle(OvernightSwapsStartFailedEvent evt, ICommandSender sender)
         {
-            //nothing to do
+            var executionInfo = await _executionInfoRepository.GetAsync<OvernightSwapOperationData>(
+                operationName: OvernightSwapCommandsHandler.OperationName,
+                id: evt.OperationId);
+
+            if (executionInfo == null)
+            {
+                return;
+            }
+
+            if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
+                CommissionOperationState.Failed))
+            {
+                await _executionInfoRepository.Save(executionInfo);
+            }
         }
 
         /// <summary>
         /// OvernightSwaps succeeded
         /// </summary>
+        [UsedImplicitly]
         private async Task Handle(OvernightSwapsChargedEvent evt, ICommandSender sender)
         {
-            //nothing to do
+            var executionInfo = await _executionInfoRepository.GetAsync<OvernightSwapOperationData>(
+                operationName: OvernightSwapCommandsHandler.OperationName,
+                id: evt.OperationId);
+
+            if (executionInfo == null)
+            {
+                return;
+            }
+
+            if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
+                CommissionOperationState.Succeeded))
+            {
+                await _executionInfoRepository.Save(executionInfo);
+            }
         }
 
         /// <summary>
         /// DailyPnls failed, save the state
         /// </summary>
+        [UsedImplicitly]
         private async Task Handle(DailyPnlsStartFailedEvent evt, ICommandSender sender)
         {
             var executionInfo = await _executionInfoRepository.GetAsync<DailyPnlOperationData>(
@@ -227,6 +265,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         /// <summary>
         /// DailyPnls succeeded, save the state
         /// </summary>
+        [UsedImplicitly]
         private async Task Handle(DailyPnlsChargedEvent evt, ICommandSender sender)
         {
             var executionInfo = await _executionInfoRepository.GetAsync<DailyPnlOperationData>(
