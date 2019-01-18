@@ -233,7 +233,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 return;
             }
 
-            if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
+            if (executionInfo.Data.SwitchState(CommissionOperationState.Calculated,
                 CommissionOperationState.Succeeded))
             {
                 await _executionInfoRepository.Save(executionInfo);
@@ -277,7 +277,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 return;
             }
 
-            if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
+            if (executionInfo.Data.SwitchState(CommissionOperationState.Calculated,
                 CommissionOperationState.Succeeded))
             {
                 await _executionInfoRepository.Save(executionInfo);
