@@ -157,18 +157,17 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 await _executionInfoRepository.Save(executionInfo);
             }
         }
-        
+
         /// <summary>
-        /// Send charge command to AccountManagement service
+        /// All swaps were calculated
         /// </summary>
         [UsedImplicitly]
-        private async Task Handle(DailyPnlCalculatedInternalEvent evt, ICommandSender sender)
+        private async Task Handle(OvernightSwapsCalculatedEvent evt, ICommandSender sender)
         {
-            var executionInfo = await _executionInfoRepository.GetAsync<DailyPnlOperationData>(
-                operationName: DailyPnlCommandsHandler.OperationName,
-                id: evt.OperationId
-            );
-            
+            var executionInfo = await _executionInfoRepository.GetAsync<OvernightSwapOperationData>(
+                operationName: OvernightSwapCommandsHandler.OperationName,
+                id: evt.OperationId);
+
             if (executionInfo == null)
             {
                 return;
@@ -177,23 +176,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
                 CommissionOperationState.Calculated))
             {
-                sender.SendCommand(new ChangeBalanceCommand(
-                        operationId: evt.OperationId,
-                        clientId: null,
-                        accountId: evt.AccountId,
-                        amount: evt.Pnl,
-                        reasonType: AccountBalanceChangeReasonTypeContract.UnrealizedDailyPnL,
-                        reason: $"Daily Pnl for account {evt.AccountId}",
-                        auditLog: null,
-                        eventSourceId: evt.PositionId,
-                        assetPairId: evt.AssetPairId,
-                        tradingDay: evt.TradingDay),
-                    _contextNames.AccountsManagement);
-                
-                _chaosKitty.Meow(evt.OperationId);
-                
                 await _executionInfoRepository.Save(executionInfo);
-            }
+            }   
         }
 
         /// <summary>
@@ -235,6 +219,66 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
 
             if (executionInfo.Data.SwitchState(CommissionOperationState.Calculated,
                 CommissionOperationState.Succeeded))
+            {
+                await _executionInfoRepository.Save(executionInfo);
+            }
+        }
+        
+        /// <summary>
+        /// Send charge command to AccountManagement service
+        /// </summary>
+        [UsedImplicitly]
+        private async Task Handle(DailyPnlCalculatedInternalEvent evt, ICommandSender sender)
+        {
+            var executionInfo = await _executionInfoRepository.GetAsync<DailyPnlOperationData>(
+                operationName: DailyPnlCommandsHandler.OperationName,
+                id: evt.OperationId
+            );
+            
+            if (executionInfo == null)
+            {
+                return;
+            }
+
+            if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
+                CommissionOperationState.Calculated))
+            {
+                sender.SendCommand(new ChangeBalanceCommand(
+                        operationId: evt.OperationId,
+                        clientId: null,
+                        accountId: evt.AccountId,
+                        amount: evt.Pnl,
+                        reasonType: AccountBalanceChangeReasonTypeContract.UnrealizedDailyPnL,
+                        reason: $"Daily Pnl for account {evt.AccountId}",
+                        auditLog: null,
+                        eventSourceId: evt.PositionId,
+                        assetPairId: evt.AssetPairId,
+                        tradingDay: evt.TradingDay),
+                    _contextNames.AccountsManagement);
+                
+                _chaosKitty.Meow(evt.OperationId);
+                
+                await _executionInfoRepository.Save(executionInfo);
+            }
+        }
+
+        /// <summary>
+        /// All DailyPnls were calculated
+        /// </summary>
+        [UsedImplicitly]
+        private async Task Handle(DailyPnlsCalculatedEvent evt, ICommandSender sender)
+        {
+            var executionInfo = await _executionInfoRepository.GetAsync<DailyPnlOperationData>(
+                operationName: DailyPnlCommandsHandler.OperationName,
+                id: evt.OperationId);
+
+            if (executionInfo == null)
+            {
+                return;
+            }
+
+            if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
+                CommissionOperationState.Calculated))
             {
                 await _executionInfoRepository.Save(executionInfo);
             }

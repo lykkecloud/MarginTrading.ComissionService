@@ -139,6 +139,9 @@ namespace MarginTrading.CommissionService.Modules
                     typeof(OvernightSwapCalculatedInternalEvent),
                     typeof(DailyPnlCalculatedInternalEvent),
                     
+                    typeof(DailyPnlsCalculatedEvent),
+                    typeof(OvernightSwapsCalculatedEvent),
+                    
                     typeof(OvernightSwapsStartFailedEvent),
                     typeof(OvernightSwapsChargedEvent),
                     typeof(DailyPnlsStartFailedEvent),
