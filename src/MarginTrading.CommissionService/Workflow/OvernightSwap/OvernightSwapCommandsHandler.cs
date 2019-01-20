@@ -125,12 +125,12 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
             ));
             
             //_chaosKitty.Meow(command.OperationId);
-            
-            foreach(var swap in swapsToCharge)
+
+            foreach (var swap in swapsToCharge)
             {
                 //prepare state for sub operations
-                await _executionInfoRepository.GetOrAddAsync(
-                    operationName: OperationName, 
+                var swapExecutionInfo = await _executionInfoRepository.GetOrAddAsync(
+                    operationName: OperationName,
                     operationId: swap.Id,
                     factory: () => new OperationExecutionInfo<OvernightSwapOperationData>(
                         operationName: OperationName,
@@ -141,7 +141,12 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                             State = CommissionOperationState.Initiated,
                         }
                     ));
-                
+
+                if (swapExecutionInfo?.Data?.State != CommissionOperationState.Initiated)
+                {
+                    continue;
+                }
+
                 publisher.PublishEvent(new OvernightSwapCalculatedInternalEvent(
                     operationId: swap.Id,
                     creationTimestamp: _systemClock.UtcNow.DateTime,
@@ -152,7 +157,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     details: swap.Details,
                     tradingDay: command.TradingDay));
             }
-            
+
             //_chaosKitty.Meow(command.OperationId);
         }
 
