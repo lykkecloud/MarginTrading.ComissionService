@@ -2,8 +2,10 @@
 using Autofac.Extensions.DependencyInjection;
 using Lykke.HttpClientGenerator;
 using Lykke.SettingsReader;
+using Lykke.Snow.Common.Startup;
 using MarginTrading.Backend.Contracts;
 using MarginTrading.CommissionService.Core.Settings;
+using MarginTrading.CommissionService.Infrastructure;
 using MarginTrading.SettingsService.Contracts;
 using MarginTrading.TradingHistory.Client;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,21 +25,53 @@ namespace MarginTrading.CommissionService.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
-            builder.RegisterClient<IPositionsApi>(_settings.CurrentValue.CommissionService.Services.Backend.Url, 
-                config => config.WithApiKey(_settings.CurrentValue.CommissionService.Services.Backend.ApiKey));
+            RegisterClientWithName<IPositionsApi>(builder,
+                "MT Trading Core",
+                _settings.CurrentValue.CommissionService.Services.Backend);
+            
+            RegisterClientWithName<IOrderEventsApi>(builder,
+                "MT Trading History",
+                _settings.CurrentValue.CommissionService.Services.TradingHistory);
 
-            builder.RegisterClient<IOrderEventsApi>(
-                _settings.CurrentValue.CommissionService.Services.TradingHistory.Url);
-                //, config => config.WithApiKey(_settings.CurrentValue.CommissionService.Services.TradingHistory.ApiKey));
+            RegisterClientWithName<IAccountsApi>(builder,
+                "MT Accounts Management",
+                _settings.CurrentValue.CommissionService.Services.AccountManagement);
             
-            builder.RegisterClient<IAccountsApi>(_settings.CurrentValue.CommissionService.Services.AccountManagement.Url);
+            RegisterClientWithName<IAssetsApi>(builder,
+                "MT Settings",
+                _settings.CurrentValue.CommissionService.Services.SettingsService);
             
-            builder.RegisterClient<IAssetsApi>(_settings.CurrentValue.CommissionService.Services.SettingsService.Url);
-            builder.RegisterClient<IAssetPairsApi>(_settings.CurrentValue.CommissionService.Services.SettingsService.Url);
-            builder.RegisterClient<ITradingConditionsApi>(_settings.CurrentValue.CommissionService.Services.SettingsService.Url);
-            builder.RegisterClient<ITradingInstrumentsApi>(_settings.CurrentValue.CommissionService.Services.SettingsService.Url);
+            RegisterClientWithName<IAssetPairsApi>(builder,
+                "MT Settings",
+                _settings.CurrentValue.CommissionService.Services.SettingsService);
+            
+            RegisterClientWithName<ITradingConditionsApi>(builder,
+                "MT Settings",
+                _settings.CurrentValue.CommissionService.Services.SettingsService);
+            
+            RegisterClientWithName<ITradingInstrumentsApi>(builder,
+                "MT Settings",
+                _settings.CurrentValue.CommissionService.Services.SettingsService);
             
             builder.Populate(_services);
+        }
+
+        private static void RegisterClientWithName<TApi>(ContainerBuilder builder, string name, 
+            ServiceSettings serviceSettings)
+            where TApi : class
+        {
+            builder.RegisterClient<TApi>(serviceSettings.Url,
+                config =>
+                {
+                    var httpClientGeneratorBuilder = config.WithServiceName<LykkeErrorResponse>($"{name} [{serviceSettings.Url}]");
+
+                    if (!string.IsNullOrEmpty(serviceSettings.ApiKey))
+                    {
+                        httpClientGeneratorBuilder = httpClientGeneratorBuilder.WithApiKey(serviceSettings.ApiKey);
+                    }
+                    
+                    return httpClientGeneratorBuilder;
+                });
         }
     }
 }
