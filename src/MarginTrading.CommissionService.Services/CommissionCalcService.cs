@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
+using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Services;
@@ -94,7 +96,14 @@ namespace MarginTrading.CommissionService.Services
         public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId,
             string accountAssetId)
         {
-            var events = await _orderEventsApi.OrderById(orderId, null, false);
+            var events = await ApiHelpers
+                .RefitRetryPolicy<List<OrderEventContract>>(
+                    r => r.Any(oec =>
+                        new[] { OrderUpdateTypeContract.Executed, OrderUpdateTypeContract.Reject, OrderUpdateTypeContract.Cancel }
+                            .Contains(oec.UpdateType)),
+                    3, 1000)
+                .ExecuteAsync(async ct =>
+                    await _orderEventsApi.OrderById(orderId, null, false), CancellationToken.None);
 
             if (events.All(e => e.UpdateType != OrderUpdateTypeContract.Executed))
             {
