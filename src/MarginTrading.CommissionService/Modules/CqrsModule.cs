@@ -23,6 +23,7 @@ using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
 using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Workflow;
 using MarginTrading.CommissionService.Workflow.ChargeCommission;
+using MarginTrading.CommissionService.Workflow.DailyPnl;
 using MarginTrading.CommissionService.Workflow.OnBehalf;
 using MarginTrading.CommissionService.Workflow.OvernightSwap;
 
@@ -136,7 +137,16 @@ namespace MarginTrading.CommissionService.Modules
                     typeof(OrderExecCommissionCalculatedInternalEvent),
                     typeof(OnBehalfCalculatedInternalEvent),
                     typeof(OvernightSwapCalculatedInternalEvent),
-                    typeof(DailyPnlCalculatedInternalEvent))
+                    typeof(DailyPnlCalculatedInternalEvent),
+                    
+                    typeof(DailyPnlsCalculatedEvent),
+                    typeof(OvernightSwapsCalculatedEvent),
+                    
+                    typeof(OvernightSwapsStartFailedEvent),
+                    typeof(OvernightSwapsChargedEvent),
+                    typeof(DailyPnlsStartFailedEvent),
+                    typeof(DailyPnlsChargedEvent)
+                )
                 .From(_contextNames.CommissionService)
                 .On(DefaultRoute)
                 .PublishingCommands(

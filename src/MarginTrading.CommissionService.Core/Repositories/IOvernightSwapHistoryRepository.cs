@@ -12,9 +12,6 @@ namespace MarginTrading.CommissionService.Core.Repositories
         Task<IReadOnlyList<IOvernightSwapCalculation>> GetAsync(DateTime? @from, DateTime? to);
         Task<IReadOnlyList<IOvernightSwapCalculation>> GetAsync(string accountId, DateTime? from, DateTime? to);
 
-        Task<bool> CheckOperationIsNew(string operationId);
-        Task<bool> CheckPositionOperationIsNew(string positionOperationId);
-
         /// <summary>
         /// For testing purposes
         /// </summary>

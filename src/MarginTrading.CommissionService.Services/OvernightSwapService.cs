@@ -25,6 +25,7 @@ using Newtonsoft.Json;
 
 namespace MarginTrading.CommissionService.Services
 {
+	/// <inheritdoc />
 	/// <summary>
 	/// Take care of overnight swap calculation and charging.
 	/// </summary>
@@ -210,16 +211,6 @@ namespace MarginTrading.CommissionService.Services
 			await _overnightSwapHistoryRepository.AddAsync(calculation);
 			
 			return calculation;
-		}
-
-		public async Task<bool> CheckOperationIsNew(string operationId)
-		{
-			return await _overnightSwapHistoryRepository.CheckOperationIsNew(operationId);
-		}
-
-		public async Task<bool> CheckPositionOperationIsNew(string positionOperationId)
-		{
-			return await _overnightSwapHistoryRepository.CheckPositionOperationIsNew(positionOperationId); 
 		}
 
 		public async Task SetWasCharged(string positionOperationId)

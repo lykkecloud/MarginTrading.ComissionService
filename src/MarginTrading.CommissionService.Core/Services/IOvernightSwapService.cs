@@ -23,13 +23,6 @@ namespace MarginTrading.CommissionService.Core.Services
         Task<IReadOnlyList<IOvernightSwapCalculation>> Calculate(string operationId, DateTime creationTimestamp,
             int numberOfFinancingDays, int financingDaysPerYear, DateTime tradingDay);
 
-        /// <summary>
-        /// True if operation with <param name="operationId"/> was never called before.
-        /// </summary>
-        /// <param name="operationId"></param>
-        /// <returns></returns>
-        Task<bool> CheckOperationIsNew(string operationId);
-        Task<bool> CheckPositionOperationIsNew(string positionOperationId);
         Task SetWasCharged(string positionOperationId);
     }
 }

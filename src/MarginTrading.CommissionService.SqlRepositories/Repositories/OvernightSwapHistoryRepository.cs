@@ -90,25 +90,6 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
             return (await GetFilteredAsync(accountId, from, to)).ToList();
         }
 
-        public async Task<bool> CheckOperationIsNew(string operationId)
-        {
-            using (var conn = new SqlConnection(_settings.Db.StateConnString))
-            {
-                return 0 == await conn.QueryFirstAsync<int>(
-                    $"SELECT COUNT(*) FROM {TableName} WHERE OperationId=@operationId", new {operationId});
-            }
-        }
-
-        public async Task<bool> CheckPositionOperationIsNew(string positionOperationId)
-        {
-            using (var conn = new SqlConnection(_settings.Db.StateConnString))
-            {
-                return 0 == await conn.QueryFirstAsync<int>(
-                           $"SELECT COUNT(*) FROM {TableName} WHERE Id=@positionOperationId AND WasCharged=1", 
-                           new {positionOperationId});
-            }
-        }
-
         public async Task DeleteAsync(IOvernightSwapCalculation obj)
         {
             using (var conn = new SqlConnection(_settings.Db.StateConnString))

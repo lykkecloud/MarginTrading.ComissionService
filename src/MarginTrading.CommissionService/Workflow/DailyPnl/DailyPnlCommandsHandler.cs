@@ -14,10 +14,9 @@ using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
-using MarginTrading.CommissionService.Workflow.ChargeCommission;
 using Microsoft.Extensions.Internal;
 
-namespace MarginTrading.CommissionService.Workflow.OvernightSwap
+namespace MarginTrading.CommissionService.Workflow.DailyPnl
 {
     public class DailyPnlCommandsHandler
     {
@@ -52,10 +51,8 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
         /// Calculate PnL
         /// </summary>
         [UsedImplicitly]
-        private async Task<CommandHandlingResult> Handle(StartDailyPnlProcessCommand command,
-            IEventPublisher publisher)
+        private async Task Handle(StartDailyPnlProcessCommand command, IEventPublisher publisher)
         {
-            //ensure idempotency of the whole operation
             var executionInfo = await _executionInfoRepository.GetOrAddAsync(
                 operationName: OperationName, 
                 operationId: command.OperationId,
@@ -85,7 +82,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                         failReason: exception.Message
                     ));
                     await _log.WriteErrorAsync(nameof(DailyPnlCommandsHandler), nameof(Handle), exception, _systemClock.UtcNow.UtcDateTime);
-                    return CommandHandlingResult.Ok();//no retries
+                    return; //no retries
                 }
 
                 publisher.PublishEvent(new DailyPnlsCalculatedEvent(
@@ -139,8 +136,6 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     //_chaosKitty.Meow(pnl.GetId());
                 }
             }
-            
-            return CommandHandlingResult.Ok();
         }
 
     }

@@ -4,5 +4,7 @@ namespace MarginTrading.CommissionService.Core.Domain
     {
         Initiated = 0,
         Calculated = 1,
+        Succeeded = 2,
+        Failed = 3,
     }
 }
