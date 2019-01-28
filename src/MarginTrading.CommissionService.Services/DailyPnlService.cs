@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
+using Lykke.Common.Log;
+using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Services;
@@ -17,15 +19,21 @@ namespace MarginTrading.CommissionService.Services
 	public class DailyPnlService : IDailyPnlService
 	{
 		private readonly IPositionReceiveService _positionReceiveService;
+		private readonly IAccountRedisCache _accountRedisCache;
+		private readonly IAssetsCache _assetsCache;
 		private readonly ILog _log;
 
 		private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
 		public DailyPnlService(
 			IPositionReceiveService positionReceiveService,
+			IAccountRedisCache accountRedisCache,
+			IAssetsCache assetsCache,
 			ILog log)
 		{
 			_positionReceiveService = positionReceiveService;
+			_accountRedisCache = accountRedisCache;
+			_assetsCache = assetsCache;
 			_log = log;
 		}
 
@@ -41,13 +49,25 @@ namespace MarginTrading.CommissionService.Services
 				await _log.WriteInfoAsync(nameof(DailyPnlService), nameof(Calculate),
 					$"Started, # of positions: {openPositions.Count}.", DateTime.UtcNow);
 
+				var accounts = (await _accountRedisCache.GetAccounts()).ToDictionary(x => x.Id);
+
 				foreach (var position in openPositions)
 				{
 					try
 					{
-						var calculation = ProcessPosition(position, operationId, tradingDay);
-						if(calculation != null)
+						if (!accounts.TryGetValue(position.AccountId, out var account))
+						{
+							_log.Error(nameof(DailyPnlService), 
+								new Exception($"Account {position.AccountId} does not exist in cache."));
+						}
+						var asset = _assetsCache.Get(account.BaseAssetId);
+						
+						var calculation = ProcessPosition(position, operationId, tradingDay, asset.Accuracy);
+						
+						if (calculation != null)
+						{
 							resultingCalculations.Add(calculation);
+						}
 					}
 					catch (Exception ex)
 					{
@@ -72,10 +92,13 @@ namespace MarginTrading.CommissionService.Services
 		/// <param name="position"></param>
 		/// <param name="operationId"></param>
 		/// <param name="tradingDay"></param>
+		/// <param name="accuracy"></param>
 		/// <returns></returns>
 		private DailyPnlCalculation ProcessPosition(IOpenPosition position,
-			string operationId, DateTime tradingDay)
+			string operationId, DateTime tradingDay, int? accuracy)
 		{
+			var value = position.PnL - position.ChargedPnl;
+
 			return new DailyPnlCalculation(
 				operationId: operationId,
 				accountId: position.AccountId,
@@ -84,7 +107,10 @@ namespace MarginTrading.CommissionService.Services
 				volume: position.CurrentVolume,
 				fxRate: position.FxRate,
 				positionId: position.Id,
-			    pnl: position.PnL - position.ChargedPnl);
+				pnl: accuracy.HasValue
+					? Math.Round(value, accuracy.Value)
+					: value
+			);
 		}
 	}
 }

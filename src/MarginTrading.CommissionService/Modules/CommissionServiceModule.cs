@@ -120,16 +120,21 @@ namespace MarginTrading.CommissionService.Modules
                 .As<IQuoteCacheService>()
                 .SingleInstance();
             
+            builder.RegisterType<AssetsCache>()
+                .As<IAssetsCache>()
+                .AsSelf()
+                .SingleInstance();
+            
             builder.RegisterType<AssetPairsCache>()
                 .As<IAssetPairsCache>()
                 .As<IAssetPairsInitializableCache>()
                 .AsSelf()
                 .SingleInstance();
             
-            builder.RegisterType<AssetPairsManager>()
+            builder.RegisterType<SettingsManager>()
                 .AsSelf()
                 .As<IStartable>()
-                .As<IAssetPairsManager>()
+                .As<ISettingsManager>()
                 .SingleInstance();
 
             builder.RegisterType<FxRateCacheService>()

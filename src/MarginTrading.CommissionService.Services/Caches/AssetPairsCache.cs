@@ -34,7 +34,7 @@ namespace MarginTrading.CommissionService.Services.Caches
                 return _assetPairs.TryGetValue(assetPairId, out var result)
                     ? result
                     : throw new AssetPairNotFoundException(assetPairId,
-                        string.Format("Instrument {0} does not exist in cache", assetPairId));
+                        $"Instrument {assetPairId} does not exist in cache");
             }
         }
 

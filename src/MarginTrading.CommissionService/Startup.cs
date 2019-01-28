@@ -140,7 +140,7 @@ namespace MarginTrading.CommissionService
                 var rabbitMqService = ApplicationContainer.Resolve<IRabbitMqService>();
                 var fxRateCacheService = ApplicationContainer.Resolve<IFxRateCacheService>();
                 var executedOrdersHandlingService = ApplicationContainer.Resolve<IExecutedOrdersHandlingService>();
-                var assetPairManager = ApplicationContainer.Resolve<IAssetPairsManager>();
+                var assetPairManager = ApplicationContainer.Resolve<ISettingsManager>();
                 
                 if (settings.RabbitMq.Consumers.FxRateRabbitMqSettings != null)
                 {

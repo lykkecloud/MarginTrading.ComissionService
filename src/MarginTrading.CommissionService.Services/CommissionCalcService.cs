@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Common;
 using Common.Log;
 using MarginTrading.CommissionService.Core;
+using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Services;
@@ -18,6 +19,7 @@ namespace MarginTrading.CommissionService.Services
     public class CommissionCalcService : ICommissionCalcService
     {
         private readonly ICfdCalculatorService _cfdCalculatorService;
+        private readonly IAssetsCache _assetsCache;
         private readonly IRateSettingsService _rateSettingsService;
         private readonly IOrderEventsApi _orderEventsApi;
         private readonly IAccountRedisCache _accountRedisCache;
@@ -25,12 +27,14 @@ namespace MarginTrading.CommissionService.Services
 
         public CommissionCalcService(
             ICfdCalculatorService cfdCalculatorService,
+            IAssetsCache assetsCache,
             IRateSettingsService rateSettingsService,
             IOrderEventsApi orderEventsApi,
             IAccountRedisCache accountRedisCache,
             ILog log)
         {
             _cfdCalculatorService = cfdCalculatorService;
+            _assetsCache = assetsCache;
             _rateSettingsService = rateSettingsService;
             _orderEventsApi = orderEventsApi;
             _accountRedisCache = accountRedisCache;
@@ -60,7 +64,8 @@ namespace MarginTrading.CommissionService.Services
 
             var dayFactor = (decimal) numberOfFinancingDays / financingDaysPerYear;
 
-            return (calculationBasis * financingRate * dayFactor,
+            return (Math.Round(calculationBasis * financingRate * dayFactor, 
+                        _assetsCache.Get(account.BaseAssetId).Accuracy),
                 new
                 {
                     CalculationBasis = calculationBasis,
@@ -90,7 +95,7 @@ namespace MarginTrading.CommissionService.Services
                     rateSettings.CommissionRate * volumeInCommissionAsset))
                 * commissionToAccountRate;
 
-            return commission;
+            return Math.Round(commission, _assetsCache.Get(account.BaseAssetId).Accuracy);
         }
 
         public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId,
@@ -137,9 +142,12 @@ namespace MarginTrading.CommissionService.Services
             //use fx rates to convert to account asset
             var quote = _cfdCalculatorService.GetFxRate(rateSettings.CommissionAsset, accountAssetId, 
                 rateSettings.LegalEntity);
+
+            var commission = Math.Round(actionsNum * rateSettings.Commission * quote, 
+                _assetsCache.Get(accountAssetId).Accuracy);
             
             //calculate commission
-            return (actionsNum, actionsNum * rateSettings.Commission * quote);
+            return (actionsNum, commission);
 
             async Task<bool> CorrelatesWithParent(OrderEventContract order) =>
                 (await _orderEventsApi.OrderById(order.ParentOrderId, OrderStatusContract.Placed, false))
