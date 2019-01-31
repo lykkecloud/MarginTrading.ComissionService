@@ -8,6 +8,6 @@ namespace MarginTrading.CommissionService.Core.Caches
     {
         void Initialize(Dictionary<string, Asset> data);
 
-        Asset Get(string id);
+        int GetAccuracy(string id);
     }
 }

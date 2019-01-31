@@ -60,9 +60,9 @@ namespace MarginTrading.CommissionService.Services
 							_log.Error(nameof(DailyPnlService), 
 								new Exception($"Account {position.AccountId} does not exist in cache."));
 						}
-						var asset = _assetsCache.Get(account.BaseAssetId);
+						var accuracy = _assetsCache.GetAccuracy(account?.BaseAssetId);
 						
-						var calculation = ProcessPosition(position, operationId, tradingDay, asset.Accuracy);
+						var calculation = ProcessPosition(position, operationId, tradingDay, accuracy);
 						
 						if (calculation != null)
 						{

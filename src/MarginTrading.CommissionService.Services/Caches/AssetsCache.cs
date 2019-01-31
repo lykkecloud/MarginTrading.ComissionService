@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MarginTrading.CommissionService.Core.Caches;
@@ -10,6 +11,8 @@ namespace MarginTrading.CommissionService.Services.Caches
 {
     public class AssetsCache : IAssetsCache
     {
+        private int _maxAccuracy = 10;
+        
         private IReadOnlyDictionary<string, Asset> _cache = ImmutableSortedDictionary<string, Asset>.Empty;
 
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
@@ -26,6 +29,7 @@ namespace MarginTrading.CommissionService.Services.Caches
             try
             {
                 _cache = data;
+                _maxAccuracy = _cache.Max(x => x.Value.Accuracy);
             }
             finally
             {
@@ -33,15 +37,15 @@ namespace MarginTrading.CommissionService.Services.Caches
             }
         }
 
-        public Asset Get(string id)
+        public int GetAccuracy(string id)
         {
             _lock.EnterReadLock();
 
             try
             {
-                return _cache.TryGetValue(id, out var result) 
-                    ? result 
-                    : throw new Exception($"Asset {id} does not exist in cache");
+                return id != null && _cache.TryGetValue(id, out var result) 
+                    ? result.Accuracy
+                    : _maxAccuracy;
             }
             finally
             {

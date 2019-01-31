@@ -65,7 +65,7 @@ namespace MarginTrading.CommissionService.Services
             var dayFactor = (decimal) numberOfFinancingDays / financingDaysPerYear;
 
             return (Math.Round(calculationBasis * financingRate * dayFactor, 
-                        _assetsCache.Get(account.BaseAssetId).Accuracy),
+                        _assetsCache.GetAccuracy(account.BaseAssetId)),
                 new
                 {
                     CalculationBasis = calculationBasis,
@@ -95,7 +95,7 @@ namespace MarginTrading.CommissionService.Services
                     rateSettings.CommissionRate * volumeInCommissionAsset))
                 * commissionToAccountRate;
 
-            return Math.Round(commission, _assetsCache.Get(account.BaseAssetId).Accuracy);
+            return Math.Round(commission, _assetsCache.GetAccuracy(account.BaseAssetId));
         }
 
         public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId,
@@ -144,7 +144,7 @@ namespace MarginTrading.CommissionService.Services
                 rateSettings.LegalEntity);
 
             var commission = Math.Round(actionsNum * rateSettings.Commission * quote, 
-                _assetsCache.Get(accountAssetId).Accuracy);
+                _assetsCache.GetAccuracy(accountAssetId));
             
             //calculate commission
             return (actionsNum, commission);
