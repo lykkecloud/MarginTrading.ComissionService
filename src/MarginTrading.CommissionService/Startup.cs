@@ -75,7 +75,8 @@ namespace MarginTrading.CommissionService
                 });
 
                 var builder = new ContainerBuilder();
-                var appSettings = Configuration.LoadSettings<AppSettings>();
+                var appSettings = Configuration.LoadSettings<AppSettings>(
+                    throwExceptionOnCheckError: !Configuration.NotThrowExceptionsOnServiceValidation());
                 Log = CreateLog(Configuration, services, appSettings);
 
                 builder.RegisterModule(new CommissionServiceModule(appSettings, Log));
