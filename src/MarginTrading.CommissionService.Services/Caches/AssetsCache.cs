@@ -11,7 +11,7 @@ namespace MarginTrading.CommissionService.Services.Caches
 {
     public class AssetsCache : IAssetsCache
     {
-        private int _maxAccuracy = 10;
+        private int _maxAccuracy = 8;
         
         private IReadOnlyDictionary<string, Asset> _cache = ImmutableSortedDictionary<string, Asset>.Empty;
 
@@ -29,7 +29,9 @@ namespace MarginTrading.CommissionService.Services.Caches
             try
             {
                 _cache = data;
-                _maxAccuracy = _cache.Max(x => x.Value.Accuracy);
+                _maxAccuracy = _cache.Any()
+                    ? _cache.Max(x => x.Value.Accuracy)
+                    : 8;
             }
             finally
             {
