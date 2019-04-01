@@ -94,7 +94,7 @@ namespace MarginTrading.CommissionService.Services
 		/// <param name="tradingDay"></param>
 		/// <param name="accuracy"></param>
 		/// <returns></returns>
-		private DailyPnlCalculation ProcessPosition(IOpenPosition position,
+		private static DailyPnlCalculation ProcessPosition(IOpenPosition position,
 			string operationId, DateTime tradingDay, int? accuracy)
 		{
 			var value = position.PnL - position.ChargedPnl;

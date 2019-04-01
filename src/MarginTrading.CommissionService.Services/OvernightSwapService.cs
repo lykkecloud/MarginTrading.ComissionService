@@ -37,15 +37,12 @@ namespace MarginTrading.CommissionService.Services
 		private readonly IOvernightSwapHistoryRepository _overnightSwapHistoryRepository;
 		private readonly IInterestRatesRepository _interestRatesRepository;
 		private readonly IPositionReceiveService _positionReceiveService;
-		private readonly IThreadSwitcher _threadSwitcher;
 		private readonly ISystemClock _systemClock;
 		private readonly IConvertService _convertService;
-		private readonly IReloadingManager<CommissionServiceSettings> _marginSettings;
 		private readonly ILog _log;
 
 		private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-		private DateTime _currentStartTimestamp;
 		private Dictionary<string, decimal> _currentInterestRates;
 
 		public OvernightSwapService(
@@ -55,10 +52,8 @@ namespace MarginTrading.CommissionService.Services
 			IOvernightSwapHistoryRepository overnightSwapHistoryRepository,
 			IInterestRatesRepository interestRatesRepository,
 			IPositionReceiveService positionReceiveService,
-			IThreadSwitcher threadSwitcher,
 			ISystemClock systemClock,
 			IConvertService convertService,
-			IReloadingManager<CommissionServiceSettings> marginSettings,
 			ILog log)
 		{
 			_assetPairsApi = assetPairsApi;
@@ -67,10 +62,8 @@ namespace MarginTrading.CommissionService.Services
 			_overnightSwapHistoryRepository = overnightSwapHistoryRepository;
 			_interestRatesRepository = interestRatesRepository;
 			_positionReceiveService = positionReceiveService;
-			_threadSwitcher = threadSwitcher;
 			_systemClock = systemClock;
 			_convertService = convertService;
-			_marginSettings = marginSettings;
 			_log = log;
 		}
 
@@ -117,8 +110,6 @@ namespace MarginTrading.CommissionService.Services
 		public async Task<IReadOnlyList<IOvernightSwapCalculation>> Calculate(string operationId,
 			DateTime creationTimestamp, int numberOfFinancingDays, int financingDaysPerYear, DateTime tradingDay)
 		{
-			_currentStartTimestamp = _systemClock.UtcNow.DateTime;
-
 			var filteredPositions = await GetOrdersForCalculationAsync(tradingDay);
 			
 			await _semaphore.WaitAsync();

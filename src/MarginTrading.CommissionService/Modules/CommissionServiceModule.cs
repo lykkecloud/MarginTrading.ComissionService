@@ -118,7 +118,13 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<QuoteCacheService>()
                 .As<IQuoteCacheService>()
-                .SingleInstance();
+                .SingleInstance()
+                .OnActivated(args => args.Instance.Start());
+
+            builder.RegisterType<FxRateCacheService>()
+                .As<IFxRateCacheService>()
+                .SingleInstance()
+                .OnActivated(args => args.Instance.Start());
             
             builder.RegisterType<AssetsCache>()
                 .As<IAssetsCache>()
@@ -136,11 +142,6 @@ namespace MarginTrading.CommissionService.Modules
                 .As<IStartable>()
                 .As<ISettingsManager>()
                 .SingleInstance();
-
-            builder.RegisterType<FxRateCacheService>()
-                .As<IFxRateCacheService>()
-                .SingleInstance()
-                .OnActivated(args => args.Instance.Start());
 
             builder.RegisterType<OvernightSwapListener>()
                 .As<IOvernightSwapListener>()

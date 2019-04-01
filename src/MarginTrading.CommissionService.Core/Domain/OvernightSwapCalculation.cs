@@ -47,7 +47,6 @@ namespace MarginTrading.CommissionService.Core.Domain
 		}
 
 		public static string GetId(string operationId, string positionId) => $"{operationId}_{positionId}";
-		
 
 		public static (string OperationId, string PositionId) ExtractKeysFromId(string operationPositionId)
 		{
