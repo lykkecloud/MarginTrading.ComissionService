@@ -58,16 +58,16 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
             await _tableStorage.DeleteAsync(OvernightSwapEntity.Create(obj));
         }
 
-        public async Task SetWasCharged(string positionOperationId, bool type)
+        public async Task<int> SetWasCharged(string positionOperationId, bool type)
         {
-            var keys = OvernightSwapCalculation.ExtractKeysFromId(positionOperationId);
+            var (operationId, positionId) = OvernightSwapCalculation.ExtractKeysFromId(positionOperationId);
             var item = (await _tableStorage.GetDataAsync(x =>
-                x.PositionId == keys.PositionId && x.OperationId == keys.OperationId)).First();
-            await _tableStorage.ReplaceAsync(item, x =>
+                x.PositionId == positionId && x.OperationId == operationId)).First();
+            return null == await _tableStorage.ReplaceAsync(item, x =>
             {
                 x.WasCharged = true;
                 return x;
-            });
+            }) ? 0 : 1;
         }
 
         public async Task<(int Total, int Failed, int NotProcessed)> GetOperationState(string operationId)

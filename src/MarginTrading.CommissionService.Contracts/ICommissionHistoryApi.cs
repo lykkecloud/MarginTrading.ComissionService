@@ -8,7 +8,7 @@ using Refit;
 namespace Lykke.MarginTrading.CommissionService.Contracts
 {
     /// <summary>
-    /// Manages overnight swaps.
+    /// Manages commission history.
     /// </summary>
     [PublicAPI]
     public interface ICommissionHistoryApi
@@ -16,8 +16,15 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// <summary>
         /// Retrieve overnight swap calculation history from storage between selected dates.
         /// </summary>
-        [Get("/api/overnightswap/history")]
+        [Get("/api/commission/overnight-swap")]
         Task<List<OvernightSwapHistoryContract>> GetOvernightSwapHistory(
+            [Query] DateTime from, [Query] DateTime to);
+        
+        /// <summary>
+        /// Retrieve daily pnl calculation history from storage between selected dates.
+        /// </summary>
+        [Get("/api/commission/daily-pnl")]
+        Task<List<DailyPnlHistoryContract>> GetDailyPnlHistory(
             [Query] DateTime from, [Query] DateTime to);
     }
 }

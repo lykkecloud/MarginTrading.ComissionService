@@ -143,10 +143,17 @@ namespace MarginTrading.CommissionService.Modules
                 .From(_contextNames.CommissionService)
                 .On(DefaultRoute)
                 .PublishingCommands(
-                    typeof(ChangeBalanceCommand),
-                    typeof(ChargeSwapsTimeoutInternalCommand)
+                    typeof(ChangeBalanceCommand)
                 )
                 .To(_contextNames.AccountsManagement)
+                .With(DefaultPipeline);
+            
+            sagaRegistration
+                .PublishingCommands(
+                    typeof(ChargeSwapsTimeoutInternalCommand),
+                    typeof(ChargeDailyPnlTimeoutInternalCommand)
+                )
+                .To(_contextNames.CommissionService)
                 .With(DefaultPipeline);
 
             return sagaRegistration;
@@ -170,7 +177,8 @@ namespace MarginTrading.CommissionService.Modules
         {
             contextRegistration
                 .ListeningCommands(
-                    typeof(HandleOnBehalfInternalCommand))
+                    typeof(HandleOnBehalfInternalCommand)
+                )
                 .On(DefaultRoute)
                 .WithCommandsHandler<OnBehalfCommandsHandler>()
                 .PublishingEvents(
@@ -201,7 +209,9 @@ namespace MarginTrading.CommissionService.Modules
         {
             contextRegistration
                 .ListeningCommands(
-                    typeof(StartDailyPnlProcessCommand))
+                    typeof(StartDailyPnlProcessCommand),
+                    typeof(ChargeDailyPnlTimeoutInternalCommand)
+                )
                 .On(DefaultRoute)
                 .WithCommandsHandler<DailyPnlCommandsHandler>()
                 .PublishingEvents(

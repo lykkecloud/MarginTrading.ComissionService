@@ -1,12 +1,9 @@
-using System;
-using System.Linq;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
 using MarginTrading.AccountsManagement.Contracts.Events;
 using MarginTrading.AccountsManagement.Contracts.Models;
-using MarginTrading.CommissionService.Core.Domain.EventArgs;
 using MarginTrading.CommissionService.Core.Services;
 
 namespace MarginTrading.CommissionService.Workflow
@@ -15,17 +12,16 @@ namespace MarginTrading.CommissionService.Workflow
     internal class AccountListenerSaga
     {
         private readonly IOvernightSwapListener _overnightSwapListener;
-        private readonly IEventChannel<DailyPnlChargedEventArgs> _dailyPnlChargedEventChannel;
-
+        private readonly IDailyPnlListener _dailyPnlListener;
         private readonly IChaosKitty _chaosKitty;
         
         public AccountListenerSaga(
             IOvernightSwapListener overnightSwapListener,
-            IEventChannel<DailyPnlChargedEventArgs> dailyPnlChargedEventChannel,
+            IDailyPnlListener dailyPnlListener,
             IChaosKitty chaosKitty)
         {
             _overnightSwapListener = overnightSwapListener;
-            _dailyPnlChargedEventChannel = dailyPnlChargedEventChannel;
+            _dailyPnlListener = dailyPnlListener;
             _chaosKitty = chaosKitty;
         }
 
@@ -47,10 +43,7 @@ namespace MarginTrading.CommissionService.Workflow
                     await _overnightSwapListener.OvernightSwapStateChanged(evt.OperationId, true);
                     break;
                 case AccountBalanceChangeReasonTypeContract.UnrealizedDailyPnL:
-                    _dailyPnlChargedEventChannel.SendEvent(this, new DailyPnlChargedEventArgs
-                    {
-                        OperationId = evt.BalanceChange.Id,
-                    });
+                    await _dailyPnlListener.DailyPnlStateChanged(evt.OperationId, true);
                     break;
             }
             
@@ -65,7 +58,7 @@ namespace MarginTrading.CommissionService.Workflow
         {
             await _overnightSwapListener.OvernightSwapStateChanged(evt.OperationId, false);
             
-            _chaosKitty.Meow(evt.OperationId);
+            await _dailyPnlListener.DailyPnlStateChanged(evt.OperationId, false);
         }
     }
 }

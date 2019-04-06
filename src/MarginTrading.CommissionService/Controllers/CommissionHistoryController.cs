@@ -15,19 +15,23 @@ using MarginTrading.CommissionService.Core.Extensions;
 namespace MarginTrading.CommissionService.Controllers
 {
 	/// <inheritdoc cref="ICommissionHistoryApi" />
+	/// Manages commission history
 	[Route("api/commission")]
 	public class CommissionHistoryController : Controller, ICommissionHistoryApi
 	{
 		private readonly IOvernightSwapHistoryRepository _overnightSwapHistoryRepository;
+		private readonly IDailyPnlHistoryRepository _dailyPnlHistoryRepository;
 		
 		public CommissionHistoryController(
-			IOvernightSwapHistoryRepository overnightSwapHistoryRepository)
+			IOvernightSwapHistoryRepository overnightSwapHistoryRepository,
+			IDailyPnlHistoryRepository dailyPnlHistoryRepository)
 		{
 			_overnightSwapHistoryRepository = overnightSwapHistoryRepository;
+			_dailyPnlHistoryRepository = dailyPnlHistoryRepository;
 		}
 
 		/// <inheritdoc />
-		[Route("history")]
+		[Route("overnight-swap")]
 		[ProducesResponseType(typeof(List<OvernightSwapHistoryContract>), 200)]
 		[ProducesResponseType(400)]
 		[HttpGet]
@@ -38,6 +42,22 @@ namespace MarginTrading.CommissionService.Controllers
 				throw new Exception("'From' date must be before 'to' date.");
 			
 			var data = await _overnightSwapHistoryRepository.GetAsync(from, to);
+
+			return data.Select(Convert).ToList();
+		}
+		
+		/// <inheritdoc />
+		[Route("daily-pnl")]
+		[ProducesResponseType(typeof(List<DailyPnlHistoryContract>), 200)]
+		[ProducesResponseType(400)]
+		[HttpGet]
+		public async Task<List<DailyPnlHistoryContract>> GetDailyPnlHistory(
+			[FromQuery] DateTime @from, [FromQuery] DateTime to)
+		{
+			if (to < from)
+				throw new Exception("'From' date must be before 'to' date.");
+			
+			var data = await _dailyPnlHistoryRepository.GetAsync(from, to);
 
 			return data.Select(Convert).ToList();
 		}
@@ -60,6 +80,24 @@ namespace MarginTrading.CommissionService.Controllers
 				IsSuccess = overnightSwapCalculation.IsSuccess,
 				Exception = overnightSwapCalculation.Exception,
 				WasCharged = overnightSwapCalculation.WasCharged,
+			};
+		}
+
+		private DailyPnlHistoryContract Convert(IDailyPnlCalculation dailyPnlCalculation)
+		{
+			return new DailyPnlHistoryContract
+			{
+				Id = dailyPnlCalculation.Id,
+				OperationId = dailyPnlCalculation.OperationId,
+				AccountId = dailyPnlCalculation.AccountId,
+				Instrument = dailyPnlCalculation.Instrument,
+				Time = dailyPnlCalculation.Time,
+				TradingDay = dailyPnlCalculation.TradingDay,
+				Volume = dailyPnlCalculation.Volume,
+				FxRate = dailyPnlCalculation.FxRate,
+				PositionId = dailyPnlCalculation.PositionId,
+				Pnl = dailyPnlCalculation.Pnl,
+				WasCharged = dailyPnlCalculation.WasCharged,
 			};
 		}
 	}

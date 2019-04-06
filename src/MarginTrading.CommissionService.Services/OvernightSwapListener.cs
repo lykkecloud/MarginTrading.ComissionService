@@ -1,11 +1,6 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Lykke.Cqrs;
 using Lykke.MarginTrading.CommissionService.Contracts.Events;
-using MarginTrading.CommissionService.Core.Domain.EventArgs;
 using MarginTrading.CommissionService.Core.Services;
 using Microsoft.Extensions.Internal;
 
@@ -30,11 +25,14 @@ namespace MarginTrading.CommissionService.Services
         
         public async Task OvernightSwapStateChanged(string operationId, bool chargedOrFailed)
         {
-            await _overnightSwapService.SetWasCharged(operationId, chargedOrFailed);
+            if (await _overnightSwapService.SetWasCharged(operationId, chargedOrFailed) == 0)
+            {
+                return;
+            }
             
             var (total, failed, notProcessed) = await _overnightSwapService.GetOperationState(operationId);
 
-            if (notProcessed == 0)
+            if (total > 0 && notProcessed == 0)
             {
                 _cqrsMessageSender.PublishEvent(new OvernightSwapsChargedEvent(
                     operationId: operationId,

@@ -27,8 +27,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
     internal class ChargeCommissionSaga
     {
         private readonly IOvernightSwapService _overnightSwapService;
+        private readonly IDailyPnlService _dailyPnlService;
         private readonly ISystemClock _systemClock;
-        private readonly ILog _log;
         private readonly IOperationExecutionInfoRepository _executionInfoRepository;
         private readonly IChaosKitty _chaosKitty;
         private readonly CqrsContextNamesSettings _contextNames;
@@ -36,16 +36,16 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
 
         public ChargeCommissionSaga(
             IOvernightSwapService overnightSwapService,
+            IDailyPnlService dailyPnlService,
             ISystemClock systemClock,
-            ILog log,
             IOperationExecutionInfoRepository executionInfoRepository,
             IChaosKitty chaosKitty,
             CqrsContextNamesSettings contextNames,
             CommissionServiceSettings commissionServiceSettings)
         {
             _overnightSwapService = overnightSwapService;
+            _dailyPnlService = dailyPnlService;
             _systemClock = systemClock;
-            _log = log;
             _executionInfoRepository = executionInfoRepository;
             _chaosKitty = chaosKitty;
             _contextNames = contextNames;
@@ -187,9 +187,18 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
                 CommissionOperationState.Calculated))
             {
-                var state = await _overnightSwapService.GetOperationState(evt.OperationId);
+                var (total, _, notProcessed) = await _overnightSwapService.GetOperationState(evt.OperationId);
 
-                if (state.NotProcessed > 0)
+                if (total == 0)
+                {
+                    sender.SendCommand(new ChargeSwapsTimeoutInternalCommand
+                    {
+                        OperationId = evt.OperationId,
+                        CreationTime = _systemClock.UtcNow.UtcDateTime,
+                        TimeoutSeconds = 0,
+                    }, _contextNames.CommissionService);
+                }
+                else if (notProcessed > 0)
                 {
                     sender.SendCommand(new ChargeSwapsTimeoutInternalCommand
                     {
@@ -303,6 +312,27 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
                 CommissionOperationState.Calculated))
             {
+                var (total, _, notProcessed) = await _dailyPnlService.GetOperationState(evt.OperationId);
+
+                if (total == 0)
+                {
+                    sender.SendCommand(new ChargeDailyPnlTimeoutInternalCommand
+                    {
+                        OperationId = evt.OperationId,
+                        CreationTime = _systemClock.UtcNow.UtcDateTime,
+                        TimeoutSeconds = 0,
+                    }, _contextNames.CommissionService);
+                }
+                else if (notProcessed > 0)
+                {
+                    sender.SendCommand(new ChargeDailyPnlTimeoutInternalCommand
+                    {
+                        OperationId = evt.OperationId,
+                        CreationTime = _systemClock.UtcNow.UtcDateTime,
+                        TimeoutSeconds = _commissionServiceSettings.DailyPnlsChargingTimeoutSec,
+                    }, _contextNames.CommissionService);
+                }
+                
                 await _executionInfoRepository.Save(executionInfo);
             }
         }

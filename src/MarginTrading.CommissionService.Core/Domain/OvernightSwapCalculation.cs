@@ -12,8 +12,6 @@ namespace MarginTrading.CommissionService.Core.Domain
 	    private const string Separator = "_";
 		
 		public string Id => GetId(OperationId, PositionId);
-		
-		public string ProcessId { get; set; }
 
 		public string OperationId { get; }
 		public string AccountId { get; }

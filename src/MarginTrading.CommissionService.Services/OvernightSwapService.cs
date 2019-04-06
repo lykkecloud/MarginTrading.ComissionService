@@ -132,8 +132,10 @@ namespace MarginTrading.CommissionService.Services
 						var assetPair = assetPairs.First(x => x.Id == position.AssetPairId);
 						var calculation = await ProcessPosition(position, assetPair, operationId, 
 							numberOfFinancingDays, financingDaysPerYear, tradingDay);
-						if(calculation != null)
+						if (calculation != null)
+						{
 							resultingCalculations.Add(calculation);
+						}
 					}
 					catch (Exception ex)
 					{
@@ -204,9 +206,9 @@ namespace MarginTrading.CommissionService.Services
 			return calculation;
 		}
 
-		public async Task SetWasCharged(string positionOperationId, bool type)
+		public async Task<int> SetWasCharged(string positionOperationId, bool type)
 		{
-			await _overnightSwapHistoryRepository.SetWasCharged(positionOperationId, type);
+			return await _overnightSwapHistoryRepository.SetWasCharged(positionOperationId, type);
 		}
 
 		public async Task<(int Total, int Failed, int NotProcessed)> GetOperationState(string id)

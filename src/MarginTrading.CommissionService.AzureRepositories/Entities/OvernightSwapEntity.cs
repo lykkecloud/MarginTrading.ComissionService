@@ -49,7 +49,7 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
                 TradingDay = obj.TradingDay,
                 IsSuccess = obj.IsSuccess,
                 Exception = JsonConvert.SerializeObject(obj.Exception),
-                WasCharged = null,
+                WasCharged = obj.WasCharged,
             };
         }
     }

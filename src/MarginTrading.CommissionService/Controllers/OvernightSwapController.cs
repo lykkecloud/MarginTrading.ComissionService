@@ -9,7 +9,7 @@ using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Controllers
 {
-    [Route("api/overnightswap")]
+    [Route("api/overnight-swap")]
     public class OvernightSwapController : Controller, IOvernightSwapApi
     {
         private readonly ICqrsEngine _cqrsEngine;

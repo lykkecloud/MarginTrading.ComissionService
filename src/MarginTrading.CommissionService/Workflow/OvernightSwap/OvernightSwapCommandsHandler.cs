@@ -27,31 +27,25 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
         public const string OperationName = "OvernightSwapCommission";
         
         private readonly IOvernightSwapService _overnightSwapService;
-        private readonly IOvernightSwapListener _overnightSwapListener;
         private readonly IOperationExecutionInfoRepository _executionInfoRepository;
         private readonly ISystemClock _systemClock;
         private readonly IChaosKitty _chaosKitty;
         private readonly ILog _log;
-        private readonly IThreadSwitcher _threadSwitcher;
         private readonly CommissionServiceSettings _commissionServiceSettings;
 
         public OvernightSwapCommandsHandler(
             IOvernightSwapService overnightSwapService,
-            IOvernightSwapListener overnightSwapListener,
             IOperationExecutionInfoRepository executionInfoRepository,
             ISystemClock systemClock,
             IChaosKitty chaosKitty,
             ILog log,
-            IThreadSwitcher threadSwitcher,
             CommissionServiceSettings commissionServiceSettings)
         {
             _overnightSwapService = overnightSwapService;
-            _overnightSwapListener = overnightSwapListener;
             _executionInfoRepository = executionInfoRepository;
             _systemClock = systemClock;
             _chaosKitty = chaosKitty;
             _log = log;
-            _threadSwitcher = threadSwitcher;
             _commissionServiceSettings = commissionServiceSettings;
         }
 
@@ -116,8 +110,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                 operationId: command.OperationId,
                 creationTimestamp: _systemClock.UtcNow.UtcDateTime,
                 total: calculatedSwaps.Count,
-                failed: calculatedSwaps.Count(x => !x.IsSuccess),
-                swapsToCharge: swapsToCharge.Select(x => x.Id).ToList()
+                failed: calculatedSwaps.Count(x => !x.IsSuccess)
             ));
             
             _chaosKitty.Meow(command.OperationId);

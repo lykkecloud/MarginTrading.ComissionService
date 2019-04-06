@@ -23,7 +23,7 @@ namespace MarginTrading.CommissionService.Core.Services
         Task<IReadOnlyList<IOvernightSwapCalculation>> Calculate(string operationId, DateTime creationTimestamp,
             int numberOfFinancingDays, int financingDaysPerYear, DateTime tradingDay);
 
-        Task SetWasCharged(string positionOperationId, bool type);
+        Task<int> SetWasCharged(string positionOperationId, bool type);
         
         Task<(int Total, int Failed, int NotProcessed)> GetOperationState(string id);
     }

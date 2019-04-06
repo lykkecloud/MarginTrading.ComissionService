@@ -17,5 +17,9 @@ namespace MarginTrading.CommissionService.Core.Services
         /// <param name="tradingDay"></param>
         /// <returns></returns>
         Task<IReadOnlyList<IDailyPnlCalculation>> Calculate(string operationId, DateTime tradingDay);
+        
+        Task<int> SetWasCharged(string positionOperationId, bool type);
+
+        Task<(int Total, int Failed, int NotProcessed)> GetOperationState(string id);
     }
 }

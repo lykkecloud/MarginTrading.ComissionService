@@ -48,7 +48,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Entities
                 { 
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                 }),
-                WasCharged = null,
+                WasCharged = obj.WasCharged,
             };
         }
     }

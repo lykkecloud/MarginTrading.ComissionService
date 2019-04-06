@@ -6,6 +6,6 @@ namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IDailyPnlListener
     {
-        Task TrackCharging(string operationId, IEnumerable<string> operationIds, IEventPublisher publisher);
+        Task DailyPnlStateChanged(string operationId, bool chargedOrFailed);
     }
 }
