@@ -56,22 +56,16 @@ namespace MarginTrading.CommissionService.Modules
             {
                 Uri = _settings.ConnectionString
             };
-           
-            var messagingEngine= new DefaultHeadersMessagingEngine(
-                new MessagingEngine(_log,
-                    new TransportResolver(new Dictionary<string, TransportInfo>
-                    {
-                        {
-                            "RabbitMq",
-                            new TransportInfo(rabbitMqSettings.Endpoint.ToString(), rabbitMqSettings.UserName,
-                                rabbitMqSettings.Password, "None", "RabbitMq")
-                        }
-                    }),
-                    new RabbitMqTransportFactory()),
-                new Dictionary<string, string>()
+
+            var messagingEngine = new MessagingEngine(_log, new TransportResolver(
+                new Dictionary<string, TransportInfo>
                 {
-                    { "Content-Type", "application/vnd.lykke+msgpack" }
-                });
+                    {
+                        "RabbitMq",
+                        new TransportInfo(rabbitMqSettings.Endpoint.ToString(), rabbitMqSettings.UserName,
+                            rabbitMqSettings.Password, "None", "RabbitMq")
+                    }
+                }), new RabbitMqTransportFactory());
             
             // Sagas & command handlers
             builder.RegisterAssemblyTypes(GetType().Assembly)

@@ -144,7 +144,7 @@ namespace MarginTrading.CommissionService.Services
 					}
 				}
 
-				await _overnightSwapHistoryRepository.BatchInsertAsync(resultingCalculations);
+				await _overnightSwapHistoryRepository.BulkInsertAsync(resultingCalculations);
 				
 				await _log.WriteInfoAsync(nameof(OvernightSwapService), nameof(Calculate),
 					$"Finished, # of successful calculations: {resultingCalculations.Count(x => x.IsSuccess)}, # of failed: {resultingCalculations.Count(x => !x.IsSuccess)}.", DateTime.UtcNow);

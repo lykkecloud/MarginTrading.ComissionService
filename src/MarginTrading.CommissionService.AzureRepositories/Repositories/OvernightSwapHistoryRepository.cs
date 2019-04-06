@@ -25,7 +25,7 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
             await _tableStorage.InsertAndGenerateRowKeyAsDateTimeAsync(entity, entity.Time);
         }
 
-        public async Task BatchInsertAsync(List<IOvernightSwapCalculation> overnightSwapCalculations)
+        public async Task BulkInsertAsync(List<IOvernightSwapCalculation> overnightSwapCalculations)
         {
             foreach (var overnightSwapCalculation in overnightSwapCalculations)
             {

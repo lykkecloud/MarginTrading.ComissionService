@@ -77,10 +77,11 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
             }
         }
 
-        public async Task BatchInsertAsync(List<IOvernightSwapCalculation> overnightSwapCalculations)
+        public async Task BulkInsertAsync(List<IOvernightSwapCalculation> overnightSwapCalculations)
         {
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
+                await conn.Bulk
                 await conn.ExecuteAsync(
                     $"insert into {TableName} ({GetColumns}) values ({GetFields})", 
                     overnightSwapCalculations.Select(OvernightSwapEntity.Create));

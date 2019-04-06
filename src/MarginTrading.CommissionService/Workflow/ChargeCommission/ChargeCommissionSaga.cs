@@ -165,7 +165,6 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             
                 _chaosKitty.Meow(evt.OperationId);
             
-//                await _overnightSwapService.SetWasCharged(evt.OperationId);
                 await _executionInfoRepository.Save(executionInfo);
             }
         }

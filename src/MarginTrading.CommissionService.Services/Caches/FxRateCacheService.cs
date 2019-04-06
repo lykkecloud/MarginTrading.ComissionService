@@ -22,10 +22,9 @@ namespace MarginTrading.CommissionService.Services.Caches
         private readonly IMarginTradingBlobRepository _blobRepository;
         private Dictionary<string, InstrumentBidAskPair> _quotes;
         private readonly ReaderWriterLockSlim _lockSlim = new ReaderWriterLockSlim();
-        private const string BlobName = "FxRates";
+        private const string BlobName = "CommissionFxRates";
 
-        public FxRateCacheService(ILog log, IMarginTradingBlobRepository blobRepository, 
-            CommissionServiceSettings settings)
+        public FxRateCacheService(ILog log, IMarginTradingBlobRepository blobRepository)
         {
             _log = log;
             _blobRepository = blobRepository;

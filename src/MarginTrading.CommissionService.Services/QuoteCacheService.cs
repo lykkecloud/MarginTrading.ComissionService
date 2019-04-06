@@ -13,15 +13,18 @@ using MarginTrading.CommissionService.Core.Services;
 
 namespace MarginTrading.CommissionService.Services
 {
-    public class QuoteCacheService : IQuoteCacheService, IEventConsumer<BestPriceChangeEventArgs>
+    public class QuoteCacheService : TimerPeriod, IQuoteCacheService, IEventConsumer<BestPriceChangeEventArgs>
     {
+        private readonly ILog _log;
         private readonly IMarginTradingBlobRepository _blobRepository;
         private Dictionary<string, InstrumentBidAskPair> _quotes;
         private readonly ReaderWriterLockSlim _lockSlim = new ReaderWriterLockSlim();
-        private static string BlobName = "Quotes";
+        private const string BlobName = "CommissionQuotes";
 
-        public QuoteCacheService(IMarginTradingBlobRepository blobRepository)
+        public QuoteCacheService(ILog log, IMarginTradingBlobRepository blobRepository)
+            : base(nameof(QuoteCacheService), 10000, log)
         {
+            _log = log;
             _blobRepository = blobRepository;
             _quotes = new Dictionary<string, InstrumentBidAskPair>();
         }
@@ -121,13 +124,38 @@ namespace MarginTrading.CommissionService.Services
             }
         }
 
-        public void Start()
+        public override void Start()
         {
             _quotes =
                 _blobRepository
                     .Read<Dictionary<string, InstrumentBidAskPair>>(LykkeConstants.StateBlobContainer, BlobName)
                     ?.ToDictionary(d => d.Key, d => d.Value) ??
                 new Dictionary<string, InstrumentBidAskPair>();
+       
+            base.Start();	
+        }	
+
+        public override Task Execute()	
+        {	
+            return DumpToRepository();	
+        }	
+
+        public override void Stop()	
+        {	
+            DumpToRepository().Wait();	
+            base.Stop();	
+        }	
+
+        private async Task DumpToRepository()	
+        {	
+            try	
+            {	
+                await _blobRepository.WriteAsync(LykkeConstants.StateBlobContainer, BlobName, GetAllQuotes());	
+            }	
+            catch (Exception ex)	
+            {	
+                await _log.WriteErrorAsync(nameof(QuoteCacheService), "Save quotes", "", ex);	
+            }	
         }
     }
 }
