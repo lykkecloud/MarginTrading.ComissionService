@@ -49,6 +49,7 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<CqrsMessageSender>()
                 .As<ICqrsMessageSender>()
+                .PropertiesAutowired(PropertyWiringOptions.AllowCircularDependencies)
                 .SingleInstance();
             
             builder.RegisterType<ThreadSwitcherToNewTask>()
@@ -145,8 +146,6 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<OvernightSwapListener>()
                 .As<IOvernightSwapListener>()
-                .As<IEventConsumer<OvernightSwapChargedEventArgs>>()
-                .WithParameter(new TypedParameter(typeof(int), _settings.CurrentValue.CommissionService.OvernightSwapsChargingTimeoutSec))
                 .SingleInstance();
 
             builder.RegisterType<DailyPnlListener>()

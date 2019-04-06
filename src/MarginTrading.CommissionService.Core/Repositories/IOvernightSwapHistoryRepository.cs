@@ -8,6 +8,7 @@ namespace MarginTrading.CommissionService.Core.Repositories
     public interface IOvernightSwapHistoryRepository
     {
         Task AddAsync(IOvernightSwapCalculation obj);
+        Task BatchInsertAsync(List<IOvernightSwapCalculation> overnightSwapCalculations);
         Task<IEnumerable<IOvernightSwapCalculation>> GetAsync();
         Task<IReadOnlyList<IOvernightSwapCalculation>> GetAsync(DateTime? @from, DateTime? to);
         Task<IReadOnlyList<IOvernightSwapCalculation>> GetAsync(string accountId, DateTime? from, DateTime? to);
@@ -19,6 +20,8 @@ namespace MarginTrading.CommissionService.Core.Repositories
         /// <returns></returns>
         Task DeleteAsync(IOvernightSwapCalculation obj);
 
-        Task SetWasCharged(string positionOperationId);
+        Task SetWasCharged(string positionOperationId, bool type);
+        
+        Task<(int Total, int Failed, int NotProcessed)> GetOperationState(string operationId);
     }
 }

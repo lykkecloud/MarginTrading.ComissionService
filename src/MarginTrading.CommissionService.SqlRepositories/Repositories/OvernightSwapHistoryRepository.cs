@@ -31,8 +31,9 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
                                                  "[Details] [nvarchar] (MAX) NULL," +
                                                  "[IsSuccess] [bit] NOT NULL, " +
                                                  "[Exception] [nvarchar] (MAX) NULL," +
-                                                 "[WasCharged] [bit] NOT NULL," +
+                                                 "[WasCharged] [bit] NULL," +
                                                  "[TradingDay] [DATETIME] NOT NULL," +
+                                                 "[ProcessId] [nvarchar] (64) NOT NULL," +
                                                  "INDEX IX_OSH NONCLUSTERED (Time, TradingDay, AccountId, OperationId, PositionId, WasCharged)" +
                                                  ");";
         
@@ -71,7 +72,18 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
                 await conn.ExecuteAsync(
-                    $"insert into {TableName} ({GetColumns}) values ({GetFields})", OvernightSwapEntity.Create(obj));
+                    $"insert into {TableName} ({GetColumns}) values ({GetFields})", 
+                    OvernightSwapEntity.Create(obj));
+            }
+        }
+
+        public async Task BatchInsertAsync(List<IOvernightSwapCalculation> overnightSwapCalculations)
+        {
+            using (var conn = new SqlConnection(_settings.Db.StateConnString))
+            {
+                await conn.ExecuteAsync(
+                    $"insert into {TableName} ({GetColumns}) values ({GetFields})", 
+                    overnightSwapCalculations.Select(OvernightSwapEntity.Create));
             }
         }
 
@@ -99,12 +111,32 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
             }
         }
 
-        public async Task SetWasCharged(string positionOperationId)
+        public async Task SetWasCharged(string positionOperationId, bool type)
         {
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
                 await conn.ExecuteAsync(
-                    $"UPDATE {TableName} SET [WasCharged]=1 WHERE Id=@Id", new { Id = positionOperationId});
+                    $"UPDATE {TableName} SET [WasCharged]=@WasCharged WHERE Id=@Id", 
+                    new
+                    {
+                        Id = positionOperationId,
+                        WasCharged = type,
+                    });
+            }
+        }
+
+        public async Task<(int Total, int Failed, int NotProcessed)> GetOperationState(string operationId)
+        {
+            using (var conn = new SqlConnection(_settings.Db.StateConnString))
+            {
+                var (total, failed, notProcessed) = await conn.QuerySingleAsync<(int total, int failed, int notProcessed)>(
+                    @"SELECT
+  (SELECT COUNT(*) FROM OvernightSwapHistory WHERE OperationId=@OperationId) total,
+  (SELECT COUNT(*) FROM OvernightSwapHistory WHERE OperationId=@OperationId AND WasCharged=0) failed,
+  (SELECT COUNT(*) FROM OvernightSwapHistory WHERE OperationId=@OperationId AND WasCharged IS NULL) notProcessed", 
+                    new { OperationId = operationId });
+
+                return (total, failed, notProcessed);
             }
         }
 
@@ -117,11 +149,11 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
                                   (string.IsNullOrWhiteSpace(accountId) ? "" : " AND AccountId = @accountId")
                                   + (from == null ? "" : " AND Time > @from")
                                   + (to == null ? "" : " AND Time < @to");
-                var accounts = await conn.QueryAsync<OvernightSwapEntity>(
+                var swapEntities = await conn.QueryAsync<OvernightSwapEntity>(
                     $"SELECT * FROM {TableName} {whereClause}", 
                     new { accountId, from, to });
                 
-                return accounts.ToList();
+                return swapEntities.ToList();
             }
         }
     }

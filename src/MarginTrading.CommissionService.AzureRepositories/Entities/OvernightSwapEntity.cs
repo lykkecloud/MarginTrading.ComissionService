@@ -28,7 +28,7 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
         public string Exception { get; set; }
         Exception IOvernightSwapCalculation.Exception => JsonConvert.DeserializeObject<Exception>(Exception);
         
-        public bool WasCharged { get; set; }
+        public bool? WasCharged { get; set; }
 		
         public static OvernightSwapEntity Create(IOvernightSwapCalculation obj)
         {
@@ -49,7 +49,7 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
                 TradingDay = obj.TradingDay,
                 IsSuccess = obj.IsSuccess,
                 Exception = JsonConvert.SerializeObject(obj.Exception),
-                WasCharged = false,
+                WasCharged = null,
             };
         }
     }

@@ -143,6 +143,8 @@ namespace MarginTrading.CommissionService.Services
 							$"Calculation failed for position: {position?.ToJson()}. Operation : {operationId}", ex);
 					}
 				}
+
+				await _overnightSwapHistoryRepository.BatchInsertAsync(resultingCalculations);
 				
 				await _log.WriteInfoAsync(nameof(OvernightSwapService), nameof(Calculate),
 					$"Finished, # of successful calculations: {resultingCalculations.Count(x => x.IsSuccess)}, # of failed: {resultingCalculations.Count(x => !x.IsSuccess)}.", DateTime.UtcNow);
@@ -198,15 +200,21 @@ namespace MarginTrading.CommissionService.Services
 					isSuccess: false,
 					exception: exception);
 			}
-
-			await _overnightSwapHistoryRepository.AddAsync(calculation);
 			
 			return calculation;
 		}
 
-		public async Task SetWasCharged(string positionOperationId)
+		public async Task SetWasCharged(string positionOperationId, bool type)
 		{
-			await _overnightSwapHistoryRepository.SetWasCharged(positionOperationId);
+			await _overnightSwapHistoryRepository.SetWasCharged(positionOperationId, type);
+		}
+
+		public async Task<(int Total, int Failed, int NotProcessed)> GetOperationState(string id)
+		{
+			//may be position charge id or operation id
+			var operationId = OvernightSwapCalculation.ExtractOperationId(id);
+
+			return await _overnightSwapHistoryRepository.GetOperationState(operationId);
 		}
 	}
 }

@@ -24,15 +24,13 @@ namespace MarginTrading.CommissionService.Services
     [UsedImplicitly]
     public class CqrsMessageSender : ICqrsMessageSender
     {
-        private readonly ICqrsEngine _cqrsEngine;
+        public ICqrsEngine _cqrsEngine { get; set; }//property injection
         private readonly CqrsContextNamesSettings _contextNames;
 
         public CqrsMessageSender(
             ISystemClock systemClock,
-            ICqrsEngine cqrsEngine,
             CqrsContextNamesSettings contextNames)
         {
-            _cqrsEngine = cqrsEngine;
             _contextNames = contextNames;
         }
 
@@ -52,6 +50,18 @@ namespace MarginTrading.CommissionService.Services
                 _contextNames.CommissionService);
             
             return Task.CompletedTask;
+        }
+
+        public void PublishEvent<T>(T ev, string boundedContext = null)
+        {
+            try
+            {
+                _cqrsEngine.PublishEvent(ev, boundedContext ?? _contextNames.CommissionService);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
     }
 }

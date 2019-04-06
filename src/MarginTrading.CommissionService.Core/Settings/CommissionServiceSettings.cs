@@ -26,8 +26,14 @@ namespace MarginTrading.CommissionService.Core.Settings
         public RedisSettings RedisSettings { get; set; }
         
         public int OvernightSwapsChargingTimeoutSec { get; set; }
+
+        [Optional] 
+        public TimeSpan OvernightSwapsRetryTimeout { get; set; } = TimeSpan.FromMinutes(1);
         
         public int DailyPnlsChargingTimeoutSec { get; set; }
+
+        [Optional] 
+        public TimeSpan DailyPnlsRetryTimeout { get; set; } = TimeSpan.FromMinutes(1);
         
         [Optional]
         public bool UseSerilog { get; set; }

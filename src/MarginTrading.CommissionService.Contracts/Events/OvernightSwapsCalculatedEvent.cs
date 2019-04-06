@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using JetBrains.Annotations;
 using MessagePack;
 
@@ -34,14 +35,21 @@ namespace Lykke.MarginTrading.CommissionService.Contracts.Events
         /// </summary>
         [Key(3)]
         public int Failed { get; }
+        
+        /// <summary>
+        /// List of overnight swaps calculation id's to supervision
+        /// </summary>
+        [Key(4)]
+        public List<string> SwapsToCharge { get; }
 
         public OvernightSwapsCalculatedEvent([NotNull] string operationId, DateTime creationTimestamp, int total,
-            int failed)
+            int failed, List<string> swapsToCharge)
         {
             OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
             CreationTimestamp = creationTimestamp;
             Total = total;
             Failed = failed;
+            SwapsToCharge = swapsToCharge;
         }
     }
 }

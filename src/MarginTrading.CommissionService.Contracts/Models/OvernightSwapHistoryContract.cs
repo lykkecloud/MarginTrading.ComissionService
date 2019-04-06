@@ -20,6 +20,9 @@ namespace Lykke.MarginTrading.CommissionService.Contracts.Models
         public bool IsSuccess { get; set; }
         public Exception Exception { get; set; }
         
-        public bool WasCharged { get; set; }
+        /// <summary>
+        /// Null - not charged yet, False - charging failed, True - charged
+        /// </summary>
+        public bool? WasCharged { get; set; }
     }
 }

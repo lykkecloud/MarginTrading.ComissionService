@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
@@ -13,21 +14,18 @@ namespace MarginTrading.CommissionService.Workflow
     [UsedImplicitly]
     internal class AccountListenerSaga
     {
+        private readonly IOvernightSwapListener _overnightSwapListener;
         private readonly IEventChannel<DailyPnlChargedEventArgs> _dailyPnlChargedEventChannel;
-        private readonly IEventChannel<OvernightSwapChargedEventArgs> _overnightSwapChargedEventChannel;
-        private readonly IEventChannel<OvernightSwapChargeFailedEventArgs> _overnightSwapChargeFailedEventChannel;
 
         private readonly IChaosKitty _chaosKitty;
         
         public AccountListenerSaga(
+            IOvernightSwapListener overnightSwapListener,
             IEventChannel<DailyPnlChargedEventArgs> dailyPnlChargedEventChannel,
-            IEventChannel<OvernightSwapChargedEventArgs> overnightSwapChargedEventChannel,
-            IEventChannel<OvernightSwapChargeFailedEventArgs> overnightSwapChargeFailedEventChannel,
             IChaosKitty chaosKitty)
         {
+            _overnightSwapListener = overnightSwapListener;
             _dailyPnlChargedEventChannel = dailyPnlChargedEventChannel;
-            _overnightSwapChargedEventChannel = overnightSwapChargedEventChannel;
-            _overnightSwapChargeFailedEventChannel = overnightSwapChargeFailedEventChannel;
             _chaosKitty = chaosKitty;
         }
 
@@ -35,7 +33,7 @@ namespace MarginTrading.CommissionService.Workflow
         /// Grab AccountChangedEvent's data for OvernightSwaps and DailyPnls
         /// </summary>
         [UsedImplicitly]
-        private void Handle(AccountChangedEvent evt, ICommandSender sender)
+        private async Task Handle(AccountChangedEvent evt, ICommandSender sender)
         {
             if (evt.EventType != AccountChangedEventTypeContract.BalanceUpdated
                 || evt.BalanceChange == null)
@@ -46,10 +44,7 @@ namespace MarginTrading.CommissionService.Workflow
             switch (evt.BalanceChange.ReasonType)
             {
                 case AccountBalanceChangeReasonTypeContract.Swap:
-                    _overnightSwapChargedEventChannel.SendEvent(this, new OvernightSwapChargedEventArgs
-                    {
-                        OperationId = evt.BalanceChange.Id,
-                    });
+                    await _overnightSwapListener.OvernightSwapStateChanged(evt.OperationId, true);
                     break;
                 case AccountBalanceChangeReasonTypeContract.UnrealizedDailyPnL:
                     _dailyPnlChargedEventChannel.SendEvent(this, new DailyPnlChargedEventArgs
@@ -66,12 +61,9 @@ namespace MarginTrading.CommissionService.Workflow
         /// Grab AccountBalanceChangeFailedEvents for OvernightSwapListener
         /// </summary>
         [UsedImplicitly]
-        private void Handle(AccountBalanceChangeFailedEvent evt, ICommandSender sender)
+        private async Task Handle(AccountBalanceChangeFailedEvent evt, ICommandSender sender)
         {
-            _overnightSwapChargeFailedEventChannel.SendEvent(this, new OvernightSwapChargeFailedEventArgs
-            {
-                OperationId = evt.OperationId,
-            });
+            await _overnightSwapListener.OvernightSwapStateChanged(evt.OperationId, false);
             
             _chaosKitty.Meow(evt.OperationId);
         }

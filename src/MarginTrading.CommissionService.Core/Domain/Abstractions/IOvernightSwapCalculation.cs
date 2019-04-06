@@ -20,6 +20,6 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
         bool IsSuccess { get; }
         Exception Exception { get; }
         
-        bool WasCharged { get; }
+        bool? WasCharged { get; }
     }
 }

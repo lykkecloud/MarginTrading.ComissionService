@@ -25,6 +25,14 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
             await _tableStorage.InsertAndGenerateRowKeyAsDateTimeAsync(entity, entity.Time);
         }
 
+        public async Task BatchInsertAsync(List<IOvernightSwapCalculation> overnightSwapCalculations)
+        {
+            foreach (var overnightSwapCalculation in overnightSwapCalculations)
+            {
+                await AddAsync(overnightSwapCalculation);
+            }
+        }
+
         public async Task<IEnumerable<IOvernightSwapCalculation>> GetAsync()
         {
             return await _tableStorage.GetDataAsync();
@@ -50,7 +58,7 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
             await _tableStorage.DeleteAsync(OvernightSwapEntity.Create(obj));
         }
 
-        public async Task SetWasCharged(string positionOperationId)
+        public async Task SetWasCharged(string positionOperationId, bool type)
         {
             var keys = OvernightSwapCalculation.ExtractKeysFromId(positionOperationId);
             var item = (await _tableStorage.GetDataAsync(x =>
@@ -60,6 +68,14 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
                 x.WasCharged = true;
                 return x;
             });
+        }
+
+        public async Task<(int Total, int Failed, int NotProcessed)> GetOperationState(string operationId)
+        {
+            var items = await _tableStorage.GetDataAsync(x =>
+                x.OperationId == operationId);
+
+            return (items.Count, items.Count(x => !x.IsSuccess), items.Count(x => x == null));
         }
     }
 }

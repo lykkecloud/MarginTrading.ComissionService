@@ -50,7 +50,6 @@ namespace MarginTrading.CommissionService.Modules
         {
             builder.Register(context => new AutofacDependencyResolver(context)).As<IDependencyResolver>()
                 .SingleInstance();
-
             builder.RegisterInstance(_contextNames).AsSelf().SingleInstance();
 
             var rabbitMqSettings = new RabbitMQ.Client.ConnectionFactory
@@ -150,7 +149,9 @@ namespace MarginTrading.CommissionService.Modules
                 .From(_contextNames.CommissionService)
                 .On(DefaultRoute)
                 .PublishingCommands(
-                    typeof(ChangeBalanceCommand))
+                    typeof(ChangeBalanceCommand),
+                    typeof(ChargeSwapsTimeoutInternalCommand)
+                )
                 .To(_contextNames.AccountsManagement)
                 .With(DefaultPipeline);
 
@@ -188,7 +189,9 @@ namespace MarginTrading.CommissionService.Modules
         {
             contextRegistration
                 .ListeningCommands(
-                    typeof(StartOvernightSwapsProcessCommand))
+                    typeof(StartOvernightSwapsProcessCommand),
+                    typeof(ChargeSwapsTimeoutInternalCommand)
+                )
                 .On(DefaultRoute)
                 .WithCommandsHandler<OvernightSwapCommandsHandler>()
                 .PublishingEvents(
