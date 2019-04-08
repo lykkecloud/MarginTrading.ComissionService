@@ -20,6 +20,9 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
         public decimal FxRate { get; private set; }
         public string PositionId { get; private set; }
         public decimal Pnl { get; private set; }
+        public bool IsSuccess { get; private set; }
+        public string Exception { get; set; }
+        Exception IDailyPnlCalculation.Exception => JsonConvert.DeserializeObject<Exception>(Exception);
         public bool? WasCharged { get; private set; }
 
         public static DailyPnlEntity Create(IDailyPnlCalculation obj)
@@ -35,6 +38,8 @@ namespace MarginTrading.CommissionService.AzureRepositories.Entities
                 FxRate = obj.FxRate,
                 PositionId = obj.PositionId,
                 Pnl = obj.Pnl,
+                IsSuccess = obj.IsSuccess,
+                Exception = JsonConvert.SerializeObject(obj.Exception),
                 WasCharged = obj.WasCharged,
             };
         }

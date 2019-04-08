@@ -37,5 +37,8 @@ namespace MarginTrading.CommissionService.Core.Settings
         
         [Optional]
         public bool UseSerilog { get; set; }
+
+        [Optional]
+        public TimeSpan DistributedLockTimeout { get; set; } = TimeSpan.FromHours(12);
     }
 }

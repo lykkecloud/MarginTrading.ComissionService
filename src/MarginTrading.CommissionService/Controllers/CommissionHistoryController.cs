@@ -31,11 +31,23 @@ namespace MarginTrading.CommissionService.Controllers
 		}
 
 		/// <inheritdoc />
-		[Route("overnight-swap")]
+		[Route("history")]
+		[Obsolete]
 		[ProducesResponseType(typeof(List<OvernightSwapHistoryContract>), 200)]
 		[ProducesResponseType(400)]
 		[HttpGet]
 		public async Task<List<OvernightSwapHistoryContract>> GetOvernightSwapHistory(
+			[FromQuery] DateTime from, [FromQuery] DateTime to)
+		{
+			return await GetOvernightSwapHistoryV2(from, to);
+		}
+
+		/// <inheritdoc />
+		[Route("overnight-swap")]
+		[ProducesResponseType(typeof(List<OvernightSwapHistoryContract>), 200)]
+		[ProducesResponseType(400)]
+		[HttpGet]
+		public async Task<List<OvernightSwapHistoryContract>> GetOvernightSwapHistoryV2(
 			[FromQuery] DateTime from, [FromQuery] DateTime to)
 		{
 			if (to < from)

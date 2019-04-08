@@ -16,8 +16,16 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// <summary>
         /// Retrieve overnight swap calculation history from storage between selected dates.
         /// </summary>
-        [Get("/api/commission/overnight-swap")]
+        [Get("/api/overnightswap/history")]
+        [Obsolete]
         Task<List<OvernightSwapHistoryContract>> GetOvernightSwapHistory(
+            [Query] DateTime from, [Query] DateTime to);
+        
+        /// <summary>
+        /// Retrieve overnight swap calculation history from storage between selected dates.
+        /// </summary>
+        [Get("/api/commission/overnight-swap")]
+        Task<List<OvernightSwapHistoryContract>> GetOvernightSwapHistoryV2(
             [Query] DateTime from, [Query] DateTime to);
         
         /// <summary>

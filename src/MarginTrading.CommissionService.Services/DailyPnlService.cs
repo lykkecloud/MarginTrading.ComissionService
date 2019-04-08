@@ -11,7 +11,9 @@ using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
+using MarginTrading.CommissionService.Core.Settings;
 using Microsoft.Extensions.Internal;
+using StackExchange.Redis;
 
 namespace MarginTrading.CommissionService.Services
 {
@@ -21,14 +23,16 @@ namespace MarginTrading.CommissionService.Services
 	/// </summary>
 	public class DailyPnlService : IDailyPnlService
 	{
+		private const string DistributedLockKey = "CommissionService:DailyPnlProcess";
+		
 		private readonly IPositionReceiveService _positionReceiveService;
 		private readonly IAccountRedisCache _accountRedisCache;
 		private readonly IAssetsCache _assetsCache;
 		private readonly IDailyPnlHistoryRepository _dailyPnlHistoryRepository;
 		private readonly ISystemClock _systemClock;
 		private readonly ILog _log;
-
-		private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+		private readonly IDatabase _database;
+		private readonly CommissionServiceSettings _commissionServiceSettings;
 
 		public DailyPnlService(
 			IPositionReceiveService positionReceiveService,
@@ -36,7 +40,9 @@ namespace MarginTrading.CommissionService.Services
 			IAssetsCache assetsCache,
 			IDailyPnlHistoryRepository dailyPnlHistoryRepository,
 			ISystemClock systemClock,
-			ILog log)
+			ILog log,
+			IDatabase database,
+			CommissionServiceSettings commissionServiceSettings)
 		{
 			_positionReceiveService = positionReceiveService;
 			_accountRedisCache = accountRedisCache;
@@ -44,13 +50,59 @@ namespace MarginTrading.CommissionService.Services
 			_dailyPnlHistoryRepository = dailyPnlHistoryRepository;
 			_systemClock = systemClock;
 			_log = log;
+			_database = database;
+			_commissionServiceSettings = commissionServiceSettings;
+		}
+		
+		/// <summary>
+		/// Filter orders that are already calculated
+		/// </summary>
+		/// <returns></returns>
+		private async Task<IReadOnlyList<OpenPosition>> GetOrdersForCalculationAsync(DateTime tradingDay)
+		{
+			var openPositions = (await _positionReceiveService.GetActive()).ToList();
+			
+			//prepare the list of orders. Explicit end of the day is ok for DateTime From by requirements.
+			var allLast = await _dailyPnlHistoryRepository.GetAsync(tradingDay, null);
+
+			if (allLast.Any())
+			{
+				var lastMaxCalcTime = allLast.Max(x => x.TradingDay);
+				
+				if (lastMaxCalcTime.Date > tradingDay)
+				{
+					throw new Exception($"Calculation started for {tradingDay:d}, but there already was calculation for a newer date {lastMaxCalcTime:d}");
+				}
+			}
+			
+			var calculatedIds = allLast.Where(x => x.IsSuccess).Select(x => x.PositionId).ToHashSet();
+			//select only non-calculated positions, changed before current invocation time
+			var filteredOrders = openPositions.Where(x => !calculatedIds.Contains(x.Id) 
+			                                              && x.OpenTimestamp.Date <= tradingDay.Date);
+
+			//detect orders for which last calculation failed and it was closed
+			var failedClosedOrders = allLast.Where(x => !x.IsSuccess)
+				.Select(x => x.PositionId)
+				.Except(openPositions.Select(y => y.Id)).ToList();
+			if (failedClosedOrders.Any())
+			{
+				await _log.WriteErrorAsync(nameof(OvernightSwapService), nameof(GetOrdersForCalculationAsync), new Exception(
+						$"Daily PnL calculation failed for some positions and they were closed before recalculation: {string.Join(", ", failedClosedOrders)}."),
+					DateTime.UtcNow);
+			}
+			
+			return filteredOrders.ToList();
 		}
 
 		public async Task<IReadOnlyList<IDailyPnlCalculation>> Calculate(string operationId, DateTime tradingDay)
 		{
-			var openPositions = (await _positionReceiveService.GetActive()).ToList();
+			var openPositions = await GetOrdersForCalculationAsync(tradingDay);
 
-			await _semaphore.WaitAsync();
+			if (!await _database.LockTakeAsync(DistributedLockKey, Environment.MachineName,
+				_commissionServiceSettings.DistributedLockTimeout))
+			{
+				throw new Exception("Daily PnL calculation process is already in progress.");
+			}
 
 			var resultingCalculations = new List<IDailyPnlCalculation>();
 			try
@@ -73,14 +125,17 @@ namespace MarginTrading.CommissionService.Services
 						
 						var calculation = ProcessPosition(position, operationId, _systemClock.UtcNow.UtcDateTime, tradingDay, accuracy);
 						
-						if (calculation != null && calculation.Pnl != 0) // skip all zero pnls
+						if (calculation != null)
 						{
 							resultingCalculations.Add(calculation);
 						}
 					}
 					catch (Exception ex)
 					{
-						_log.WriteWarning(nameof(DailyPnlService), position?.ToJson(), "Error calculating PnL", ex);
+						resultingCalculations.Add(ProcessPosition(position, operationId, 
+							_systemClock.UtcNow.UtcDateTime, tradingDay, int.MaxValue, ex));
+						await _log.WriteErrorAsync(nameof(DailyPnlService), nameof(Calculate),
+							$"Error calculating PnL for position: {position?.ToJson()}. Operation : {operationId}", ex);
 					}
 				}
 
@@ -91,7 +146,7 @@ namespace MarginTrading.CommissionService.Services
 			}
 			finally
 			{
-				_semaphore.Release();
+				await _database.LockReleaseAsync(DistributedLockKey, Environment.MachineName);
 			}
 
 			return resultingCalculations;
@@ -113,9 +168,25 @@ namespace MarginTrading.CommissionService.Services
 		/// <summary>
 		/// Calculate daily pnl for position.
 		/// </summary>
-		private static DailyPnlCalculation ProcessPosition(IOpenPosition position,
-			string operationId, DateTime now, DateTime tradingDay, int? accuracy)
+		private static DailyPnlCalculation ProcessPosition(IOpenPosition position, string operationId, DateTime now, 
+			DateTime tradingDay, int? accuracy, Exception exception = null)
 		{
+			if (exception == null)
+			{
+				return new DailyPnlCalculation(
+					operationId: operationId,
+					accountId: position.AccountId,
+					instrument: position.AssetPairId,
+					time: now,
+					tradingDay: tradingDay,
+					volume: position.CurrentVolume,
+					fxRate: position.FxRate,
+					positionId: position.Id,
+					pnl: 0,
+					isSuccess: false
+				);
+			}
+			
 			var value = position.PnL - position.ChargedPnl;
 
 			return new DailyPnlCalculation(
@@ -130,7 +201,7 @@ namespace MarginTrading.CommissionService.Services
 				pnl: accuracy.HasValue
 					? Math.Round(value, accuracy.Value)
 					: value,
-				wasCharged: null
+				isSuccess: true
 			);
 		}
 	}

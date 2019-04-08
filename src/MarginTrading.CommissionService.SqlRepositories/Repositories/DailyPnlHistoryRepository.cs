@@ -29,6 +29,8 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
 [FxRate] float NOT NULL,
 [PositionId] [nvarchar] (64) NOT NULL,
 [Pnl] float NOT NULL,
+[IsSuccess] [bit] NOT NULL,
+[Exception] [nvarchar] (MAX) NULL,
 [WasCharged] [bit] NULL,
 INDEX IX_DailyPnlHistory NONCLUSTERED (Time, TradingDay, AccountId, OperationId, PositionId, WasCharged)
 );";

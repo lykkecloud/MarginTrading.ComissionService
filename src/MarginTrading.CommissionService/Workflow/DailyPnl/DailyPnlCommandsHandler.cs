@@ -83,7 +83,7 @@ namespace MarginTrading.CommissionService.Workflow.DailyPnl
                     return; //no retries
                 }
                 
-                var swapsToCharge = calculatedPnLs.Where(x => x.Pnl != 0).ToList();
+                var swapsToCharge = calculatedPnLs.Where(x => x.IsSuccess).ToList();
 
                 publisher.PublishEvent(new DailyPnlsCalculatedEvent(
                     operationId: command.OperationId,

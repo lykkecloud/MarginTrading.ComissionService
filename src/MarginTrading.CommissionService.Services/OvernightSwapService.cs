@@ -22,6 +22,7 @@ using MarginTrading.SettingsService.Contracts;
 using MarginTrading.SettingsService.Contracts.AssetPair;
 using Microsoft.Extensions.Internal;
 using Newtonsoft.Json;
+using StackExchange.Redis;
 
 namespace MarginTrading.CommissionService.Services
 {
@@ -31,40 +32,43 @@ namespace MarginTrading.CommissionService.Services
 	/// </summary>
 	public class OvernightSwapService : IOvernightSwapService
 	{
+		private const string DistributedLockKey = "CommissionService:OvernightSwapProcess";
+		
 		private readonly IAssetPairsApi _assetPairsApi;
 		private readonly ICommissionCalcService _commissionCalcService;
-		
 		private readonly IOvernightSwapHistoryRepository _overnightSwapHistoryRepository;
 		private readonly IInterestRatesRepository _interestRatesRepository;
 		private readonly IPositionReceiveService _positionReceiveService;
 		private readonly ISystemClock _systemClock;
 		private readonly IConvertService _convertService;
 		private readonly ILog _log;
-
-		private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+		private readonly IDatabase _database;
+		private readonly CommissionServiceSettings _commissionServiceSettings;
 
 		private Dictionary<string, decimal> _currentInterestRates;
 
 		public OvernightSwapService(
 			IAssetPairsApi assetPairsApi,
 			ICommissionCalcService commissionCalcService,
-			
 			IOvernightSwapHistoryRepository overnightSwapHistoryRepository,
 			IInterestRatesRepository interestRatesRepository,
 			IPositionReceiveService positionReceiveService,
 			ISystemClock systemClock,
 			IConvertService convertService,
-			ILog log)
+			ILog log,
+			IDatabase database,
+			CommissionServiceSettings commissionServiceSettings)
 		{
 			_assetPairsApi = assetPairsApi;
 			_commissionCalcService = commissionCalcService;
-			
 			_overnightSwapHistoryRepository = overnightSwapHistoryRepository;
 			_interestRatesRepository = interestRatesRepository;
 			_positionReceiveService = positionReceiveService;
 			_systemClock = systemClock;
 			_convertService = convertService;
 			_log = log;
+			_database = database;
+			_commissionServiceSettings = commissionServiceSettings;
 		}
 
 		/// <summary>
@@ -111,8 +115,12 @@ namespace MarginTrading.CommissionService.Services
 			DateTime creationTimestamp, int numberOfFinancingDays, int financingDaysPerYear, DateTime tradingDay)
 		{
 			var filteredPositions = await GetOrdersForCalculationAsync(tradingDay);
-			
-			await _semaphore.WaitAsync();
+
+			if (!await _database.LockTakeAsync(DistributedLockKey, Environment.MachineName,
+				_commissionServiceSettings.DistributedLockTimeout))
+			{
+				throw new Exception("Overnight swap calculation process is already in progress.");
+			}
 
 			var resultingCalculations = new List<IOvernightSwapCalculation>();
 			try
@@ -123,7 +131,7 @@ namespace MarginTrading.CommissionService.Services
 				var assetPairs = (await _assetPairsApi.List())
 					.Select(x => _convertService.Convert<AssetPairContract, AssetPair>(x)).ToList();
 				_currentInterestRates = (await _interestRatesRepository.GetAllLatest())
-					.ToDictionary(x => x.AssetPairId, x=> x.Rate);
+					.ToDictionary(x => x.AssetPairId, x => x.Rate);
 				
 				foreach (var position in filteredPositions)
 				{
@@ -142,7 +150,7 @@ namespace MarginTrading.CommissionService.Services
 						resultingCalculations.Add(await ProcessPosition(position, null, operationId, 
 							numberOfFinancingDays, financingDaysPerYear, tradingDay, ex));
 						await _log.WriteErrorAsync(nameof(OvernightSwapService), nameof(Calculate),
-							$"Calculation failed for position: {position?.ToJson()}. Operation : {operationId}", ex);
+							$"Error calculating swaps for position: {position?.ToJson()}. Operation : {operationId}", ex);
 					}
 				}
 
@@ -153,7 +161,7 @@ namespace MarginTrading.CommissionService.Services
 			}
 			finally
 			{
-				_semaphore.Release();
+				await _database.LockReleaseAsync(DistributedLockKey, Environment.MachineName);
 			}
 
 			return resultingCalculations;
@@ -166,29 +174,9 @@ namespace MarginTrading.CommissionService.Services
 			string operationId, int numberOfFinancingDays, int financingDaysPerYear, DateTime tradingDay,
 			Exception exception = null)
 		{
-			IOvernightSwapCalculation calculation;
-			
-			if (exception == null)
+			if (exception != null)
 			{
-				var swapData = await _commissionCalcService.GetOvernightSwap(_currentInterestRates, position, assetPair,
-					numberOfFinancingDays, financingDaysPerYear);
-				
-				calculation = new OvernightSwapCalculation(
-					operationId: operationId,
-					accountId: position.AccountId,
-					instrument: position.AssetPairId,
-					direction: position.Direction,
-					time: _systemClock.UtcNow.DateTime,
-					volume: position.CurrentVolume,
-					swapValue: swapData.Swap,
-					positionId: position.Id,
-					details: swapData.Details,
-					tradingDay: tradingDay,
-					isSuccess: true);
-			}
-			else
-			{
-				calculation = new OvernightSwapCalculation(
+				return new OvernightSwapCalculation(
 					operationId: operationId,
 					accountId: position.AccountId,
 					instrument: position.AssetPairId,
@@ -203,7 +191,21 @@ namespace MarginTrading.CommissionService.Services
 					exception: exception);
 			}
 			
-			return calculation;
+			var (swap, details) = await _commissionCalcService.GetOvernightSwap(_currentInterestRates, position,
+				assetPair, numberOfFinancingDays, financingDaysPerYear);
+
+			return new OvernightSwapCalculation(
+				operationId: operationId,
+				accountId: position.AccountId,
+				instrument: position.AssetPairId,
+				direction: position.Direction,
+				time: _systemClock.UtcNow.DateTime,
+				volume: position.CurrentVolume,
+				swapValue: swap,
+				positionId: position.Id,
+				details: details,
+				tradingDay: tradingDay,
+				isSuccess: true);
 		}
 
 		public async Task<int> SetWasCharged(string positionOperationId, bool type)
