@@ -115,9 +115,9 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
             {
                 var (total, failed, notProcessed) = await conn.QuerySingleAsync<(int total, int failed, int notProcessed)>(
                     $@"SELECT
-  (SELECT COUNT(*) FROM {TableName} WHERE OperationId=@OperationId) total,
-  (SELECT COUNT(*) FROM {TableName} WHERE OperationId=@OperationId AND WasCharged=0) failed,
-  (SELECT COUNT(*) FROM {TableName} WHERE OperationId=@OperationId AND WasCharged IS NULL) notProcessed", 
+  (SELECT COUNT(*) FROM {TableName} WHERE OperationId=@OperationId AND SwapValue<>0) total,
+  (SELECT COUNT(*) FROM {TableName} WHERE OperationId=@OperationId AND SwapValue<>0 AND WasCharged=0) failed,
+  (SELECT COUNT(*) FROM {TableName} WHERE OperationId=@OperationId AND SwapValue<>0 AND WasCharged IS NULL) notProcessed", 
                     new { OperationId = operationId });
 
                 return (total, failed, notProcessed);
