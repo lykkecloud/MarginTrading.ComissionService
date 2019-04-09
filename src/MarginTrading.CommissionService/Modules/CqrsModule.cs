@@ -108,7 +108,9 @@ namespace MarginTrading.CommissionService.Modules
         {
             var contextRegistration = Register.BoundedContext(_contextNames.CommissionService)
                 .FailedCommandRetryDelay(_defaultRetryDelayMs)
-                .ProcessingOptions(DefaultRoute).MultiThreaded(8).QueueCapacity(1024);
+                .ProcessingOptions(DefaultRoute)
+                .MultiThreaded(_settings.CommandsHandlersThreadCount)
+                .QueueCapacity(_settings.CommandsHandlersQueueCapacity);
             RegisterOrderExecCommissionCommandHandler(contextRegistration);
             RegisterOnBehalfCommandsHandler(contextRegistration);
             RegisterOvernightSwapCommandHandler(contextRegistration);

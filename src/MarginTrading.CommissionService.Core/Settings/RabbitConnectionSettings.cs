@@ -11,5 +11,8 @@ namespace MarginTrading.CommissionService.Core.Settings
         
         [Optional]
         public string RoutingKey { get; set; }
+
+        [Optional] 
+        public int ConsumerCount { get; set; } = 1;
     }
 }
