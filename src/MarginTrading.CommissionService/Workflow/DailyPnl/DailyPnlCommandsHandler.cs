@@ -83,18 +83,18 @@ namespace MarginTrading.CommissionService.Workflow.DailyPnl
                     return; //no retries
                 }
                 
-                var swapsToCharge = calculatedPnLs.Where(x => x.IsSuccess).ToList();
+                var pnlsToCharge = calculatedPnLs.Where(x => x.IsSuccess).ToList();
 
                 publisher.PublishEvent(new DailyPnlsCalculatedEvent(
                     operationId: command.OperationId,
                     creationTimestamp: _systemClock.UtcNow.UtcDateTime,
-                    total: swapsToCharge.Count,
+                    total: pnlsToCharge.Count,
                     failed: 0 //todo not implemented: check
                 ));
 
                 _chaosKitty.Meow(command.OperationId);
 
-                foreach (var pnl in swapsToCharge)
+                foreach (var pnl in pnlsToCharge)
                 {
                     //prepare state for sub operations
                     await _executionInfoRepository.GetOrAddAsync(

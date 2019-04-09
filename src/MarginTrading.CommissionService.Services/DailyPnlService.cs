@@ -171,7 +171,7 @@ namespace MarginTrading.CommissionService.Services
 		private static DailyPnlCalculation ProcessPosition(IOpenPosition position, string operationId, DateTime now, 
 			DateTime tradingDay, int? accuracy, Exception exception = null)
 		{
-			if (exception == null)
+			if (exception != null)
 			{
 				return new DailyPnlCalculation(
 					operationId: operationId,
@@ -183,7 +183,8 @@ namespace MarginTrading.CommissionService.Services
 					fxRate: position.FxRate,
 					positionId: position.Id,
 					pnl: 0,
-					isSuccess: false
+					isSuccess: false,
+					exception: exception
 				);
 			}
 			
