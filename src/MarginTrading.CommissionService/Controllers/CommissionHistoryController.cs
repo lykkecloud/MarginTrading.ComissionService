@@ -30,16 +30,15 @@ namespace MarginTrading.CommissionService.Controllers
 			_dailyPnlHistoryRepository = dailyPnlHistoryRepository;
 		}
 
-		/// <inheritdoc />
 		[Route("history")]
 		[Obsolete]
 		[ProducesResponseType(typeof(List<OvernightSwapHistoryContract>), 200)]
 		[ProducesResponseType(400)]
 		[HttpGet]
-		public async Task<List<OvernightSwapHistoryContract>> GetOvernightSwapHistory(
+		public async Task<List<OvernightSwapHistoryContract>> GetOvernightSwapHistoryOld(
 			[FromQuery] DateTime from, [FromQuery] DateTime to)
 		{
-			return await GetOvernightSwapHistoryV2(from, to);
+			return await GetOvernightSwapHistory(from, to);
 		}
 
 		/// <inheritdoc />
@@ -47,7 +46,7 @@ namespace MarginTrading.CommissionService.Controllers
 		[ProducesResponseType(typeof(List<OvernightSwapHistoryContract>), 200)]
 		[ProducesResponseType(400)]
 		[HttpGet]
-		public async Task<List<OvernightSwapHistoryContract>> GetOvernightSwapHistoryV2(
+		public async Task<List<OvernightSwapHistoryContract>> GetOvernightSwapHistory(
 			[FromQuery] DateTime from, [FromQuery] DateTime to)
 		{
 			if (to < from)
