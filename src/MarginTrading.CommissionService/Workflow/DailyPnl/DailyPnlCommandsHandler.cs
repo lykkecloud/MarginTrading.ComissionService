@@ -88,8 +88,8 @@ namespace MarginTrading.CommissionService.Workflow.DailyPnl
                 publisher.PublishEvent(new DailyPnlsCalculatedEvent(
                     operationId: command.OperationId,
                     creationTimestamp: _systemClock.UtcNow.UtcDateTime,
-                    total: pnlsToCharge.Count,
-                    failed: 0 //todo not implemented: check
+                    total: calculatedPnLs.Count,
+                    failed: calculatedPnLs.Count(x => !x.IsSuccess)
                 ));
 
                 _chaosKitty.Meow(command.OperationId);

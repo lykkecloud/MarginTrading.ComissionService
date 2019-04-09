@@ -114,8 +114,6 @@ namespace MarginTrading.CommissionService.Services
 		public async Task<IReadOnlyList<IOvernightSwapCalculation>> Calculate(string operationId,
 			DateTime creationTimestamp, int numberOfFinancingDays, int financingDaysPerYear, DateTime tradingDay)
 		{
-			var filteredPositions = await GetOrdersForCalculationAsync(tradingDay);
-
 			if (!await _database.LockTakeAsync(DistributedLockKey, Environment.MachineName,
 				_commissionServiceSettings.DistributedLockTimeout))
 			{
@@ -125,6 +123,8 @@ namespace MarginTrading.CommissionService.Services
 			var resultingCalculations = new List<IOvernightSwapCalculation>();
 			try
 			{
+				var filteredPositions = await GetOrdersForCalculationAsync(tradingDay);
+
 				await _log.WriteInfoAsync(nameof(OvernightSwapService), nameof(Calculate),
 					$"Started, # of positions: {filteredPositions.Count}.", DateTime.UtcNow);
 

@@ -96,8 +96,6 @@ namespace MarginTrading.CommissionService.Services
 
 		public async Task<IReadOnlyList<IDailyPnlCalculation>> Calculate(string operationId, DateTime tradingDay)
 		{
-			var openPositions = await GetOrdersForCalculationAsync(tradingDay);
-
 			if (!await _database.LockTakeAsync(DistributedLockKey, Environment.MachineName,
 				_commissionServiceSettings.DistributedLockTimeout))
 			{
@@ -107,6 +105,8 @@ namespace MarginTrading.CommissionService.Services
 			var resultingCalculations = new List<IDailyPnlCalculation>();
 			try
 			{
+				var openPositions = await GetOrdersForCalculationAsync(tradingDay);
+				
 				await _log.WriteInfoAsync(nameof(DailyPnlService), nameof(Calculate),
 					$"Started, # of positions: {openPositions.Count}.", DateTime.UtcNow);
 

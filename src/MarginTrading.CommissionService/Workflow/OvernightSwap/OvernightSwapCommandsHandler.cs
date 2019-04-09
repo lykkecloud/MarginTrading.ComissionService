@@ -104,7 +104,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                 return; //no retries
             }
 
-            var swapsToCharge = calculatedSwaps.Where(x => x.IsSuccess && x.SwapValue != 0).ToList();
+            var swapsToCharge = calculatedSwaps.Where(x => x.IsSuccess).ToList();
             
             publisher.PublishEvent(new OvernightSwapsCalculatedEvent(
                 operationId: command.OperationId,
