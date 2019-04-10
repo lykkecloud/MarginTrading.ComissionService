@@ -7,7 +7,6 @@ using Lykke.SettingsReader;
 using MarginTrading.CommissionService.AzureRepositories;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
-using MarginTrading.CommissionService.Core.Domain.EventArgs;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
@@ -49,6 +48,7 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<CqrsMessageSender>()
                 .As<ICqrsMessageSender>()
+                .PropertiesAutowired(PropertyWiringOptions.AllowCircularDependencies)
                 .SingleInstance();
             
             builder.RegisterType<ThreadSwitcherToNewTask>()
@@ -67,23 +67,7 @@ namespace MarginTrading.CommissionService.Modules
 
             RegisterRepositories(builder);
             RegisterServices(builder);
-            RegisterEventChannels(builder);
             RegisterRedis(builder);
-        }
-
-        private void RegisterEventChannels(ContainerBuilder builder)
-        {
-            builder.RegisterType<EventChannel<DailyPnlChargedEventArgs>>()
-                .As<IEventChannel<DailyPnlChargedEventArgs>>()
-                .SingleInstance();
-
-            builder.RegisterType<EventChannel<OvernightSwapChargedEventArgs>>()
-                .As<IEventChannel<OvernightSwapChargedEventArgs>>()
-                .SingleInstance();
-
-            builder.RegisterType<EventChannel<OvernightSwapChargeFailedEventArgs>>()
-                .As<IEventChannel<OvernightSwapChargeFailedEventArgs>>()
-                .SingleInstance();
         }
 
         private void RegisterServices(ContainerBuilder builder)
@@ -118,7 +102,13 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<QuoteCacheService>()
                 .As<IQuoteCacheService>()
-                .SingleInstance();
+                .SingleInstance()
+                .OnActivated(args => args.Instance.Start());
+
+            builder.RegisterType<FxRateCacheService>()
+                .As<IFxRateCacheService>()
+                .SingleInstance()
+                .OnActivated(args => args.Instance.Start());
             
             builder.RegisterType<AssetsCache>()
                 .As<IAssetsCache>()
@@ -137,21 +127,12 @@ namespace MarginTrading.CommissionService.Modules
                 .As<ISettingsManager>()
                 .SingleInstance();
 
-            builder.RegisterType<FxRateCacheService>()
-                .As<IFxRateCacheService>()
-                .SingleInstance()
-                .OnActivated(args => args.Instance.Start());
-
             builder.RegisterType<OvernightSwapListener>()
                 .As<IOvernightSwapListener>()
-                .As<IEventConsumer<OvernightSwapChargedEventArgs>>()
-                .WithParameter(new TypedParameter(typeof(int), _settings.CurrentValue.CommissionService.OvernightSwapsChargingTimeoutSec))
                 .SingleInstance();
 
             builder.RegisterType<DailyPnlListener>()
                 .As<IDailyPnlListener>()
-                .As<IEventConsumer<DailyPnlChargedEventArgs>>()
-                .WithParameter(new TypedParameter(typeof(int), _settings.CurrentValue.CommissionService.DailyPnlsChargingTimeoutSec))
                 .SingleInstance();
 
             builder.RegisterType<RateSettingsService>()
@@ -176,6 +157,11 @@ namespace MarginTrading.CommissionService.Modules
                             _settings.Nested(s => s.CommissionService.Db.StateConnString), _log))
                     .SingleInstance();
 
+                builder.Register<IDailyPnlHistoryRepository>(ctx =>
+                        AzureRepoFactories.MarginTrading.CreateDailyPnlHistoryRepository(
+                            _settings.Nested(s => s.CommissionService.Db.StateConnString), _log))
+                    .SingleInstance();
+
                 builder.Register<IInterestRatesRepository>(ctx =>
                     AzureRepoFactories.MarginTrading.CreateInterestRatesRepository(
                         _settings.Nested(s => s.CommissionService.Db.StateConnString), _log));
@@ -193,6 +179,10 @@ namespace MarginTrading.CommissionService.Modules
                 
                 builder.RegisterType<OvernightSwapHistoryRepository>()
                     .As<IOvernightSwapHistoryRepository>()
+                    .SingleInstance();
+                
+                builder.RegisterType<DailyPnlHistoryRepository>()
+                    .As<IDailyPnlHistoryRepository>()
                     .SingleInstance();
 
                 builder.RegisterType<InterestRatesRepository>()

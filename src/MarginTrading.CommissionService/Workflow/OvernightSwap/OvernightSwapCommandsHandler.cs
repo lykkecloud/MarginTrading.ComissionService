@@ -11,6 +11,7 @@ using Lykke.MarginTrading.CommissionService.Contracts.Commands;
 using Lykke.MarginTrading.CommissionService.Contracts.Events;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
+using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
@@ -26,29 +27,26 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
         public const string OperationName = "OvernightSwapCommission";
         
         private readonly IOvernightSwapService _overnightSwapService;
-        private readonly IOvernightSwapListener _overnightSwapListener;
         private readonly IOperationExecutionInfoRepository _executionInfoRepository;
         private readonly ISystemClock _systemClock;
         private readonly IChaosKitty _chaosKitty;
         private readonly ILog _log;
-        private readonly IThreadSwitcher _threadSwitcher;
+        private readonly CommissionServiceSettings _commissionServiceSettings;
 
         public OvernightSwapCommandsHandler(
             IOvernightSwapService overnightSwapService,
-            IOvernightSwapListener overnightSwapListener,
             IOperationExecutionInfoRepository executionInfoRepository,
             ISystemClock systemClock,
             IChaosKitty chaosKitty,
             ILog log,
-            IThreadSwitcher threadSwitcher)
+            CommissionServiceSettings commissionServiceSettings)
         {
             _overnightSwapService = overnightSwapService;
-            _overnightSwapListener = overnightSwapListener;
             _executionInfoRepository = executionInfoRepository;
             _systemClock = systemClock;
             _chaosKitty = chaosKitty;
             _log = log;
-            _threadSwitcher = threadSwitcher;
+            _commissionServiceSettings = commissionServiceSettings;
         }
 
         /// <summary>
@@ -105,26 +103,17 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                 await _log.WriteErrorAsync(nameof(OvernightSwapCommandsHandler), nameof(Handle), exception, _systemClock.UtcNow.UtcDateTime);
                 return; //no retries
             }
+
+            var swapsToCharge = calculatedSwaps.Where(x => x.IsSuccess).ToList();
             
             publisher.PublishEvent(new OvernightSwapsCalculatedEvent(
                 operationId: command.OperationId,
                 creationTimestamp: _systemClock.UtcNow.UtcDateTime,
                 total: calculatedSwaps.Count,
-                failed: calculatedSwaps.Count(x => !x.IsSuccess) 
+                failed: calculatedSwaps.Count(x => !x.IsSuccess)
             ));
             
             _chaosKitty.Meow(command.OperationId);
-
-            var swapsToCharge = calculatedSwaps.Where(x => x.IsSuccess && x.SwapValue != 0);
-
-            //TODO: replace in-memory tracking by subscription on event
-            _threadSwitcher.SwitchThread(() => _overnightSwapListener.TrackCharging(
-                operationId: command.OperationId, 
-                operationIds: swapsToCharge.Select(x => x.Id).ToList(),
-                publisher: publisher
-            ));
-            
-            //_chaosKitty.Meow(command.OperationId);
 
             foreach (var swap in swapsToCharge)
             {
@@ -157,9 +146,38 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     details: swap.Details,
                     tradingDay: command.TradingDay));
             }
-
-            //_chaosKitty.Meow(command.OperationId);
         }
 
+        private async Task<CommandHandlingResult> Handle(ChargeSwapsTimeoutInternalCommand command,
+            IEventPublisher publisher)
+        {
+            var executionInfo = await _executionInfoRepository.GetAsync<OvernightSwapOperationData>(
+                operationName: OperationName,
+                id: command.OperationId);
+
+            if (executionInfo?.Data != null)
+            {
+                if (executionInfo.Data.State > CommissionOperationState.Calculated)
+                {
+                    return CommandHandlingResult.Ok();
+                }
+                
+                if (_systemClock.UtcNow.UtcDateTime >= command.CreationTime.AddSeconds(command.TimeoutSeconds))
+                {
+                    var (total, failed, _) = await _overnightSwapService.GetOperationState(command.OperationId);
+                    
+                    publisher.PublishEvent(new OvernightSwapsChargedEvent(
+                        operationId: command.OperationId,
+                        creationTimestamp: _systemClock.UtcNow.UtcDateTime,
+                        total: total,
+                        failed: failed
+                    ));
+
+                    return CommandHandlingResult.Ok();
+                }
+            }
+
+            return CommandHandlingResult.Fail(_commissionServiceSettings.OvernightSwapsRetryTimeout);
+        }
     }
 }

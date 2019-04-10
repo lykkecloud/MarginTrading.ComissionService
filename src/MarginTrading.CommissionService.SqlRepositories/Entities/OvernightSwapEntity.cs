@@ -27,7 +27,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Entities
         public string Exception { get; set; }
         Exception IOvernightSwapCalculation.Exception => JsonConvert.DeserializeObject<Exception>(Exception);
         
-        public bool WasCharged { get; set; }
+        public bool? WasCharged { get; set; }
 		
         public static OvernightSwapEntity Create(IOvernightSwapCalculation obj)
         {
@@ -48,7 +48,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Entities
                 { 
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                 }),
-                WasCharged = false,
+                WasCharged = obj.WasCharged,
             };
         }
     }

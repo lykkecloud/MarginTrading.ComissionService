@@ -6,6 +6,6 @@ namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IOvernightSwapListener
     {
-        Task TrackCharging(string operationId, List<string> operationIds, IEventPublisher publisher);
+        Task OvernightSwapStateChanged(string operationId, bool chargedOrFailed);
     }
 }

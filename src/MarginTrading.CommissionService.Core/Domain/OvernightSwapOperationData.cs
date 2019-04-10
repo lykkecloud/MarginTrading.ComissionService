@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace MarginTrading.CommissionService.Core.Domain
 {
     public class OvernightSwapOperationData : OperationDataBase<CommissionOperationState>

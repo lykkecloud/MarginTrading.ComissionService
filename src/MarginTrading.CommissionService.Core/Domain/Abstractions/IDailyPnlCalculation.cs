@@ -9,12 +9,16 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
         string OperationId { get; }
         string AccountId { get; }
         string Instrument { get; }
+        DateTime Time { get; }
         DateTime TradingDay { get; }
         decimal Volume { get; }
         decimal FxRate { get; }
         string PositionId { get; }
         decimal Pnl { get; }
-
-        string GetId();
+        
+        bool IsSuccess { get; }
+        Exception Exception { get; }
+        
+        bool? WasCharged { get; }
     }
 }

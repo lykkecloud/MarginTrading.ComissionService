@@ -13,6 +13,7 @@ using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
+using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
 using Microsoft.Extensions.Internal;
 
@@ -26,8 +27,7 @@ namespace MarginTrading.CommissionService.Workflow.DailyPnl
         private readonly ISystemClock _systemClock;
         private readonly IChaosKitty _chaosKitty;
         private readonly ILog _log;
-        private readonly IThreadSwitcher _threadSwitcher;
-        private readonly IDailyPnlListener _dailyPnlListener;
+        private readonly CommissionServiceSettings _commissionServiceSettings;
 
         public DailyPnlCommandsHandler(
             IDailyPnlService dailyPnlService,
@@ -35,16 +35,14 @@ namespace MarginTrading.CommissionService.Workflow.DailyPnl
             ISystemClock systemClock,
             IChaosKitty chaosKitty,
             ILog log,
-            IThreadSwitcher threadSwitcher,
-            IDailyPnlListener dailyPnlListener)
+            CommissionServiceSettings commissionServiceSettings)
         {
             _dailyPnlService = dailyPnlService;
             _executionInfoRepository = executionInfoRepository;
             _systemClock = systemClock;
             _chaosKitty = chaosKitty;
             _log = log;
-            _threadSwitcher = threadSwitcher;
-            _dailyPnlListener = dailyPnlListener;
+            _commissionServiceSettings = commissionServiceSettings;
         }
 
         /// <summary>
@@ -84,34 +82,27 @@ namespace MarginTrading.CommissionService.Workflow.DailyPnl
                     await _log.WriteErrorAsync(nameof(DailyPnlCommandsHandler), nameof(Handle), exception, _systemClock.UtcNow.UtcDateTime);
                     return; //no retries
                 }
+                
+                var pnlsToCharge = calculatedPnLs.Where(x => x.IsSuccess).ToList();
 
                 publisher.PublishEvent(new DailyPnlsCalculatedEvent(
                     operationId: command.OperationId,
                     creationTimestamp: _systemClock.UtcNow.UtcDateTime,
                     total: calculatedPnLs.Count,
-                    failed: 0 //todo not implemented: check
+                    failed: calculatedPnLs.Count(x => !x.IsSuccess)
                 ));
 
                 _chaosKitty.Meow(command.OperationId);
 
-                //TODO: replace in-memory tracking by subscription on event 
-                _threadSwitcher.SwitchThread(() => _dailyPnlListener.TrackCharging(
-                    operationId: command.OperationId, 
-                    operationIds: calculatedPnLs.Select(x => x.Id), 
-                    publisher: publisher
-                ));
-
-                //_chaosKitty.Meow(command.OperationId);
-
-                foreach (var pnl in calculatedPnLs)
+                foreach (var pnl in pnlsToCharge)
                 {
                     //prepare state for sub operations
                     await _executionInfoRepository.GetOrAddAsync(
                         operationName: OperationName, 
-                        operationId: pnl.GetId(),
+                        operationId: pnl.Id,
                         factory: () => new OperationExecutionInfo<DailyPnlOperationData>(
                             operationName: OperationName,
-                            id: pnl.GetId(),
+                            id: pnl.Id,
                             lastModified: _systemClock.UtcNow.UtcDateTime,
                             data: new DailyPnlOperationData
                             {
@@ -121,7 +112,7 @@ namespace MarginTrading.CommissionService.Workflow.DailyPnl
                         ));
                     
                     publisher.PublishEvent(new DailyPnlCalculatedInternalEvent(
-                        operationId: pnl.GetId(),
+                        operationId: pnl.Id,
                         creationTimestamp: _systemClock.UtcNow.DateTime,
                         accountId: pnl.AccountId,
                         positionId: pnl.PositionId,
@@ -131,12 +122,40 @@ namespace MarginTrading.CommissionService.Workflow.DailyPnl
                         volume: pnl.Volume,
                         fxRate: pnl.FxRate
                     ));
-
-                    //todo think about it
-                    //_chaosKitty.Meow(pnl.GetId());
                 }
             }
         }
+        
+        private async Task<CommandHandlingResult> Handle(ChargeDailyPnlTimeoutInternalCommand command,
+            IEventPublisher publisher)
+        {
+            var executionInfo = await _executionInfoRepository.GetAsync<DailyPnlOperationData>(
+                operationName: OperationName,
+                id: command.OperationId);
 
+            if (executionInfo?.Data != null)
+            {
+                if (executionInfo.Data.State > CommissionOperationState.Calculated)
+                {
+                    return CommandHandlingResult.Ok();
+                }
+
+                if (_systemClock.UtcNow.UtcDateTime >= command.CreationTime.AddSeconds(command.TimeoutSeconds))
+                {
+                    var (total, failed, _) = await _dailyPnlService.GetOperationState(command.OperationId);
+
+                    publisher.PublishEvent(new DailyPnlsChargedEvent(
+                        operationId: command.OperationId,
+                        creationTimestamp: _systemClock.UtcNow.UtcDateTime,
+                        total: total,
+                        failed: failed
+                    ));
+
+                    return CommandHandlingResult.Ok();
+                }
+            }
+
+            return CommandHandlingResult.Fail(_commissionServiceSettings.DailyPnlsRetryTimeout);
+        }
     }
 }

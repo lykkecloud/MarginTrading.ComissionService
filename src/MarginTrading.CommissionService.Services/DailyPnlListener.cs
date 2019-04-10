@@ -1,74 +1,46 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Lykke.Cqrs;
 using Lykke.MarginTrading.CommissionService.Contracts.Events;
-using MarginTrading.CommissionService.Core.Domain.EventArgs;
 using MarginTrading.CommissionService.Core.Services;
 using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Services
 {
     [UsedImplicitly]
-    public class DailyPnlListener : IDailyPnlListener,
-        IEventConsumer<DailyPnlChargedEventArgs>
+    public class DailyPnlListener : IDailyPnlListener
     {
-        private readonly int _timeoutMs;
+        private readonly IDailyPnlService _dailyPnlService;
+        private readonly ICqrsMessageSender _cqrsMessageSender;
         private readonly ISystemClock _systemClock;
-        private Dictionary<string, bool> _cache;
-        private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
-        private CancellationTokenSource _cancellationTokenSource;
 
-        public DailyPnlListener(int timeoutSec,
+        public DailyPnlListener(
+            IDailyPnlService dailyPnlService,
+            ICqrsMessageSender cqrsMessageSender,
             ISystemClock systemClock)
         {
-            _timeoutMs = timeoutSec * 1000;
+            _dailyPnlService = dailyPnlService;
+            _cqrsMessageSender = cqrsMessageSender;
             _systemClock = systemClock;
         }
         
-        public async Task TrackCharging(string operationId, IEnumerable<string> operationIds, IEventPublisher publisher)
+        public async Task DailyPnlStateChanged(string operationId, bool chargedOrFailed)
         {
-            await _semaphoreSlim.WaitAsync();
-            
-            _cache = operationIds.ToDictionary(x => x, x => false);
-            _cancellationTokenSource = new CancellationTokenSource(_timeoutMs);
-
-            try
+            if (await _dailyPnlService.SetWasCharged(operationId, chargedOrFailed) == 0)
             {
-                await Task.Delay(_timeoutMs, _cancellationTokenSource.Token);
-            }
-            catch
-            {
-                // cancellation ignored
-            }
-
-            publisher.PublishEvent(new DailyPnlsChargedEvent(
-                operationId: operationId,
-                creationTimestamp: _systemClock.UtcNow.UtcDateTime,
-                total: _cache.Count,
-                failed: _cache.Values.Count(x => !x)
-            ));
-            
-            _cache = new Dictionary<string, bool>();
-
-            _semaphoreSlim.Release();
-        }
-
-        public void ConsumeEvent(object sender, DailyPnlChargedEventArgs ea)
-        {
-            if(!_cache.ContainsKey(ea.OperationId))
                 return;
+            }
+            
+            var (total, failed, notProcessed) = await _dailyPnlService.GetOperationState(operationId);
 
-            _cache[ea.OperationId] = true;
-
-            if (_cache.All(x => x.Value))
+            if (total > 0 && notProcessed == 0)
             {
-                _cancellationTokenSource.Cancel();
+                _cqrsMessageSender.PublishEvent(new DailyPnlsChargedEvent(
+                    operationId: operationId,
+                    creationTimestamp: _systemClock.UtcNow.UtcDateTime,
+                    total: total,
+                    failed: failed
+                ));
             }
         }
-
-        public int ConsumerRank => 100;
     }
 }

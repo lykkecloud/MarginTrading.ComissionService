@@ -19,9 +19,9 @@ namespace MarginTrading.CommissionService.Services
         private readonly IMarginTradingBlobRepository _blobRepository;
         private Dictionary<string, InstrumentBidAskPair> _quotes;
         private readonly ReaderWriterLockSlim _lockSlim = new ReaderWriterLockSlim();
-        private static string BlobName = "Quotes";
+        private const string BlobName = "CommissionQuotes";
 
-        public QuoteCacheService(ILog log, IMarginTradingBlobRepository blobRepository) 
+        public QuoteCacheService(ILog log, IMarginTradingBlobRepository blobRepository)
             : base(nameof(QuoteCacheService), 10000, log)
         {
             _log = log;
@@ -35,7 +35,9 @@ namespace MarginTrading.CommissionService.Services
             try
             {
                 if (!_quotes.TryGetValue(instrument, out var quote))
-                    throw new QuoteNotFoundException(instrument, string.Format("There is no quote for instrument {0}", instrument));
+                {
+                    throw new QuoteNotFoundException(instrument, $"There is no quote for instrument {instrument}");
+                }
 
                 return quote;
             }
@@ -84,9 +86,13 @@ namespace MarginTrading.CommissionService.Services
             try
             {
                 if (_quotes.ContainsKey(assetPair))
+                {
                     _quotes.Remove(assetPair);
+                }
                 else
-                    throw new QuoteNotFoundException(assetPair, string.Format("There is no quote for instrument {0}", assetPair));
+                {
+                    throw new QuoteNotFoundException(assetPair, $"There is no quote for instrument {assetPair}");
+                }
             }
             finally
             {
@@ -125,31 +131,31 @@ namespace MarginTrading.CommissionService.Services
                     .Read<Dictionary<string, InstrumentBidAskPair>>(LykkeConstants.StateBlobContainer, BlobName)
                     ?.ToDictionary(d => d.Key, d => d.Value) ??
                 new Dictionary<string, InstrumentBidAskPair>();
+       
+            base.Start();	
+        }	
 
-            base.Start();
-        }
+        public override Task Execute()	
+        {	
+            return DumpToRepository();	
+        }	
 
-        public override Task Execute()
-        {
-            return DumpToRepository();
-        }
+        public override void Stop()	
+        {	
+            DumpToRepository().Wait();	
+            base.Stop();	
+        }	
 
-        public override void Stop()
-        {
-            DumpToRepository().Wait();
-            base.Stop();
-        }
-
-        private async Task DumpToRepository()
-        {
-            try
-            {
-                await _blobRepository.WriteAsync(LykkeConstants.StateBlobContainer, BlobName, GetAllQuotes());
-            }
-            catch (Exception ex)
-            {
-                await _log.WriteErrorAsync(nameof(QuoteCacheService), "Save quotes", "", ex);
-            }
+        private async Task DumpToRepository()	
+        {	
+            try	
+            {	
+                await _blobRepository.WriteAsync(LykkeConstants.StateBlobContainer, BlobName, GetAllQuotes());	
+            }	
+            catch (Exception ex)	
+            {	
+                await _log.WriteErrorAsync(nameof(QuoteCacheService), "Save quotes", "", ex);	
+            }	
         }
     }
 }

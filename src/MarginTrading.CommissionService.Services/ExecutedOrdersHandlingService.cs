@@ -21,9 +21,9 @@ namespace MarginTrading.CommissionService.Services
         private readonly ICqrsMessageSender _cqrsMessageSender;
         private readonly ISystemClock _systemClock;
         private readonly ILog _log;
-        
-        public static readonly string OnBehalfPostfix = "order-on-behalf";
-        public static readonly string OrderExecPostfix = "order-executed";
+
+        private const string OnBehalfPostfix = "order-on-behalf";
+        private const string OrderExecPostfix = "order-executed";
 
         public ExecutedOrdersHandlingService(
             ICqrsMessageSender cqrsMessageSender,

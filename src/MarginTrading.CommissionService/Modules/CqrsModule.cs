@@ -50,29 +50,22 @@ namespace MarginTrading.CommissionService.Modules
         {
             builder.Register(context => new AutofacDependencyResolver(context)).As<IDependencyResolver>()
                 .SingleInstance();
-
             builder.RegisterInstance(_contextNames).AsSelf().SingleInstance();
 
             var rabbitMqSettings = new RabbitMQ.Client.ConnectionFactory
             {
                 Uri = _settings.ConnectionString
             };
-           
-            var messagingEngine= new DefaultHeadersMessagingEngine(
-                new MessagingEngine(_log,
-                    new TransportResolver(new Dictionary<string, TransportInfo>
-                    {
-                        {
-                            "RabbitMq",
-                            new TransportInfo(rabbitMqSettings.Endpoint.ToString(), rabbitMqSettings.UserName,
-                                rabbitMqSettings.Password, "None", "RabbitMq")
-                        }
-                    }),
-                    new RabbitMqTransportFactory()),
-                new Dictionary<string, string>()
+
+            var messagingEngine = new MessagingEngine(_log, new TransportResolver(
+                new Dictionary<string, TransportInfo>
                 {
-                    { "Content-Type", "application/vnd.lykke+msgpack" }
-                });
+                    {
+                        "RabbitMq",
+                        new TransportInfo(rabbitMqSettings.Endpoint.ToString(), rabbitMqSettings.UserName,
+                            rabbitMqSettings.Password, "None", "RabbitMq")
+                    }
+                }), new RabbitMqTransportFactory());
             
             // Sagas & command handlers
             builder.RegisterAssemblyTypes(GetType().Assembly)
@@ -152,8 +145,17 @@ namespace MarginTrading.CommissionService.Modules
                 .From(_contextNames.CommissionService)
                 .On(DefaultRoute)
                 .PublishingCommands(
-                    typeof(ChangeBalanceCommand))
+                    typeof(ChangeBalanceCommand)
+                )
                 .To(_contextNames.AccountsManagement)
+                .With(DefaultPipeline);
+            
+            sagaRegistration
+                .PublishingCommands(
+                    typeof(ChargeSwapsTimeoutInternalCommand),
+                    typeof(ChargeDailyPnlTimeoutInternalCommand)
+                )
+                .To(_contextNames.CommissionService)
                 .With(DefaultPipeline);
 
             return sagaRegistration;
@@ -177,7 +179,8 @@ namespace MarginTrading.CommissionService.Modules
         {
             contextRegistration
                 .ListeningCommands(
-                    typeof(HandleOnBehalfInternalCommand))
+                    typeof(HandleOnBehalfInternalCommand)
+                )
                 .On(DefaultRoute)
                 .WithCommandsHandler<OnBehalfCommandsHandler>()
                 .PublishingEvents(
@@ -190,7 +193,9 @@ namespace MarginTrading.CommissionService.Modules
         {
             contextRegistration
                 .ListeningCommands(
-                    typeof(StartOvernightSwapsProcessCommand))
+                    typeof(StartOvernightSwapsProcessCommand),
+                    typeof(ChargeSwapsTimeoutInternalCommand)
+                )
                 .On(DefaultRoute)
                 .WithCommandsHandler<OvernightSwapCommandsHandler>()
                 .PublishingEvents(
@@ -206,7 +211,9 @@ namespace MarginTrading.CommissionService.Modules
         {
             contextRegistration
                 .ListeningCommands(
-                    typeof(StartDailyPnlProcessCommand))
+                    typeof(StartDailyPnlProcessCommand),
+                    typeof(ChargeDailyPnlTimeoutInternalCommand)
+                )
                 .On(DefaultRoute)
                 .WithCommandsHandler<DailyPnlCommandsHandler>()
                 .PublishingEvents(

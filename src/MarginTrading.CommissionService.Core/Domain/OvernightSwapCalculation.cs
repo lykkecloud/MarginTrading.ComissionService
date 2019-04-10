@@ -3,13 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
+using MarginTrading.CommissionService.Core.Extensions;
 
 namespace MarginTrading.CommissionService.Core.Domain
 {
     public class OvernightSwapCalculation : IOvernightSwapCalculation
-	{
-		public string Id => GetId(OperationId, PositionId);
+    {
+	    private const string Separator = "_";
 		
+		public string Id => GetId(OperationId, PositionId);
+
 		public string OperationId { get; }
 		public string AccountId { get; }
 		public string Instrument { get; }
@@ -24,12 +27,12 @@ namespace MarginTrading.CommissionService.Core.Domain
 		public bool IsSuccess { get; }
 		public Exception Exception { get; }
 		
-		public bool WasCharged { get; }
+		public bool? WasCharged { get; }
 
 		public OvernightSwapCalculation([NotNull] string operationId, [NotNull] string accountId,
 			[NotNull] string instrument, [NotNull] PositionDirection? direction, DateTime time, decimal volume, 
 			decimal swapValue, [NotNull] string positionId, [CanBeNull] string details, DateTime tradingDay, 
-			bool isSuccess, [CanBeNull] Exception exception = null, bool wasCharged = false)
+			bool isSuccess, [CanBeNull] Exception exception = null, bool? wasCharged = null)
 		{
 			OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
 			AccountId = accountId ?? throw new ArgumentNullException(nameof(accountId));
@@ -46,13 +49,21 @@ namespace MarginTrading.CommissionService.Core.Domain
 			WasCharged = wasCharged;
 		}
 
-		public static string GetId(string operationId, string positionId) => $"{operationId}_{positionId}";
-		
+		public static string GetId(string operationId, string positionId) => $"{operationId}{Separator}{positionId}";
 
 		public static (string OperationId, string PositionId) ExtractKeysFromId(string operationPositionId)
 		{
-			var arr = operationPositionId.Split('_');
-			return (arr[0], arr[1]);
+			var separatorIndex = operationPositionId.LastIndexOf(Separator, StringComparison.InvariantCulture)
+				.RequiredGreaterThan(-1, nameof(operationPositionId));
+			return (operationPositionId.Substring(0, separatorIndex), 
+					operationPositionId.Substring(separatorIndex + 1));
+		}
+
+		public static string ExtractOperationId(string id)
+		{
+			var separatorIndex = id.LastIndexOf(Separator, StringComparison.InvariantCulture);
+
+			return separatorIndex == -1 ? id : id.Substring(0, separatorIndex);
 		}
 	}
 }

@@ -5,18 +5,19 @@ using MarginTrading.CommissionService.Core.Domain.Abstractions;
 
 namespace MarginTrading.CommissionService.Core.Repositories
 {
-    public interface IOvernightSwapHistoryRepository
+    public interface IDailyPnlHistoryRepository
     {
-        Task BulkInsertAsync(List<IOvernightSwapCalculation> overnightSwapCalculations);
-        Task<IReadOnlyList<IOvernightSwapCalculation>> GetAsync(DateTime? @from, DateTime? to);
-        Task<IReadOnlyList<IOvernightSwapCalculation>> GetAsync(string accountId, DateTime? from, DateTime? to);
+        Task BulkInsertAsync(List<IDailyPnlCalculation> calculations);
+        
+        Task<IReadOnlyList<IDailyPnlCalculation>> GetAsync(DateTime? @from, DateTime? to);
+        Task<IReadOnlyList<IDailyPnlCalculation>> GetAsync(string accountId, DateTime? from, DateTime? to);
 
         /// <summary>
         /// For testing purposes
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        Task DeleteAsync(IOvernightSwapCalculation obj);
+        Task DeleteAsync(IDailyPnlCalculation obj);
 
         Task<int> SetWasCharged(string positionOperationId, bool type);
         

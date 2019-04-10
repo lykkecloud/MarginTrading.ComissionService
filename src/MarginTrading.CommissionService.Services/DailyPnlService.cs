@@ -9,43 +9,104 @@ using Lykke.Common.Log;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
+using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
+using MarginTrading.CommissionService.Core.Settings;
+using Microsoft.Extensions.Internal;
+using StackExchange.Redis;
 
 namespace MarginTrading.CommissionService.Services
 {
+	/// <inheritdoc />
 	/// <summary>
 	/// Take care of daily pnl calculation.
 	/// </summary>
 	public class DailyPnlService : IDailyPnlService
 	{
+		private const string DistributedLockKey = "CommissionService:DailyPnlProcess";
+		
 		private readonly IPositionReceiveService _positionReceiveService;
 		private readonly IAccountRedisCache _accountRedisCache;
 		private readonly IAssetsCache _assetsCache;
+		private readonly IDailyPnlHistoryRepository _dailyPnlHistoryRepository;
+		private readonly ISystemClock _systemClock;
 		private readonly ILog _log;
-
-		private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+		private readonly IDatabase _database;
+		private readonly CommissionServiceSettings _commissionServiceSettings;
 
 		public DailyPnlService(
 			IPositionReceiveService positionReceiveService,
 			IAccountRedisCache accountRedisCache,
 			IAssetsCache assetsCache,
-			ILog log)
+			IDailyPnlHistoryRepository dailyPnlHistoryRepository,
+			ISystemClock systemClock,
+			ILog log,
+			IDatabase database,
+			CommissionServiceSettings commissionServiceSettings)
 		{
 			_positionReceiveService = positionReceiveService;
 			_accountRedisCache = accountRedisCache;
 			_assetsCache = assetsCache;
+			_dailyPnlHistoryRepository = dailyPnlHistoryRepository;
+			_systemClock = systemClock;
 			_log = log;
+			_database = database;
+			_commissionServiceSettings = commissionServiceSettings;
+		}
+		
+		/// <summary>
+		/// Filter orders that are already calculated
+		/// </summary>
+		/// <returns></returns>
+		private async Task<IReadOnlyList<OpenPosition>> GetOrdersForCalculationAsync(DateTime tradingDay)
+		{
+			var openPositions = (await _positionReceiveService.GetActive()).ToList();
+			
+			//prepare the list of orders. Explicit end of the day is ok for DateTime From by requirements.
+			var allLast = await _dailyPnlHistoryRepository.GetAsync(tradingDay, null);
+
+			if (allLast.Any())
+			{
+				var lastMaxCalcTime = allLast.Max(x => x.TradingDay);
+				
+				if (lastMaxCalcTime.Date > tradingDay)
+				{
+					throw new Exception($"Calculation started for {tradingDay:d}, but there already was calculation for a newer date {lastMaxCalcTime:d}");
+				}
+			}
+			
+			var calculatedIds = allLast.Where(x => x.IsSuccess).Select(x => x.PositionId).ToHashSet();
+			//select only non-calculated positions, changed before current invocation time
+			var filteredOrders = openPositions.Where(x => !calculatedIds.Contains(x.Id) 
+			                                              && x.OpenTimestamp.Date <= tradingDay.Date);
+
+			//detect orders for which last calculation failed and it was closed
+			var failedClosedOrders = allLast.Where(x => !x.IsSuccess)
+				.Select(x => x.PositionId)
+				.Except(openPositions.Select(y => y.Id)).ToList();
+			if (failedClosedOrders.Any())
+			{
+				await _log.WriteErrorAsync(nameof(OvernightSwapService), nameof(GetOrdersForCalculationAsync), new Exception(
+						$"Daily PnL calculation failed for some positions and they were closed before recalculation: {string.Join(", ", failedClosedOrders)}."),
+					DateTime.UtcNow);
+			}
+			
+			return filteredOrders.ToList();
 		}
 
 		public async Task<IReadOnlyList<IDailyPnlCalculation>> Calculate(string operationId, DateTime tradingDay)
 		{
-			var openPositions = (await _positionReceiveService.GetActive()).ToList();
-
-			await _semaphore.WaitAsync();
+			if (!await _database.LockTakeAsync(DistributedLockKey, Environment.MachineName,
+				_commissionServiceSettings.DistributedLockTimeout))
+			{
+				throw new Exception("Daily PnL calculation process is already in progress.");
+			}
 
 			var resultingCalculations = new List<IDailyPnlCalculation>();
 			try
 			{
+				var openPositions = await GetOrdersForCalculationAsync(tradingDay);
+				
 				await _log.WriteInfoAsync(nameof(DailyPnlService), nameof(Calculate),
 					$"Started, # of positions: {openPositions.Count}.", DateTime.UtcNow);
 
@@ -62,7 +123,7 @@ namespace MarginTrading.CommissionService.Services
 						}
 						var accuracy = _assetsCache.GetAccuracy(account?.BaseAssetId);
 						
-						var calculation = ProcessPosition(position, operationId, tradingDay, accuracy);
+						var calculation = ProcessPosition(position, operationId, _systemClock.UtcNow.UtcDateTime, tradingDay, accuracy);
 						
 						if (calculation != null)
 						{
@@ -71,45 +132,77 @@ namespace MarginTrading.CommissionService.Services
 					}
 					catch (Exception ex)
 					{
-						_log.WriteWarning(nameof(DailyPnlService), position?.ToJson(), "Error calculating PnL", ex);
+						resultingCalculations.Add(ProcessPosition(position, operationId, 
+							_systemClock.UtcNow.UtcDateTime, tradingDay, int.MaxValue, ex));
+						await _log.WriteErrorAsync(nameof(DailyPnlService), nameof(Calculate),
+							$"Error calculating PnL for position: {position?.ToJson()}. Operation : {operationId}", ex);
 					}
 				}
+
+				await _dailyPnlHistoryRepository.BulkInsertAsync(resultingCalculations);
 				
 				await _log.WriteInfoAsync(nameof(OvernightSwapService), nameof(Calculate),
 					$"Finished, # of calculations: {resultingCalculations.Count}", DateTime.UtcNow);
 			}
 			finally
 			{
-				_semaphore.Release();
+				await _database.LockReleaseAsync(DistributedLockKey, Environment.MachineName);
 			}
 
 			return resultingCalculations;
 		}
 
+		public async Task<int> SetWasCharged(string positionOperationId, bool type)
+		{
+			return await _dailyPnlHistoryRepository.SetWasCharged(positionOperationId, type);
+		}
+
+		public async Task<(int Total, int Failed, int NotProcessed)> GetOperationState(string id)
+		{
+			//may be position charge id or operation id
+			var operationId = DailyPnlCalculation.ExtractOperationId(id);
+
+			return await _dailyPnlHistoryRepository.GetOperationState(operationId);
+		}
+
 		/// <summary>
 		/// Calculate daily pnl for position.
 		/// </summary>
-		/// <param name="position"></param>
-		/// <param name="operationId"></param>
-		/// <param name="tradingDay"></param>
-		/// <param name="accuracy"></param>
-		/// <returns></returns>
-		private DailyPnlCalculation ProcessPosition(IOpenPosition position,
-			string operationId, DateTime tradingDay, int? accuracy)
+		private static DailyPnlCalculation ProcessPosition(IOpenPosition position, string operationId, DateTime now, 
+			DateTime tradingDay, int? accuracy, Exception exception = null)
 		{
+			if (exception != null)
+			{
+				return new DailyPnlCalculation(
+					operationId: operationId,
+					accountId: position.AccountId,
+					instrument: position.AssetPairId,
+					time: now,
+					tradingDay: tradingDay,
+					volume: position.CurrentVolume,
+					fxRate: position.FxRate,
+					positionId: position.Id,
+					pnl: 0,
+					isSuccess: false,
+					exception: exception
+				);
+			}
+			
 			var value = position.PnL - position.ChargedPnl;
 
 			return new DailyPnlCalculation(
 				operationId: operationId,
 				accountId: position.AccountId,
 				instrument: position.AssetPairId,
+				time: now,
 				tradingDay: tradingDay,
 				volume: position.CurrentVolume,
 				fxRate: position.FxRate,
 				positionId: position.Id,
 				pnl: accuracy.HasValue
 					? Math.Round(value, accuracy.Value)
-					: value
+					: value,
+				isSuccess: true
 			);
 		}
 	}

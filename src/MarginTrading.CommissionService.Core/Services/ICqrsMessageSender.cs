@@ -8,5 +8,7 @@ namespace MarginTrading.CommissionService.Core.Services
     {
         Task SendHandleExecutedOrderInternalCommand(HandleOrderExecInternalCommand command);
         Task SendHandleOnBehalfInternalCommand(HandleOnBehalfInternalCommand command);
+
+        void PublishEvent<T>(T ev, string boundedContext = null);
     }
 }

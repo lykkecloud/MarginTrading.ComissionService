@@ -15,43 +15,37 @@ using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.SqlRepositories.Repositories
 {
-    public class OvernightSwapHistoryRepository : IOvernightSwapHistoryRepository
+    public class DailyPnlHistoryRepository : IDailyPnlHistoryRepository
     {
-        private const string TableName = "OvernightSwapHistory";
-        private const string CreateTableScript = "CREATE TABLE [{0}](" +
-                                                 "[Id] [nvarchar] (128) NOT NULL PRIMARY KEY," +
-                                                 "[OperationId] [nvarchar] (64) NOT NULL," +
-                                                 "[AccountId] [nvarchar] (64) NOT NULL, " +
-                                                 "[Instrument] [nvarchar] (64) NOT NULL, " +
-                                                 "[Direction] [nvarchar] (64) NOT NULL, " +
-                                                 "[Time] [DateTime] NOT NULL," +
-                                                 "[Volume] float NOT NULL, " +
-                                                 "[SwapValue] float NOT NULL, " +
-                                                 "[PositionId] [nvarchar] (64) NOT NULL, " +
-                                                 "[Details] [nvarchar] (MAX) NULL," +
-                                                 "[IsSuccess] [bit] NOT NULL, " +
-                                                 "[Exception] [nvarchar] (MAX) NULL," +
-                                                 "[WasCharged] [bit] NULL," +
-                                                 "[TradingDay] [DATETIME] NOT NULL," +
-                                                 "INDEX IX_OSH NONCLUSTERED (Time, TradingDay, AccountId, OperationId, PositionId, WasCharged)" +
-                                                 ");";
+        private const string TableName = "DailyPnlHistory";
+        private const string CreateTableScript = @"CREATE TABLE [{0}](
+  [Id] [nvarchar] (128) NOT NULL PRIMARY KEY,
+[OperationId] [nvarchar] (64) NOT NULL,
+[AccountId] [nvarchar] (64) NOT NULL,
+[Instrument] [nvarchar] (64) NOT NULL,
+[Time] [DateTime] NOT NULL,
+[TradingDay] [DateTime] NOT NULL,
+[Volume] float NOT NULL,
+[FxRate] float NOT NULL,
+[PositionId] [nvarchar] (64) NOT NULL,
+[Pnl] float NOT NULL,
+[IsSuccess] [bit] NOT NULL,
+[Exception] [nvarchar] (MAX) NULL,
+[WasCharged] [bit] NULL,
+INDEX IX_DailyPnlHistory NONCLUSTERED (Time, TradingDay, AccountId, OperationId, PositionId, WasCharged)
+);";
         
-        private static Type DataType => typeof(IOvernightSwapCalculation);
+        private static Type DataType => typeof(IDailyPnlCalculation);
         private static readonly string GetColumns = string.Join(",", DataType.GetProperties().Select(x => x.Name));
         private static readonly string GetFields = string.Join(",", DataType.GetProperties().Select(x => "@" + x.Name));
-        private static readonly string GetUpdateClause = string.Join(",",
-            DataType.GetProperties().Select(x => "[" + x.Name + "]=@" + x.Name));
 
-        private readonly IConvertService _convertService;
-        private readonly ISystemClock _systemClock;
         private readonly CommissionServiceSettings _settings;
         private readonly ILog _log;
         
-        public OvernightSwapHistoryRepository(IConvertService convertService, ISystemClock systemClock, 
-            CommissionServiceSettings settings, ILog log)
+        public DailyPnlHistoryRepository(
+            CommissionServiceSettings settings, 
+            ILog log)
         {
-            _convertService = convertService;
-            _systemClock = systemClock;
             _log = log;
             _settings = settings;
             
@@ -60,33 +54,33 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
                 try { conn.CreateTableIfDoesntExists(CreateTableScript, TableName); }
                 catch (Exception ex)
                 {
-                    _log?.WriteErrorAsync(nameof(OvernightSwapHistoryRepository), "CreateTableIfDoesntExists", null, ex);
+                    _log?.WriteErrorAsync(nameof(DailyPnlHistoryRepository), "CreateTableIfDoesntExists", null, ex);
                     throw;
                 }
             }
         }
 
-        public async Task BulkInsertAsync(List<IOvernightSwapCalculation> overnightSwapCalculations)
+        public async Task BulkInsertAsync(List<IDailyPnlCalculation> calculations)
         {
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
                 await conn.ExecuteAsync(
                     $"insert into {TableName} ({GetColumns}) values ({GetFields})", 
-                    overnightSwapCalculations.Select(OvernightSwapEntity.Create));
+                    calculations.Select(DailyPnlEntity.Create));
             }
         }
 
-        public async Task<IReadOnlyList<IOvernightSwapCalculation>> GetAsync(DateTime? @from, DateTime? to)
+        public async Task<IReadOnlyList<IDailyPnlCalculation>> GetAsync(DateTime? @from, DateTime? to)
         {
             return (await GetFilteredAsync(null, from, to)).ToList();
         }
 
-        public async Task<IReadOnlyList<IOvernightSwapCalculation>> GetAsync(string accountId, DateTime? @from, DateTime? to)
+        public async Task<IReadOnlyList<IDailyPnlCalculation>> GetAsync(string accountId, DateTime? @from, DateTime? to)
         {
             return (await GetFilteredAsync(accountId, from, to)).ToList();
         }
 
-        public async Task DeleteAsync(IOvernightSwapCalculation obj)
+        public async Task DeleteAsync(IDailyPnlCalculation obj)
         {
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
@@ -124,7 +118,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
             }
         }
 
-        private async Task<IEnumerable<IOvernightSwapCalculation>> GetFilteredAsync(string accountId = null,
+        private async Task<IEnumerable<IDailyPnlCalculation>> GetFilteredAsync(string accountId = null,
             DateTime? @from = null, DateTime? to = null)
         {
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
@@ -133,11 +127,11 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
                                   (string.IsNullOrWhiteSpace(accountId) ? "" : " AND AccountId = @accountId")
                                   + (from == null ? "" : " AND Time > @from")
                                   + (to == null ? "" : " AND Time < @to");
-                var swapEntities = await conn.QueryAsync<OvernightSwapEntity>(
+                var entities = await conn.QueryAsync<DailyPnlEntity>(
                     $"SELECT * FROM {TableName} {whereClause}", 
                     new { accountId, from, to });
                 
-                return swapEntities.ToList();
+                return entities.ToList();
             }
         }
     }
