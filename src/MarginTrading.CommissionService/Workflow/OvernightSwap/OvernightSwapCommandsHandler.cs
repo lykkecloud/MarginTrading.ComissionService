@@ -77,12 +77,23 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
             }
 
             var now = _systemClock.UtcNow.UtcDateTime;
-            if (command.TradingDay < now.Date.AddDays(-1) || command.TradingDay > now)
+            if (command.TradingDay > now)
             {
                 publisher.PublishEvent(new OvernightSwapsStartFailedEvent(
                     operationId: command.OperationId,
                     creationTimestamp: _systemClock.UtcNow.UtcDateTime,
                     failReason: $"TradingDay {command.TradingDay} is invalid. Must be today or yesterday."
+                ));
+                return; //no retries 
+            }
+
+            if (command.TradingDay < now.Date.AddDays(-1))
+            {
+                publisher.PublishEvent(new OvernightSwapsCalculatedEvent(
+                    operationId: command.OperationId,
+                    creationTimestamp: _systemClock.UtcNow.UtcDateTime,
+                    total: 0,
+                    failed: 0
                 ));
                 return; //no retries 
             }
