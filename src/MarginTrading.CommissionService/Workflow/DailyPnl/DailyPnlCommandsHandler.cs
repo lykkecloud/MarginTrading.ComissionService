@@ -70,7 +70,7 @@ namespace MarginTrading.CommissionService.Workflow.DailyPnl
                 IReadOnlyList<IDailyPnlCalculation> calculatedPnLs = null;
                 try
                 {
-                    calculatedPnLs = await _dailyPnlService.Calculate(command.OperationId, command.CreationTimestamp);
+                    calculatedPnLs = await _dailyPnlService.Calculate(command.OperationId, command.TradingDay);
                 }
                 catch (Exception exception)
                 {
