@@ -61,7 +61,7 @@ namespace MarginTrading.CommissionService.Services
 		private async Task<IReadOnlyList<OpenPosition>> GetOrdersForCalculationAsync(DateTime tradingDay)
 		{
 			var now = _systemClock.UtcNow.UtcDateTime;
-			if (tradingDay < now.AddDays(-1))
+			if (tradingDay < now.Date.AddDays(-1))
 			{
 				await _log.WriteWarningAsync(
 					nameof(OvernightSwapService),
