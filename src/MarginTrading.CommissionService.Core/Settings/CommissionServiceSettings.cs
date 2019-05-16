@@ -40,5 +40,8 @@ namespace MarginTrading.CommissionService.Core.Settings
 
         [Optional]
         public TimeSpan DistributedLockTimeout { get; set; } = TimeSpan.FromHours(12);
+
+        [Optional]
+        public string InstanceId { get; set; }
     }
 }

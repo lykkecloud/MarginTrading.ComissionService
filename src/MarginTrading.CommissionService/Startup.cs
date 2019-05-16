@@ -77,6 +77,10 @@ namespace MarginTrading.CommissionService
                 var builder = new ContainerBuilder();
                 var appSettings = Configuration.LoadSettings<AppSettings>(
                     throwExceptionOnCheckError: !Configuration.NotThrowExceptionsOnServiceValidation());
+
+                // Generating new instance id guid if it is not specified through configurations
+                appSettings.CurrentValue.CommissionService.InstanceId = appSettings.CurrentValue.CommissionService.InstanceId ?? Guid.NewGuid().ToString("N");
+
                 Log = CreateLog(Configuration, services, appSettings);
 
                 builder.RegisterModule(new CommissionServiceModule(appSettings, Log));
@@ -146,7 +150,7 @@ namespace MarginTrading.CommissionService
                 if (settings.RabbitMq.Consumers.FxRateRabbitMqSettings != null)
                 {
                     rabbitMqService.Subscribe(settings.RabbitMq.Consumers.FxRateRabbitMqSettings, false,
-                        fxRateCacheService.SetQuote, rabbitMqService.GetMsgPackDeserializer<ExternalExchangeOrderbookMessage>());
+                        fxRateCacheService.SetQuote, rabbitMqService.GetMsgPackDeserializer<ExternalExchangeOrderbookMessage>(), settings.InstanceId);
                 }
                 if (settings.RabbitMq.Consumers.OrderExecutedSettings != null)
                 {

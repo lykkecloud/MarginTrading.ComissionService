@@ -135,7 +135,8 @@ Settings schema is:
     },
     "OvernightSwapsChargingTimeoutSec": 600,
     "DailyPnlsChargingTimeoutSec": 600,
-    "UseSerilog": false
+    "UseSerilog": false,
+	"InstanceId": "a534ffab"
   }
 }
 ```
