@@ -7,7 +7,7 @@ namespace MarginTrading.CommissionService.Core.Domain
 {
     public class DailyPnlCalculation : IDailyPnlCalculation
     {
-        private const string Separator = "_";
+        private const string Separator = "_DailyPnL_";
         
         public string Id => GetId(OperationId, PositionId);
         
