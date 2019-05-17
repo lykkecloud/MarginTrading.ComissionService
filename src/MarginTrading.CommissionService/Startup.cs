@@ -166,9 +166,9 @@ namespace MarginTrading.CommissionService
 
                 if (settings.RabbitMq.Consumers.SettingsChanged != null)
                 {
-                    rabbitMqService.Subscribe(settings.RabbitMq.Consumers.SettingsChanged, true, 
+                    rabbitMqService.Subscribe(settings.RabbitMq.Consumers.SettingsChanged, false, 
                         arg => assetPairManager.HandleSettingsChanged(arg), 
-                        rabbitMqService.GetJsonDeserializer<SettingsChangedEvent>());
+                        rabbitMqService.GetJsonDeserializer<SettingsChangedEvent>(), settings.InstanceId);
                 }
                 
                 Log?.WriteMonitorAsync("", "", "Started").Wait();
