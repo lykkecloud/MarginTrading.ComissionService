@@ -76,10 +76,16 @@ namespace MarginTrading.CommissionService
 
                 var builder = new ContainerBuilder();
                 var appSettings = Configuration.LoadSettings<AppSettings>(
-                    throwExceptionOnCheckError: !Configuration.NotThrowExceptionsOnServiceValidation());
+                    throwExceptionOnCheckError: !Configuration.NotThrowExceptionsOnServiceValidation())
+                    .Nested(s =>
+                    {
+                        s.CommissionService.InstanceId = Configuration.InstanceId();
 
-                // Generating new instance id guid if it is not specified through configurations
-                appSettings.CurrentValue.CommissionService.InstanceId = appSettings.CurrentValue.CommissionService.InstanceId ?? Guid.NewGuid().ToString("N");
+                        // Generating new instance id guid if it is not specified through configurations
+                        s.CommissionService.InstanceId = s.CommissionService.InstanceId ?? Guid.NewGuid().ToString("N");
+
+                        return s;
+                    });
 
                 Log = CreateLog(Configuration, services, appSettings);
 

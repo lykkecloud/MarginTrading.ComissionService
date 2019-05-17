@@ -106,7 +106,7 @@ namespace MarginTrading.CommissionService.Services
                 var subscriptionSettings = new RabbitMqSubscriptionSettings
                 {
                     ConnectionString = settings.ConnectionString,
-                    QueueName = QueueHelper.BuildQueueName(settings.ExchangeName, null, postfix: instanceId),
+                    QueueName = QueueHelper.BuildQueueName(settings.ExchangeName, instanceId),
                     ExchangeName = settings.ExchangeName,
                     IsDurable = isDurable,
                 };
