@@ -79,10 +79,7 @@ namespace MarginTrading.CommissionService
                     throwExceptionOnCheckError: !Configuration.NotThrowExceptionsOnServiceValidation())
                     .Nested(s =>
                     {
-                        s.CommissionService.InstanceId = Configuration.InstanceId();
-
-                        // Generating new instance id guid if it is not specified through configurations
-                        s.CommissionService.InstanceId = s.CommissionService.InstanceId ?? Guid.NewGuid().ToString("N");
+                        s.CommissionService.InstanceId = Configuration.InstanceId() ?? Guid.NewGuid().ToString("N");
 
                         return s;
                     });
