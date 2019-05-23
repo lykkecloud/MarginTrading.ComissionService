@@ -76,7 +76,14 @@ namespace MarginTrading.CommissionService
 
                 var builder = new ContainerBuilder();
                 var appSettings = Configuration.LoadSettings<AppSettings>(
-                    throwExceptionOnCheckError: !Configuration.NotThrowExceptionsOnServiceValidation());
+                    throwExceptionOnCheckError: !Configuration.NotThrowExceptionsOnServiceValidation())
+                    .Nested(s =>
+                    {
+                        s.CommissionService.InstanceId = Configuration.InstanceId() ?? Guid.NewGuid().ToString("N");
+
+                        return s;
+                    });
+
                 Log = CreateLog(Configuration, services, appSettings);
 
                 builder.RegisterModule(new CommissionServiceModule(appSettings, Log));
@@ -146,7 +153,7 @@ namespace MarginTrading.CommissionService
                 if (settings.RabbitMq.Consumers.FxRateRabbitMqSettings != null)
                 {
                     rabbitMqService.Subscribe(settings.RabbitMq.Consumers.FxRateRabbitMqSettings, false,
-                        fxRateCacheService.SetQuote, rabbitMqService.GetMsgPackDeserializer<ExternalExchangeOrderbookMessage>());
+                        fxRateCacheService.SetQuote, rabbitMqService.GetMsgPackDeserializer<ExternalExchangeOrderbookMessage>(), settings.InstanceId);
                 }
                 if (settings.RabbitMq.Consumers.OrderExecutedSettings != null)
                 {
@@ -156,9 +163,9 @@ namespace MarginTrading.CommissionService
 
                 if (settings.RabbitMq.Consumers.SettingsChanged != null)
                 {
-                    rabbitMqService.Subscribe(settings.RabbitMq.Consumers.SettingsChanged, true, 
+                    rabbitMqService.Subscribe(settings.RabbitMq.Consumers.SettingsChanged, false, 
                         arg => assetPairManager.HandleSettingsChanged(arg), 
-                        rabbitMqService.GetJsonDeserializer<SettingsChangedEvent>());
+                        rabbitMqService.GetJsonDeserializer<SettingsChangedEvent>(), settings.InstanceId);
                 }
                 
                 Log?.WriteMonitorAsync("", "", "Started").Wait();

@@ -49,6 +49,7 @@ All variables and value constraints are default. For instance, to set host URL t
 * *RESTART_ATTEMPTS_NUMBER* - number of restart attempts. If not set int.MaxValue is used.
 * *RESTART_ATTEMPTS_INTERVAL_MS* - interval between restarts in milliseconds. If not set 10000 is used.
 * *SettingsUrl* - defines URL of remote settings or path for local settings.
+* "InstanceId" - Unique id to identify service instance.
 
 ### Settings ###
 

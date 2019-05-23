@@ -13,7 +13,8 @@ namespace MarginTrading.CommissionService.Core.Services
             bool isDurable, IRabbitMqSerializer<TMessage> serializer);
 
         void Subscribe<TMessage>(RabbitConnectionSettings settings, bool isDurable, Func<TMessage, Task> handler,
-            IMessageDeserializer<TMessage> deserializer);
+            IMessageDeserializer<TMessage> deserializer,
+            string instanceId = null);
 
         IRabbitMqSerializer<TMessage> GetJsonSerializer<TMessage>();
         IRabbitMqSerializer<TMessage> GetMsgPackSerializer<TMessage>();

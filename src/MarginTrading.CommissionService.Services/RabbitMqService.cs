@@ -96,7 +96,8 @@ namespace MarginTrading.CommissionService.Services
         }
 
         public void Subscribe<TMessage>(RabbitConnectionSettings settings, bool isDurable,
-            Func<TMessage, Task> handler, IMessageDeserializer<TMessage> deserializer)
+            Func<TMessage, Task> handler, IMessageDeserializer<TMessage> deserializer,
+            string instanceId = null)
         {
             var consumerCount = settings.ConsumerCount <= 0 ? 1 : settings.ConsumerCount;
             
@@ -105,7 +106,7 @@ namespace MarginTrading.CommissionService.Services
                 var subscriptionSettings = new RabbitMqSubscriptionSettings
                 {
                     ConnectionString = settings.ConnectionString,
-                    QueueName = QueueHelper.BuildQueueName(settings.ExchangeName, null),
+                    QueueName = QueueHelper.BuildQueueName(settings.ExchangeName, instanceId),
                     ExchangeName = settings.ExchangeName,
                     IsDurable = isDurable,
                 };
