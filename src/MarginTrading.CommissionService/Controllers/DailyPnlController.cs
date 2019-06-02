@@ -5,12 +5,13 @@ using Lykke.MarginTrading.CommissionService.Contracts;
 using Lykke.MarginTrading.CommissionService.Contracts.Commands;
 using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Settings;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Controllers
 {
-    
+    [Authorize]
     [Route("api/daily-pnl")]
     public class DailyPnlController : Controller, IDailyPnlApi
     {

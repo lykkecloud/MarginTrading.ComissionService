@@ -16,6 +16,7 @@ namespace MarginTrading.CommissionService.Controllers
 {
 	/// <inheritdoc cref="ICommissionHistoryApi" />
 	/// Manages commission history
+	[Authorize]
 	[Route("api/commission")]
 	public class CommissionHistoryController : Controller, ICommissionHistoryApi
 	{

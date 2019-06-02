@@ -15,6 +15,8 @@ using Lykke.Logs.MsSql.Repositories;
 using Lykke.Logs.Serilog;
 using Lykke.MarginTrading.CommissionService.Contracts.Api;
 using Lykke.SettingsReader;
+using Lykke.Snow.Common.Startup;
+using Lykke.Snow.Common.Startup.ApiKey;
 using MarginTrading.Backend.Contracts.Events;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
@@ -67,22 +69,29 @@ namespace MarginTrading.CommissionService
                         options.SerializerSettings.ContractResolver = new DefaultContractResolver();
                         options.SerializerSettings.Converters.Add(new StringEnumConverter());
                     });
-
-                services.AddSwaggerGen(options =>
-                {
-                    options.DefaultLykkeConfiguration("v1", ServiceName + " API");
-                    options.OperationFilter<CustomOperationIdOperationFilter>();
-                });
-
-                var builder = new ContainerBuilder();
+                
                 var appSettings = Configuration.LoadSettings<AppSettings>(
-                    throwExceptionOnCheckError: !Configuration.NotThrowExceptionsOnServiceValidation())
+                        throwExceptionOnCheckError: !Configuration.NotThrowExceptionsOnServiceValidation())
                     .Nested(s =>
                     {
                         s.CommissionService.InstanceId = Configuration.InstanceId() ?? Guid.NewGuid().ToString("N");
 
                         return s;
                     });
+                
+                services.AddApiKeyAuth(appSettings.CurrentValue.CommissionServiceClient);
+
+                services.AddSwaggerGen(options =>
+                {
+                    options.DefaultLykkeConfiguration("v1", ServiceName + " API");
+                    options.OperationFilter<CustomOperationIdOperationFilter>();
+                    if (!string.IsNullOrWhiteSpace(appSettings.CurrentValue.CommissionServiceClient?.ApiKey))
+                    {
+                        options.OperationFilter<ApiKeyHeaderOperationFilter>();
+                    }
+                });
+
+                var builder = new ContainerBuilder();
 
                 Log = CreateLog(Configuration, services, appSettings);
 
@@ -122,6 +131,7 @@ namespace MarginTrading.CommissionService
                 app.UseLykkeMiddleware(ServiceName, ex => new ErrorResponse {ErrorMessage = "Technical problem", Details = ex.Message});
 #endif
                 
+                app.UseAuthentication();
                 app.UseMvc();
                 app.UseSwagger();
                 app.UseSwaggerUI(a => a.SwaggerEndpoint("/swagger/v1/swagger.json", "Main Swagger"));
