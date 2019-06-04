@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Refit;
 
@@ -15,6 +16,6 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// </summary>
         [Post("/api/overnightswap/start")]
         Task StartOvernightSwapProcess([NotNull] string operationId, 
-            int numberOfFinancingDays = 0, int financingDaysPerYear = 0);
+            int numberOfFinancingDays = 0, int financingDaysPerYear = 0, DateTime tradingDay = default);
     }
 }

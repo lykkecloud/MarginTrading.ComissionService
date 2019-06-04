@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Lykke.Cqrs;
 using Lykke.MarginTrading.CommissionService.Contracts;
 using Lykke.MarginTrading.CommissionService.Contracts.Commands;
@@ -29,14 +30,15 @@ namespace MarginTrading.CommissionService.Controllers
         [Route("start")]
         [HttpPost]
         public Task StartOvernightSwapProcess(string operationId, 
-            int numberOfFinancingDays = 0, int financingDaysPerYear = 0)
+            int numberOfFinancingDays = 0, int financingDaysPerYear = 0, DateTime tradingDay = default)
         {
             _cqrsEngine.SendCommand(
                 new StartOvernightSwapsProcessCommand(
                     operationId.RequiredNotNullOrWhiteSpace(nameof(operationId)),
                     _systemClock.UtcNow.DateTime,
                     numberOfFinancingDays,
-                    financingDaysPerYear),
+                    financingDaysPerYear,
+                    tradingDay),
                 _cqrsContextNamesSettings.CommissionService,
                 _cqrsContextNamesSettings.CommissionService);
             

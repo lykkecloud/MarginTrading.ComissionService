@@ -11,6 +11,7 @@ using Lykke.MarginTrading.CommissionService.Contracts.Commands;
 using Lykke.MarginTrading.CommissionService.Contracts.Events;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
+using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
@@ -60,7 +61,7 @@ namespace MarginTrading.CommissionService.Workflow.DailyPnl
                     lastModified: _systemClock.UtcNow.UtcDateTime,
                     data: new DailyPnlOperationData
                     {
-                        TradingDay = command.CreationTimestamp,
+                        TradingDay = command.TradingDay.ValidateTradingDay(_log, nameof(StartDailyPnlProcessCommand)),
                         State = CommissionOperationState.Initiated,
                     }
                 ));
@@ -70,7 +71,7 @@ namespace MarginTrading.CommissionService.Workflow.DailyPnl
                 IReadOnlyList<IDailyPnlCalculation> calculatedPnLs = null;
                 try
                 {
-                    calculatedPnLs = await _dailyPnlService.Calculate(command.OperationId, command.CreationTimestamp);
+                    calculatedPnLs = await _dailyPnlService.Calculate(command.OperationId, executionInfo.Data.TradingDay);
                 }
                 catch (Exception exception)
                 {
@@ -106,7 +107,7 @@ namespace MarginTrading.CommissionService.Workflow.DailyPnl
                             lastModified: _systemClock.UtcNow.UtcDateTime,
                             data: new DailyPnlOperationData
                             {
-                                TradingDay = command.CreationTimestamp,
+                                TradingDay = executionInfo.Data.TradingDay,
                                 State = CommissionOperationState.Initiated,
                             }
                         ));
