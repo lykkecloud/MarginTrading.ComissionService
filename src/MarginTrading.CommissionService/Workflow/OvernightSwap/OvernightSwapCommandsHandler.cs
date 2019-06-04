@@ -89,12 +89,12 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                 return; //no retries 
             }
 
-            if (command.TradingDay < now.Date.AddDays(-1))
+            if (executionInfo.Data.TradingDay < now.Date.AddDays(-1))
             {
                 await _log.WriteWarningAsync(
                     nameof(OvernightSwapCommandsHandler),
                     nameof(Handle),
-                    $"Calculation of overnight swaps for tradingDay: {command.TradingDay} but it has been done already, therefore skipping recalculation",
+                    $"Calculation of overnight swaps for tradingDay: {executionInfo.Data.TradingDay} but it has been done already, therefore skipping recalculation",
                     DateTime.UtcNow);
 
                 publisher.PublishEvent(new OvernightSwapsCalculatedEvent(

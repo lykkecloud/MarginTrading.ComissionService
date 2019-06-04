@@ -9,7 +9,7 @@ namespace MarginTrading.CommissionService.Core.Extensions
         {
             if (tradingDay != tradingDay.Date)
             {
-                log.WriteWarning(nameof(ValidateTradingDay), context, $"{tradingDay:s}");
+                log.WriteWarning(nameof(ValidateTradingDay), context, $"Trading day {tradingDay:s} contained not only Date component, truncating.");
             }
 
             return tradingDay.Date;
