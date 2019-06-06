@@ -147,6 +147,9 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                         data: new OvernightSwapOperationData
                         {
                             State = CommissionOperationState.Initiated,
+                            TradingDay = executionInfo.Data.TradingDay,
+                            NumberOfFinancingDays = executionInfo.Data.NumberOfFinancingDays,
+                            FinancingDaysPerYear = executionInfo.Data.FinancingDaysPerYear,
                         }
                     ));
 
