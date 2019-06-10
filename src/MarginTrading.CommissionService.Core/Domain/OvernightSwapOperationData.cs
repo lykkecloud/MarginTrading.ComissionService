@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace MarginTrading.CommissionService.Core.Domain
@@ -13,5 +14,10 @@ namespace MarginTrading.CommissionService.Core.Domain
         /// Null is for sub-operations
         /// </summary>
         public int? FinancingDaysPerYear { get; set; }
+        
+        /// <summary>
+        /// Trading day
+        /// </summary>
+        public DateTime TradingDay { get; set; }
     }
 }

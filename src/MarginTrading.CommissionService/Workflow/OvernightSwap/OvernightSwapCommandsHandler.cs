@@ -67,6 +67,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     {
                         NumberOfFinancingDays = command.NumberOfFinancingDays,
                         FinancingDaysPerYear = command.FinancingDaysPerYear,
+                        TradingDay = command.TradingDay.ValidateTradingDay(_log, nameof(StartOvernightSwapsProcessCommand)),
                         State = CommissionOperationState.Initiated,
                     }
                 ));
@@ -77,22 +78,23 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
             }
 
             var now = _systemClock.UtcNow.UtcDateTime;
-            if (command.TradingDay > now)
+
+            if (executionInfo.Data.TradingDay > now)
             {
                 publisher.PublishEvent(new OvernightSwapsStartFailedEvent(
                     operationId: command.OperationId,
                     creationTimestamp: _systemClock.UtcNow.UtcDateTime,
-                    failReason: $"TradingDay {command.TradingDay} is invalid. Must be today or yesterday."
+                    failReason: $"TradingDay {executionInfo.Data.TradingDay} is invalid. Must be today or yesterday."
                 ));
                 return; //no retries 
             }
 
-            if (command.TradingDay < now.Date.AddDays(-1))
+            if (executionInfo.Data.TradingDay < now.Date.AddDays(-1))
             {
                 await _log.WriteWarningAsync(
                     nameof(OvernightSwapCommandsHandler),
                     nameof(Handle),
-                    $"Calculation of overnight swaps for tradingDay: {command.TradingDay} but it has been done already, therefore skipping recalculation",
+                    $"Calculation of overnight swaps for tradingDay: {executionInfo.Data.TradingDay} but it has been done already, therefore skipping recalculation",
                     DateTime.UtcNow);
 
                 publisher.PublishEvent(new OvernightSwapsCalculatedEvent(
@@ -108,7 +110,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
             try
             {
                 calculatedSwaps = await _overnightSwapService.Calculate(command.OperationId, command.CreationTimestamp, 
-                    command.NumberOfFinancingDays, command.FinancingDaysPerYear, command.TradingDay);
+                    command.NumberOfFinancingDays, command.FinancingDaysPerYear, executionInfo.Data.TradingDay);
             }
             catch (Exception exception)
             {
@@ -145,6 +147,9 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                         data: new OvernightSwapOperationData
                         {
                             State = CommissionOperationState.Initiated,
+                            TradingDay = executionInfo.Data.TradingDay,
+                            NumberOfFinancingDays = executionInfo.Data.NumberOfFinancingDays,
+                            FinancingDaysPerYear = executionInfo.Data.FinancingDaysPerYear,
                         }
                     ));
 
@@ -161,7 +166,7 @@ namespace MarginTrading.CommissionService.Workflow.OvernightSwap
                     assetPairId: swap.Instrument,
                     swapAmount: swap.SwapValue,
                     details: swap.Details,
-                    tradingDay: command.TradingDay));
+                    tradingDay: executionInfo.Data.TradingDay));
             }
         }
 
