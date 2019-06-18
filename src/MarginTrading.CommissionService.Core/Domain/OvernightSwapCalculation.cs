@@ -9,7 +9,7 @@ namespace MarginTrading.CommissionService.Core.Domain
 {
     public class OvernightSwapCalculation : IOvernightSwapCalculation
     {
-	    private const string Separator = "_";
+	    private const string Separator = "_Swap_";
 		
 		public string Id => GetId(OperationId, PositionId);
 

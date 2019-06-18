@@ -1,6 +1,8 @@
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Lykke.MarginTrading.CommissionService.Contracts.Events;
+using MarginTrading.CommissionService.Core.Domain;
+using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Services;
 using Microsoft.Extensions.Internal;
 
@@ -35,7 +37,7 @@ namespace MarginTrading.CommissionService.Services
             if (total > 0 && notProcessed == 0)
             {
                 _cqrsMessageSender.PublishEvent(new DailyPnlsChargedEvent(
-                    operationId: operationId,
+                    operationId: DailyPnlCalculation.ExtractOperationId(operationId),
                     creationTimestamp: _systemClock.UtcNow.UtcDateTime,
                     total: total,
                     failed: failed
