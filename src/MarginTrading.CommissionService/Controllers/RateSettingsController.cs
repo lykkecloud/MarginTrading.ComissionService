@@ -34,13 +34,20 @@ namespace MarginTrading.CommissionService.Controllers
 
         [ProducesResponseType(typeof(OrderExecutionRateContract), 200)]
         [ProducesResponseType(400)]
-        [Description("Get order execution rate. If accountId not set Trading Profile value is returned.")]
+        [Description("Get order execution rate. If accountId not set, or it's order exec rates are not set then Trading Profile value is returned.")]
         [HttpGet("get-order-exec/{assetPairId}")]
         public async Task<OrderExecutionRateContract> GetOrderExecutionRate(
             [FromRoute] string assetPairId, [FromQuery] string accountId = "")
         {
-            var data = await _rateSettingsService.GetOrderExecutionRate(
-                string.IsNullOrWhiteSpace(accountId) ? RateSettingsService.TradingProfile : accountId, assetPairId);
+            var profileId = string.IsNullOrWhiteSpace(accountId) ? RateSettingsService.TradingProfile : accountId;
+            var data = await _rateSettingsService.GetOrderExecutionRate(profileId, assetPairId);
+
+            if (data == null && profileId != RateSettingsService.TradingProfile)
+            {
+                data = await _rateSettingsService.GetOrderExecutionRate(
+                    RateSettingsService.TradingProfile, assetPairId);
+            }
+            
             return data == null ? null : Map(data);
         }
 
