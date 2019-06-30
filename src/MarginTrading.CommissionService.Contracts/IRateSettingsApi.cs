@@ -15,6 +15,13 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
     public interface IRateSettingsApi
     {
         /// <summary>
+        /// Get order execution rate. If accountId not set Trading Profile value is returned.
+        /// </summary>
+        [Get("/api/rates/get-order-exec/{assetPairId}")]
+        Task<OrderExecutionRateContract> GetOrderExecutionRate(
+            [NotNull] string assetPairId, [Query] string accountId = "");
+        
+        /// <summary>
         /// Get order execution rates
         /// </summary>
         [Get("/api/rates/get-order-exec")]

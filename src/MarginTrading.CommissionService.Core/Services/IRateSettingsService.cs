@@ -8,7 +8,7 @@ namespace MarginTrading.CommissionService.Core.Services
     public interface IRateSettingsService
     {
         Task<OrderExecutionRate> GetOrderExecutionRate([NotNull] string tradingConditionId, [NotNull] string assetPairId);
-        Task<IReadOnlyList<OrderExecutionRate>> GetOrderExecutionRatesForApi(string tradingConditionId = null);
+        Task<IReadOnlyList<OrderExecutionRate>> GetOrderExecutionRates(string tradingConditionId = null);
         Task ReplaceOrderExecutionRates(List<OrderExecutionRate> rates);
 
         Task<OvernightSwapRate> GetOvernightSwapRate([NotNull] string assetPair);

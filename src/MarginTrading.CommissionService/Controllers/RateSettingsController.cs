@@ -32,14 +32,26 @@ namespace MarginTrading.CommissionService.Controllers
             _convertService = convertService;
         }
 
+        [ProducesResponseType(typeof(OrderExecutionRateContract), 200)]
+        [ProducesResponseType(400)]
+        [Description("Get order execution rate. If accountId not set Trading Profile value is returned.")]
+        [HttpGet("get-order-exec/{assetPairId}")]
+        public async Task<OrderExecutionRateContract> GetOrderExecutionRate(
+            [FromRoute] string assetPairId, [FromQuery] string accountId = "")
+        {
+            var data = await _rateSettingsService.GetOrderExecutionRate(
+                string.IsNullOrWhiteSpace(accountId) ? RateSettingsService.TradingProfile : accountId, assetPairId);
+            return data == null ? null : Map(data);
+        }
+
         [ProducesResponseType(typeof(IReadOnlyList<OrderExecutionRateContract>), 200)]
         [ProducesResponseType(400)]
         [Description("Get order execution rates")]
         [HttpGet("get-order-exec")]
         public async Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates()
         {
-            return (await _rateSettingsService.GetOrderExecutionRatesForApi())
-                ?.Select(Map).ToList() ?? new List<OrderExecutionRateContract>();
+            return (await _rateSettingsService.GetOrderExecutionRates())
+                   ?.Select(Map).ToList() ?? new List<OrderExecutionRateContract>();
         }
 
         [ProducesResponseType(200)]
@@ -101,7 +113,7 @@ namespace MarginTrading.CommissionService.Controllers
         public async Task<OnBehalfRateContract> GetOnBehalfRate([FromQuery] string accountId = "")
         {
             var item = await _rateSettingsService.GetOnBehalfRate(
-                string.IsNullOrWhiteSpace(accountId) ? string.Empty : accountId);
+                string.IsNullOrWhiteSpace(accountId) ? RateSettingsService.TradingProfile : accountId);
             return item == null ? null : Map(item);
         }
 

@@ -73,7 +73,7 @@ namespace MarginTrading.CommissionService.Services
             return cachedData;
         }
 
-        public async Task<IReadOnlyList<OrderExecutionRate>> GetOrderExecutionRatesForApi(string tradingConditionId = null)
+        public async Task<IReadOnlyList<OrderExecutionRate>> GetOrderExecutionRates(string tradingConditionId = null)
         {
             var cachedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OrderExecutionKey))
                 ? (await _redisDatabase.HashGetAllAsync(GetKey(LykkeConstants.OrderExecutionKey)))
