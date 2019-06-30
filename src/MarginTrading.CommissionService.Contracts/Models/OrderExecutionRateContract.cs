@@ -4,6 +4,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts.Models
 {
     public class OrderExecutionRateContract
     {
+        [NotNull] public string TradingConditionId { get; set; }
         [NotNull] public string AssetPairId { get; set; }
         
         public decimal CommissionCap { get; set; }

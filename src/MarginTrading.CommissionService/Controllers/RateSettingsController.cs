@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Lykke.MarginTrading.CommissionService.Contracts;
@@ -9,8 +10,10 @@ using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Rates;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
+using MarginTrading.CommissionService.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Swagger;
 
 namespace MarginTrading.CommissionService.Controllers
 {
@@ -31,41 +34,39 @@ namespace MarginTrading.CommissionService.Controllers
 
         [ProducesResponseType(typeof(IReadOnlyList<OrderExecutionRateContract>), 200)]
         [ProducesResponseType(400)]
+        [Description("Get order execution rates")]
         [HttpGet("get-order-exec")]
         public async Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates()
         {
             return (await _rateSettingsService.GetOrderExecutionRatesForApi())
-                ?.Select(x => _convertService.Convert<OrderExecutionRate, OrderExecutionRateContract>(x)).ToList()
-                   ?? new List<OrderExecutionRateContract>();
+                ?.Select(Map).ToList() ?? new List<OrderExecutionRateContract>();
         }
 
-        /// <summary>
-        /// Replace order execution rates
-        /// </summary>
-        /// <param name="rates"></param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentNullException"></exception>
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Description("Insert or update existing order execution rates")]
         [HttpPost("replace-order-exec")]
         public async Task ReplaceOrderExecutionRates([FromBody] OrderExecutionRateContract[] rates)
         {
-            if (rates == null || !rates.Any() || rates.Any(x => 
-                    string.IsNullOrWhiteSpace(x.AssetPairId)
-                    || string.IsNullOrWhiteSpace(x.CommissionAsset)))
+            if (rates == null || !rates.Any())
             {
                 throw new ArgumentNullException(nameof(rates));
             }
 
-            await _rateSettingsService.ReplaceOrderExecutionRates(rates
-                .Select(x => _convertService.Convert<OrderExecutionRateContract, OrderExecutionRate>(x))
-                .ToList());
+            if (rates.Any(x => string.IsNullOrWhiteSpace(x.TradingConditionId)
+                               || string.IsNullOrWhiteSpace(x.AssetPairId)
+                               || string.IsNullOrWhiteSpace(x.CommissionAsset)))
+            {
+                throw new ArgumentException("Wrong parameters: TradingConditionId, AssetPairId and CommissionAsset must be set", nameof(rates));
+            }
+
+            await _rateSettingsService.ReplaceOrderExecutionRates(rates.Select(Map).ToList());
         }
 
-        
-        
+
         [ProducesResponseType(typeof(IReadOnlyList<OvernightSwapRateContract>), 200)]
         [ProducesResponseType(400)]
+        [Description("Get overnight swap rates")]
         [HttpGet("get-overnight-swap")]
         public async Task<IReadOnlyList<OvernightSwapRateContract>> GetOvernightSwapRates()
         {
@@ -76,6 +77,7 @@ namespace MarginTrading.CommissionService.Controllers
 
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Description("Insert or update existing overnight swap rates")]
         [HttpPost("replace-overnight-swap")]
         public async Task ReplaceOvernightSwapRates([FromBody] OvernightSwapRateContract[] rates)
         {
@@ -94,15 +96,29 @@ namespace MarginTrading.CommissionService.Controllers
         
         [ProducesResponseType(typeof(OnBehalfRateContract), 200)]
         [ProducesResponseType(400)]
+        [Description("Get on behalf rate. If accountId not set Trading Profile value is returned.")]
         [HttpGet("get-on-behalf")]
-        public async Task<OnBehalfRateContract> GetOnBehalfRate()
+        public async Task<OnBehalfRateContract> GetOnBehalfRate([FromQuery] string accountId = "")
         {
-            var item = await _rateSettingsService.GetOnBehalfRate();
-            return item == null ? null : _convertService.Convert<OnBehalfRate, OnBehalfRateContract>(item);
+            var item = await _rateSettingsService.GetOnBehalfRate(
+                string.IsNullOrWhiteSpace(accountId) ? string.Empty : accountId);
+            return item == null ? null : Map(item);
         }
 
+        [ProducesResponseType(typeof(IReadOnlyList<OnBehalfRateContract>), 200)]
+        [ProducesResponseType(400)]
+        [Description("Get all on behalf rates")]
+        [HttpGet("get-all-on-behalf")]
+        public async Task<IReadOnlyList<OnBehalfRateContract>> GetOnBehalfRates()
+        {
+            var items = await _rateSettingsService.GetOnBehalfRates();
+            return items.Select(Map).ToList();
+        }
+
+        [Obsolete("Use replace-all-on-behalf")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Description("Insert or update existing on behalf rate")]
         [HttpPost("replace-on-behalf")]
         public async Task ReplaceOnBehalfRate([FromBody] OnBehalfRateContract rate)
         {
@@ -111,8 +127,72 @@ namespace MarginTrading.CommissionService.Controllers
                 throw new ArgumentNullException(nameof(rate.CommissionAsset));
             }
 
-            await _rateSettingsService.ReplaceOnBehalfRate(
-                _convertService.Convert<OnBehalfRateContract, OnBehalfRate>(rate));
+            var toReplace = Map(rate);
+
+            var all = (await _rateSettingsService.GetOnBehalfRates()).ToList();
+            all.RemoveAll(x => x.TradingConditionId == toReplace.TradingConditionId);
+            all.Add(toReplace);
+
+            await _rateSettingsService.ReplaceOnBehalfRates(all);
         }
+        
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [Description("Insert or update all on behalf rates")]
+        [HttpPost("replace-all-on-behalf")]
+        public async Task ReplaceAllOnBehalfRate([FromBody] List<OnBehalfRateContract> rates)
+        {
+            foreach (var rate in rates)
+            {
+                if (string.IsNullOrWhiteSpace(rate?.CommissionAsset))
+                {
+                    throw new ArgumentNullException(nameof(rate.CommissionAsset), $"{nameof(rate.CommissionAsset)} must be set");
+                }
+            }
+
+            await _rateSettingsService.ReplaceOnBehalfRates(rates.Select(Map).ToList());
+        }
+
+        private OrderExecutionRateContract Map(OrderExecutionRate orderExecutionRate) => new OrderExecutionRateContract
+        {
+            TradingConditionId = orderExecutionRate.TradingConditionId,
+            AssetPairId = orderExecutionRate.AssetPairId,
+            CommissionCap = orderExecutionRate.CommissionCap,
+            CommissionFloor = orderExecutionRate.CommissionFloor,
+            CommissionRate = orderExecutionRate.CommissionRate,
+            CommissionAsset = orderExecutionRate.CommissionAsset,
+            LegalEntity = orderExecutionRate.LegalEntity,
+        };
+
+        private OrderExecutionRate Map(OrderExecutionRateContract orderExecutionRate) => new OrderExecutionRate
+        {
+            TradingConditionId = string.IsNullOrWhiteSpace(orderExecutionRate.TradingConditionId)
+                ? RateSettingsService.TradingProfile
+                : orderExecutionRate.TradingConditionId,
+            AssetPairId = orderExecutionRate.AssetPairId,
+            CommissionCap = orderExecutionRate.CommissionCap,
+            CommissionFloor = orderExecutionRate.CommissionFloor,
+            CommissionRate = orderExecutionRate.CommissionRate,
+            CommissionAsset = orderExecutionRate.CommissionAsset,
+            LegalEntity = orderExecutionRate.LegalEntity,
+        };
+
+        private OnBehalfRateContract Map(OnBehalfRate onBehalfRate) => new OnBehalfRateContract
+        {
+            TradingConditionId = onBehalfRate.TradingConditionId,
+            Commission = onBehalfRate.Commission,
+            CommissionAsset = onBehalfRate.CommissionAsset,
+            LegalEntity = onBehalfRate.LegalEntity,
+        };
+
+        private OnBehalfRate Map(OnBehalfRateContract onBehalfRate) => new OnBehalfRate
+        {
+            TradingConditionId = string.IsNullOrWhiteSpace(onBehalfRate.TradingConditionId)
+                ? RateSettingsService.TradingProfile
+                : onBehalfRate.TradingConditionId,
+            Commission = onBehalfRate.Commission,
+            CommissionAsset = onBehalfRate.CommissionAsset,
+            LegalEntity = onBehalfRate.LegalEntity,
+        };
     }
 }

@@ -5,16 +5,20 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
 {
     public class OnBehalfRate
     {
+        [NotNull] public string TradingConditionId { get; set; }
+        
         public decimal Commission { get; set; }
         
         [NotNull] public string CommissionAsset { get; set; }
         
         [CanBeNull] public string LegalEntity { get; set; }
         
-        public static OnBehalfRate FromDefault(DefaultOnBehalfSettings defaultOnBehalfSettings)
+        public static OnBehalfRate FromDefault(DefaultOnBehalfSettings defaultOnBehalfSettings,
+            string tradingConditionId)
         {
             return new OnBehalfRate
             {
+                TradingConditionId = tradingConditionId,
                 Commission = defaultOnBehalfSettings.Commission,
                 CommissionAsset = defaultOnBehalfSettings.CommissionAsset,
                 LegalEntity = defaultOnBehalfSettings.LegalEntity,

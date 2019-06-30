@@ -79,7 +79,8 @@ namespace MarginTrading.CommissionService.Services
         public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument,
             string legalEntity, decimal volume, decimal orderExecutionPrice)
         {
-            var rateSettings = await _rateSettingsService.GetOrderExecutionRate(instrument);
+            var rateSettings = await _rateSettingsService.GetOrderExecutionRate(accountId, instrument)
+                ?? await _rateSettingsService.GetOrderExecutionRate(RateSettingsService.TradingProfile, instrument);
             var account = await _accountRedisCache.GetAccount(accountId);
 
             var volumeInCommissionAsset = _cfdCalculatorService.GetFxRateForAssetPair(rateSettings.CommissionAsset,
@@ -137,7 +138,8 @@ namespace MarginTrading.CommissionService.Services
 
             var actionsNum = changeEventsCount + placeEventCharged;
 
-            var rateSettings = await _rateSettingsService.GetOnBehalfRate(); 
+            var rateSettings = await _rateSettingsService.GetOnBehalfRate(onBehalfEvents.First().AccountId)
+                ?? await _rateSettingsService.GetOnBehalfRate(RateSettingsService.TradingProfile); 
             
             //use fx rates to convert to account asset
             var quote = _cfdCalculatorService.GetFxRate(rateSettings.CommissionAsset, accountAssetId, 

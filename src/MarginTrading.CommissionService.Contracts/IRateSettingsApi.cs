@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -42,16 +43,30 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         
         
         /// <summary>
-        /// Get on behalf rate
+        /// Get on behalf rate. If accountId not set Trading Profile value is returned.
         /// </summary>
         [Get("/api/rates/get-on-behalf")]
         [ItemCanBeNull]
-        Task<OnBehalfRateContract> GetOnBehalfRate();
+        Task<OnBehalfRateContract> GetOnBehalfRate([Query, NotNull] string accountId = "");
+        
+        /// <summary>
+        /// Get all on behalf rates
+        /// </summary>
+        [Get("/api/rates/get-all-on-behalf")]
+        [ItemCanBeNull]
+        Task<IReadOnlyList<OnBehalfRateContract>> GetOnBehalfRates();
 
         /// <summary>
         /// Insert or update existing on behalf rate
         /// </summary>
+        [Obsolete("Use replace-all-on-behalf")]
         [Post("/api/rates/replace-on-behalf")]
         Task ReplaceOnBehalfRate([Body, NotNull] OnBehalfRateContract rate);
+
+        /// <summary>
+        /// Insert or update all on behalf rates
+        /// </summary>
+        [Post("/api/rates/replace-all-on-behalf")]
+        Task ReplaceAllOnBehalfRate([Body, NotNull] List<OnBehalfRateContract> rates);
     }
 }
