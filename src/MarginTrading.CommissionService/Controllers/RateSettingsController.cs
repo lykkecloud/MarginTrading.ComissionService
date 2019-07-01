@@ -72,11 +72,10 @@ namespace MarginTrading.CommissionService.Controllers
                 throw new ArgumentNullException(nameof(rates));
             }
 
-            if (rates.Any(x => string.IsNullOrWhiteSpace(x.TradingConditionId)
-                               || string.IsNullOrWhiteSpace(x.AssetPairId)
+            if (rates.Any(x => string.IsNullOrWhiteSpace(x.AssetPairId)
                                || string.IsNullOrWhiteSpace(x.CommissionAsset)))
             {
-                throw new ArgumentException("Wrong parameters: TradingConditionId, AssetPairId and CommissionAsset must be set", nameof(rates));
+                throw new ArgumentException("Wrong parameters: AssetPairId and CommissionAsset must be set", nameof(rates));
             }
 
             await _rateSettingsService.ReplaceOrderExecutionRates(rates.Select(Map).ToList());
