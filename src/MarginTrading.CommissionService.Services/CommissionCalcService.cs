@@ -138,7 +138,9 @@ namespace MarginTrading.CommissionService.Services
 
             var actionsNum = changeEventsCount + placeEventCharged;
 
-            var rateSettings = await _rateSettingsService.GetOnBehalfRate(onBehalfEvents.First().AccountId)
+            var rateSettings =
+                await _rateSettingsService.GetOnBehalfRate(events.FirstOrDefault()?.AccountId ??
+                                                           RateSettingsService.TradingProfile)
                 ?? await _rateSettingsService.GetOnBehalfRate(RateSettingsService.TradingProfile); 
             
             //use fx rates to convert to account asset
