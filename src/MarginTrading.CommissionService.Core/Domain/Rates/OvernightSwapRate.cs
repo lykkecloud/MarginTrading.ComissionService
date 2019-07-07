@@ -5,7 +5,7 @@ using MarginTrading.CommissionService.Core.Settings.Rates;
 
 namespace MarginTrading.CommissionService.Core.Domain.Rates
 {
-    public class OvernightSwapRate
+    public class OvernightSwapRate : IKeyedObject
     {
         [NotNull] public string AssetPairId { get; set; }
         
@@ -29,5 +29,8 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
                 VariableRateQuote = defaultOvernightSwapSettings.VariableRateQuote,
             };
         }
+
+        public string Key => AssetPairId;
+        public string GetFilterKey() => AssetPairId;
     }
 }

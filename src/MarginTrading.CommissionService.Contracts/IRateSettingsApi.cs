@@ -25,13 +25,19 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// Get order execution rates
         /// </summary>
         [Get("/api/rates/get-order-exec")]
-        Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates();
+        Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates([Query] string accountId = null);
 
         /// <summary>
         /// Insert or update existing order execution rates
         /// </summary>
         [Post("/api/rates/replace-order-exec")]
         Task ReplaceOrderExecutionRates([Body, NotNull] OrderExecutionRateContract[] rates);
+
+        /// <summary>
+        /// Delete existing order execution rates
+        /// </summary>
+        [Post("/api/rates/delete-order-exec")]
+        Task DeleteOrderExecutionRates([Body, NotNull] OrderExecutionRateContract[] rates);
         
         
         

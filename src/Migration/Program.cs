@@ -73,9 +73,14 @@ namespace Migration
             var (orderExecutionRates, onBehalfRates) = await PrepareData(blobRepo);
             
             //migrate SQL
-            await blobRepo.WriteAsync(LykkeConstants.RateSettingsBlobContainer, LykkeConstants.OrderExecutionKey,
-                orderExecutionRates);
-            await blobRepo.WriteAsync(LykkeConstants.RateSettingsBlobContainer, LykkeConstants.OnBehalfKey, onBehalfRates);
+            await blobRepo.WriteAsync(LykkeConstants.RateSettingsBlobContainer, 
+                RateSettingsService.GetKey(LykkeConstants.OrderExecutionKey), orderExecutionRates);
+            await blobRepo.WriteAsync(LykkeConstants.RateSettingsBlobContainer, 
+                RateSettingsService.GetKey(LykkeConstants.OnBehalfKey), onBehalfRates);
+            var swaps = await blobRepo.ReadAsync<IEnumerable<OvernightSwapRate>>(
+                LykkeConstants.RateSettingsBlobContainer, LykkeConstants.OvernightSwapKey);
+            await blobRepo.WriteAsync(LykkeConstants.RateSettingsBlobContainer,
+                RateSettingsService.GetKey(LykkeConstants.OvernightSwapKey), swaps);
 
             //migrate Redis
             await redisDatabase.KeyDeleteAsync(RateSettingsService.GetKey(LykkeConstants.OrderExecutionKey));

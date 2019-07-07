@@ -45,6 +45,13 @@ namespace MarginTrading.CommissionService.AzureRepositories.Repositories
             await WriteAsync(blobContainer, key, objects.Concat(existing.ExceptBy(objects, selector)));
         }
 
+        public async Task RemoveFromListAsync<T>(string blobContainer, string key, IEnumerable<T> objects, Func<T, string> selector)
+        {
+            var existing = Read<IEnumerable<T>>(blobContainer, key)?.ToList() ?? new List<T>();
+
+            await WriteAsync(blobContainer, key, existing.ExceptBy(objects, selector));
+        }
+
         public async Task<T> ReadAsync<T>(string blobContainer, string key)
         {
             if (_blobStorage.HasBlobAsync(blobContainer, key).Result)

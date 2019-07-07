@@ -1,9 +1,10 @@
 using JetBrains.Annotations;
+using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Settings.Rates;
 
 namespace MarginTrading.CommissionService.Core.Domain.Rates
 {
-    public class OnBehalfRate
+    public class OnBehalfRate : IKeyedObject
     {
         [NotNull] public string TradingConditionId { get; set; }
         
@@ -24,5 +25,8 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
                 LegalEntity = defaultOnBehalfSettings.LegalEntity,
             };
         }
+
+        public string Key => TradingConditionId;
+        public string GetFilterKey() => TradingConditionId;
     }
 }

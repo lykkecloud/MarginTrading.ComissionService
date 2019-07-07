@@ -10,6 +10,7 @@ using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Rates;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
+using MarginTrading.CommissionService.Core.Settings.Rates;
 using MarginTrading.CommissionService.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,13 +24,14 @@ namespace MarginTrading.CommissionService.Controllers
     {
         private readonly IRateSettingsService _rateSettingsService;
         private readonly IConvertService _convertService;
+        private readonly DefaultRateSettings _defaultRateSettings;
 
-        public RateSettingsController(
-            IRateSettingsService rateSettingsService,
-            IConvertService convertService)
+        public RateSettingsController(IRateSettingsService rateSettingsService, IConvertService convertService,
+            DefaultRateSettings defaultRateSettings)
         {
             _rateSettingsService = rateSettingsService;
             _convertService = convertService;
+            _defaultRateSettings = defaultRateSettings;
         }
 
         [ProducesResponseType(typeof(OrderExecutionRateContract), 200)]
@@ -55,9 +57,9 @@ namespace MarginTrading.CommissionService.Controllers
         [ProducesResponseType(400)]
         [Description("Get order execution rates")]
         [HttpGet("get-order-exec")]
-        public async Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates()
+        public async Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates([FromQuery] string accountId = null)
         {
-            return (await _rateSettingsService.GetOrderExecutionRates())
+            return (await _rateSettingsService.GetOrderExecutionRates(accountId))
                    ?.Select(Map).ToList() ?? new List<OrderExecutionRateContract>();
         }
 
@@ -79,6 +81,20 @@ namespace MarginTrading.CommissionService.Controllers
             }
 
             await _rateSettingsService.ReplaceOrderExecutionRates(rates.Select(Map).ToList());
+        }
+
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [Description("Delete existing order execution rates")]
+        [HttpPost("delete-order-exec")]
+        public async Task DeleteOrderExecutionRates([FromBody] OrderExecutionRateContract[] rates)
+        {
+            if (rates == null || !rates.Any())
+            {
+                throw new ArgumentNullException(nameof(rates));
+            }
+
+            await _rateSettingsService.DeleteOrderExecutionRates(rates.Select(Map).ToList());
         }
 
 
@@ -192,7 +208,9 @@ namespace MarginTrading.CommissionService.Controllers
             CommissionFloor = orderExecutionRate.CommissionFloor,
             CommissionRate = orderExecutionRate.CommissionRate,
             CommissionAsset = orderExecutionRate.CommissionAsset,
-            LegalEntity = orderExecutionRate.LegalEntity,
+            LegalEntity = string.IsNullOrWhiteSpace(orderExecutionRate.LegalEntity)
+                ? _defaultRateSettings.DefaultOrderExecutionSettings.LegalEntity
+                : orderExecutionRate.LegalEntity,
         };
 
         private OnBehalfRateContract Map(OnBehalfRate onBehalfRate) => new OnBehalfRateContract
@@ -200,7 +218,9 @@ namespace MarginTrading.CommissionService.Controllers
             TradingConditionId = onBehalfRate.TradingConditionId,
             Commission = onBehalfRate.Commission,
             CommissionAsset = onBehalfRate.CommissionAsset,
-            LegalEntity = onBehalfRate.LegalEntity,
+            LegalEntity = string.IsNullOrWhiteSpace(onBehalfRate.LegalEntity)
+                ? _defaultRateSettings.DefaultOnBehalfSettings.LegalEntity
+                : onBehalfRate.LegalEntity,
         };
 
         private OnBehalfRate Map(OnBehalfRateContract onBehalfRate) => new OnBehalfRate
