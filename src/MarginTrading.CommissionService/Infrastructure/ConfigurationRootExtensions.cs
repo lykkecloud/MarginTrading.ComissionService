@@ -1,3 +1,6 @@
+// Copyright (c) 2019 Lykke Corp.
+// See the LICENSE file in the project root for more information.
+
 using Microsoft.Extensions.Configuration;
 
 namespace MarginTrading.CommissionService.Infrastructure
