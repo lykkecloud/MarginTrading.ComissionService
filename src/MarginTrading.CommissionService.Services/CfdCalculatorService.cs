@@ -1,4 +1,7 @@
-﻿using MarginTrading.CommissionService.Core.Caches;
+﻿// Copyright (c) 2019 Lykke Corp.
+// See the LICENSE file in the project root for more information.
+
+using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Services;
 
 namespace MarginTrading.CommissionService.Services

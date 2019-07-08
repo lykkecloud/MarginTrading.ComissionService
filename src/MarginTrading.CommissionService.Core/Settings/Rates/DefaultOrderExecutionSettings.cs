@@ -1,4 +1,7 @@
-﻿using MarginTrading.CommissionService.Core.Domain.Rates;
+﻿// Copyright (c) 2019 Lykke Corp.
+// See the LICENSE file in the project root for more information.
+
+using MarginTrading.CommissionService.Core.Domain.Rates;
 
 namespace MarginTrading.CommissionService.Core.Settings.Rates
 {
