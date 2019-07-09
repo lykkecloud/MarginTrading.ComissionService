@@ -19,13 +19,13 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// </summary>
         [Get("/api/rates/get-order-exec/{assetPairId}")]
         Task<OrderExecutionRateContract> GetOrderExecutionRate(
-            [NotNull] string assetPairId, [Query] string accountId = "");
+            [NotNull] string assetPairId, [Query] string tradingConditionId = "");
         
         /// <summary>
         /// Get order execution rates
         /// </summary>
         [Get("/api/rates/get-order-exec")]
-        Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates([Query] string accountId = null);
+        Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates([Query] string tradingConditionId = null);
 
         /// <summary>
         /// Insert or update existing order execution rates
@@ -60,7 +60,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// </summary>
         [Get("/api/rates/get-on-behalf")]
         [ItemCanBeNull]
-        Task<OnBehalfRateContract> GetOnBehalfRate([Query, NotNull] string accountId = "");
+        Task<OnBehalfRateContract> GetOnBehalfRate([Query, NotNull] string tradingConditionId = "");
         
         /// <summary>
         /// Get all on behalf rates

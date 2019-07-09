@@ -36,12 +36,12 @@ namespace MarginTrading.CommissionService.Controllers
 
         [ProducesResponseType(typeof(OrderExecutionRateContract), 200)]
         [ProducesResponseType(400)]
-        [Description("Get order execution rate. If accountId not set, or it's order exec rates are not set then Trading Profile value is returned.")]
+        [Description("Get order execution rate. If tradingConditionId not set, or it's order exec rates are not set then Trading Profile value is returned.")]
         [HttpGet("get-order-exec/{assetPairId}")]
         public async Task<OrderExecutionRateContract> GetOrderExecutionRate(
-            [FromRoute] string assetPairId, [FromQuery] string accountId = "")
+            [FromRoute] string assetPairId, [FromQuery] string tradingConditionId = "")
         {
-            var profileId = string.IsNullOrWhiteSpace(accountId) ? RateSettingsService.TradingProfile : accountId;
+            var profileId = string.IsNullOrWhiteSpace(tradingConditionId) ? RateSettingsService.TradingProfile : tradingConditionId;
             var data = await _rateSettingsService.GetOrderExecutionRate(profileId, assetPairId);
 
             if (data == null && profileId != RateSettingsService.TradingProfile)
@@ -57,9 +57,9 @@ namespace MarginTrading.CommissionService.Controllers
         [ProducesResponseType(400)]
         [Description("Get order execution rates")]
         [HttpGet("get-order-exec")]
-        public async Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates([FromQuery] string accountId = null)
+        public async Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates([FromQuery] string tradingConditionId = null)
         {
-            return (await _rateSettingsService.GetOrderExecutionRates(accountId))
+            return (await _rateSettingsService.GetOrderExecutionRates(tradingConditionId))
                    ?.Select(Map).ToList() ?? new List<OrderExecutionRateContract>();
         }
 
@@ -130,12 +130,12 @@ namespace MarginTrading.CommissionService.Controllers
         
         [ProducesResponseType(typeof(OnBehalfRateContract), 200)]
         [ProducesResponseType(400)]
-        [Description("Get on behalf rate. If accountId not set Trading Profile value is returned.")]
+        [Description("Get on behalf rate. If tradingConditionId not set Trading Profile value is returned.")]
         [HttpGet("get-on-behalf")]
-        public async Task<OnBehalfRateContract> GetOnBehalfRate([FromQuery] string accountId = "")
+        public async Task<OnBehalfRateContract> GetOnBehalfRate([FromQuery] string tradingConditionId = "")
         {
             var item = await _rateSettingsService.GetOnBehalfRate(
-                string.IsNullOrWhiteSpace(accountId) ? RateSettingsService.TradingProfile : accountId);
+                string.IsNullOrWhiteSpace(tradingConditionId) ? RateSettingsService.TradingProfile : tradingConditionId);
             return item == null ? null : Map(item);
         }
 
