@@ -35,6 +35,10 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpPost]
         public Task StartDailyPnlProcess(string operationId, DateTime tradingDay)
         {
+            tradingDay = tradingDay != default
+                ? DateTime.SpecifyKind(tradingDay.Date, DateTimeKind.Utc)
+                : _systemClock.UtcNow.Date;
+            
             _cqrsEngine.SendCommand(
                 new StartDailyPnlProcessCommand(
                     operationId.RequiredNotNullOrWhiteSpace(nameof(operationId)),
