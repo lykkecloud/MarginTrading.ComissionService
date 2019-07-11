@@ -37,6 +37,10 @@ namespace MarginTrading.CommissionService.Controllers
         public Task StartOvernightSwapProcess(string operationId, 
             int numberOfFinancingDays = 0, int financingDaysPerYear = 0, DateTime tradingDay = default)
         {
+            tradingDay = tradingDay != default
+                ? DateTime.SpecifyKind(tradingDay.Date, DateTimeKind.Utc)
+                : _systemClock.UtcNow.Date;
+            
             _cqrsEngine.SendCommand(
                 new StartOvernightSwapsProcessCommand(
                     operationId.RequiredNotNullOrWhiteSpace(nameof(operationId)),
