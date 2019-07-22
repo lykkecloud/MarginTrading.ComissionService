@@ -28,8 +28,6 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         [Post("/api/rates/replace-order-exec")]
         Task ReplaceOrderExecutionRates([Body, NotNull] OrderExecutionRateContract[] rates);
         
-        
-        
         /// <summary>
         /// Get overnight swap rates
         /// </summary>
@@ -41,8 +39,6 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// </summary>
         [Post("/api/rates/replace-overnight-swap")]
         Task ReplaceOvernightSwapRates([Body, NotNull] OvernightSwapRateContract[] rates);
-        
-        
         
         /// <summary>
         /// Get on behalf rate

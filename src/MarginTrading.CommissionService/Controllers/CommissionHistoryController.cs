@@ -40,9 +40,9 @@ namespace MarginTrading.CommissionService.Controllers
 		[ProducesResponseType(400)]
 		[HttpGet]
 		public async Task<List<OvernightSwapHistoryContract>> GetOvernightSwapHistoryOld(
-			[FromQuery] DateTime from, [FromQuery] DateTime to)
+			[FromQuery] DateTime from, [FromQuery] DateTime to, [FromQuery] string accountId)
 		{
-			return await GetOvernightSwapHistory(from, to);
+			return await GetOvernightSwapHistory(from, to, accountId);
 		}
 
 		/// <inheritdoc />
@@ -51,12 +51,12 @@ namespace MarginTrading.CommissionService.Controllers
 		[ProducesResponseType(400)]
 		[HttpGet]
 		public async Task<List<OvernightSwapHistoryContract>> GetOvernightSwapHistory(
-			[FromQuery] DateTime from, [FromQuery] DateTime to)
+			[FromQuery] DateTime from, [FromQuery] DateTime to, [FromQuery] string accountId)
 		{
 			if (to < from)
 				throw new Exception("'From' date must be before 'to' date.");
 			
-			var data = await _overnightSwapHistoryRepository.GetAsync(from, to);
+			var data = await _overnightSwapHistoryRepository.GetAsync(accountId, from, to);
 
 			return data.Select(Convert).ToList();
 		}
@@ -67,12 +67,12 @@ namespace MarginTrading.CommissionService.Controllers
 		[ProducesResponseType(400)]
 		[HttpGet]
 		public async Task<List<DailyPnlHistoryContract>> GetDailyPnlHistory(
-			[FromQuery] DateTime @from, [FromQuery] DateTime to)
+			[FromQuery] DateTime @from, [FromQuery] DateTime to, [FromQuery] string accountId)
 		{
 			if (to < from)
 				throw new Exception("'From' date must be before 'to' date.");
 			
-			var data = await _dailyPnlHistoryRepository.GetAsync(from, to);
+			var data = await _dailyPnlHistoryRepository.GetAsync(accountId,from, to);
 
 			return data.Select(Convert).ToList();
 		}
