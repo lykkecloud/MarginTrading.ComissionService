@@ -17,17 +17,17 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
     public interface ICommissionHistoryApi
     {   
         /// <summary>
-        /// Retrieve overnight swap calculation history from storage between selected dates.
+        /// Retrieve overnight swap calculation history from storage between selected trading days.
         /// </summary>
         [Get("/api/commission/overnight-swap")]
         Task<List<OvernightSwapHistoryContract>> GetOvernightSwapHistory(
-            [Query] DateTime from, [Query] DateTime to);
+            [Query] DateTime from, [Query] DateTime to, [Query] string accountId);
         
         /// <summary>
-        /// Retrieve daily pnl calculation history from storage between selected dates.
+        /// Retrieve daily pnl calculation history from storage between selected trading days.
         /// </summary>
         [Get("/api/commission/daily-pnl")]
         Task<List<DailyPnlHistoryContract>> GetDailyPnlHistory(
-            [Query] DateTime from, [Query] DateTime to);
+            [Query] DateTime from, [Query] DateTime to, [Query] string accountId);
     }
 }

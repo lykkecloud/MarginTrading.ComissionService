@@ -134,8 +134,8 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
             {
                 var whereClause = "WHERE 1=1 " +
                                   (string.IsNullOrWhiteSpace(accountId) ? "" : " AND AccountId = @accountId")
-                                  + (from == null ? "" : " AND Time > @from")
-                                  + (to == null ? "" : " AND Time < @to");
+                                  + (from == null ? "" : " AND TradingDay >= @from")
+                                  + (to == null ? "" : " AND TradingDay < @to");
                 var swapEntities = await conn.QueryAsync<OvernightSwapEntity>(
                     $"SELECT * FROM {TableName} {whereClause}", 
                     new { accountId, from, to });

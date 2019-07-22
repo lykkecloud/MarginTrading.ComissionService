@@ -128,8 +128,8 @@ INDEX IX_DailyPnlHistory NONCLUSTERED (Time, TradingDay, AccountId, OperationId,
             {
                 var whereClause = "WHERE 1=1 " +
                                   (string.IsNullOrWhiteSpace(accountId) ? "" : " AND AccountId = @accountId")
-                                  + (from == null ? "" : " AND Time > @from")
-                                  + (to == null ? "" : " AND Time < @to");
+                                  + (from == null ? "" : " AND TradingDay >= @from")
+                                  + (to == null ? "" : " AND TradingDay < @to");
                 var entities = await conn.QueryAsync<DailyPnlEntity>(
                     $"SELECT * FROM {TableName} {whereClause}", 
                     new { accountId, from, to });
