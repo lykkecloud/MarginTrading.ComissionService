@@ -105,13 +105,13 @@ namespace MarginTrading.CommissionService.Services
             string accountAssetId)
         {
             var events = await ApiHelpers
-                .RefitRetryPolicy<List<OrderEventContract>>(
+                .RefitRetryPolicy<List<OrderEventWithAdditionalContract>>(
                     r => r.Any(oec =>
                         new[] { OrderUpdateTypeContract.Executed, OrderUpdateTypeContract.Reject, OrderUpdateTypeContract.Cancel }
                             .Contains(oec.UpdateType)),
                     3, 1000)
                 .ExecuteAsync(async ct =>
-                    await _orderEventsApi.OrderById(orderId, null, false), CancellationToken.None);
+                    await _orderEventsApi.OrderById(orderId), CancellationToken.None);
 
             if (events.All(e => e.UpdateType != OrderUpdateTypeContract.Executed))
             {
@@ -153,7 +153,7 @@ namespace MarginTrading.CommissionService.Services
             return (actionsNum, commission);
 
             async Task<bool> CorrelatesWithParent(OrderEventContract order) =>
-                (await _orderEventsApi.OrderById(order.ParentOrderId, OrderStatusContract.Placed, false))
+                (await _orderEventsApi.OrderById(order.ParentOrderId, OrderStatusContract.Placed))
                 .Any(p => p.CorrelationId == order.CorrelationId);
         }
 
