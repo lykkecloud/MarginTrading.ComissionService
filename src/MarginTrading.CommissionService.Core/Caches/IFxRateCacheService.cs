@@ -11,8 +11,6 @@ namespace MarginTrading.CommissionService.Core.Caches
     public interface IFxRateCacheService
     {
         InstrumentBidAskPair GetQuote(string instrument);
-        Dictionary<string, InstrumentBidAskPair> GetAllQuotes();
         Task SetQuote(ExternalExchangeOrderbookMessage quote);
-        void SetQuote(InstrumentBidAskPair bidAskPair);
     }
 }

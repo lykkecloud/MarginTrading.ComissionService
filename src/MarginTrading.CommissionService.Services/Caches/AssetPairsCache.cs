@@ -16,7 +16,7 @@ namespace MarginTrading.CommissionService.Services.Caches
     /// <summary>
     /// Cashes data about assets in the backend app.
     /// </summary>
-    public class AssetPairsCache : IAssetPairsInitializableCache
+    public class AssetPairsCache : IAssetPairsCache
     {
         private IReadOnlyDictionary<string, IAssetPair> _assetPairs = 
             ImmutableSortedDictionary<string, IAssetPair>.Empty;

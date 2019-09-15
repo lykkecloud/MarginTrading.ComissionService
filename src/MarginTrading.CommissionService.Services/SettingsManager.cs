@@ -22,14 +22,14 @@ namespace MarginTrading.CommissionService.Services
     {
         private static readonly object Lock = new object();
 
-        private readonly IAssetPairsInitializableCache _assetPairsCache;
+        private readonly IAssetPairsCache _assetPairsCache;
         private readonly IAssetsCache _assetsCache;
         private readonly IAssetPairsApi _assetPairs;
         private readonly IAssetsApi _assetsApi;
         private readonly IConvertService _convertService;
 
         public SettingsManager(
-            IAssetPairsInitializableCache assetPairsCache,
+            IAssetPairsCache assetPairsCache,
             IAssetsCache assetsCache,
             IAssetPairsApi assetPairs,
             IAssetsApi assetsApi,
