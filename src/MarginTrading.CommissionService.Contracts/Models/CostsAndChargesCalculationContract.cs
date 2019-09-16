@@ -19,14 +19,50 @@ namespace Lykke.MarginTrading.CommissionService.Contracts.Models
         
         public DateTime Timestamp { get; set; }
         
-        public decimal EntryCost { get; set; }
+        public CostsAndChargesValueContract EntrySum { get; set; }
         
-        public decimal ExitCost { get; set; }
+        public CostsAndChargesValueContract EntryCost { get; set; }
         
-        public decimal EntryCommission { get; set; }
+        public CostsAndChargesValueContract EntryCommission { get; set; }
         
-        public decimal ExitCommission { get; set; }
+        public CostsAndChargesValueContract EntryConsorsDonation { get; set; }
         
-        public decimal OvernightCost { get; set; }
+        public CostsAndChargesValueContract EntryForeignCurrencyCosts { get; set; }
+        
+        public CostsAndChargesValueContract RunningCostsSum { get; set; }
+        
+        public CostsAndChargesValueContract RunningCostsProductReturnsSum { get; set; }
+        
+        public CostsAndChargesValueContract OvernightCost { get; set; }
+        
+        public CostsAndChargesValueContract ReferenceRateAmount { get; set; }
+        
+        public CostsAndChargesValueContract RepoCost { get; set; }
+        
+        public CostsAndChargesValueContract RunningCommissions { get; set; }
+        
+        public CostsAndChargesValueContract RunningCostsConsorsDonation { get; set; }
+        
+        public CostsAndChargesValueContract RunningCostsForeignCurrencyCosts { get; set; }
+        
+        public CostsAndChargesValueContract ExitSum { get; set; }
+        
+        public CostsAndChargesValueContract ExitCost { get; set; }
+        
+        public CostsAndChargesValueContract ExitCommission { get; set; }
+        
+        public CostsAndChargesValueContract ExitConsorsDonation { get; set; }
+        
+        public CostsAndChargesValueContract ExitForeignCurrencyCosts { get; set; }
+        
+        public CostsAndChargesValueContract ProductsReturn { get; set; }
+        
+        public CostsAndChargesValueContract ServiceCost { get; set; }
+        
+        public CostsAndChargesValueContract ProductsReturnConsorsDonation { get; set; }
+        
+        public CostsAndChargesValueContract ProductsReturnForeignCurrencyCosts { get; set; }
+        
+        public CostsAndChargesValueContract OneTag { get; set; }
     }
 }

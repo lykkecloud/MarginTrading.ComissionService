@@ -99,16 +99,71 @@ namespace MarginTrading.CommissionService.Controllers
 			return new CostsAndChargesCalculationContract
 			{
 				Id = calculation.Id,
+				
 				Direction = calculation.Direction.ToType<OrderDirectionContract>(),
+				
 				Instrument = calculation.Instrument,
+				
 				Timestamp = calculation.Timestamp,
+				
 				Volume = calculation.Volume,
+				
 				AccountId = calculation.AccountId,
-				EntryCommission = calculation.EntryCommission,
-				EntryCost = calculation.EntryCost,
-				ExitCommission = calculation.ExitCommission,
-				ExitCost = calculation.ExitCost,
-				OvernightCost = calculation.OvernightCost
+
+				EntrySum = Map(calculation.EntrySum),
+
+				EntryCost = Map(calculation.EntryCost),
+
+				EntryCommission = Map(calculation.EntryCommission),
+
+				EntryConsorsDonation = Map(calculation.EntryConsorsDonation),
+
+				EntryForeignCurrencyCosts = Map(calculation.EntryForeignCurrencyCosts),
+
+				RunningCostsSum = Map(calculation.RunningCostsSum),
+
+				RunningCostsProductReturnsSum = Map(calculation.RunningCostsProductReturnsSum),
+
+				OvernightCost = Map(calculation.OvernightCost),
+
+				ReferenceRateAmount = Map(calculation.ReferenceRateAmount),
+
+				RepoCost = Map(calculation.RepoCost),
+
+				RunningCommissions = Map(calculation.RunningCommissions),
+
+				RunningCostsConsorsDonation = Map(calculation.RunningCostsConsorsDonation),
+
+				RunningCostsForeignCurrencyCosts = Map(calculation.RunningCostsForeignCurrencyCosts),
+
+				ExitSum = Map(calculation.ExitSum),
+
+				ExitCost = Map(calculation.ExitCost),
+
+				ExitCommission = Map(calculation.ExitCommission),
+
+				ExitConsorsDonation = Map(calculation.ExitConsorsDonation),
+
+				ExitForeignCurrencyCosts = Map(calculation.ExitForeignCurrencyCosts),
+
+				ProductsReturn = Map(calculation.ProductsReturn),
+
+				ServiceCost = Map(calculation.ServiceCost),
+
+				ProductsReturnConsorsDonation = Map(calculation.ProductsReturnConsorsDonation),
+
+				ProductsReturnForeignCurrencyCosts = Map(calculation.ProductsReturnForeignCurrencyCosts),
+
+				OneTag = Map(calculation.OneTag)
+			};
+		}
+
+		private CostsAndChargesValueContract Map(CostsAndChargesValue value)
+		{
+			return new CostsAndChargesValueContract
+			{
+				ValueInEur = value.ValueInEur,
+				ValueInPercent = value.ValueInPercent
 			};
 		}
 	}

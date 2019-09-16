@@ -19,14 +19,55 @@ namespace MarginTrading.CommissionService.Core.Domain
         
         public DateTime Timestamp { get; set; }
         
-        public decimal EntryCost { get; set; }
+        public CostsAndChargesValue EntrySum { get; set; }
         
-        public decimal ExitCost { get; set; }
+        public CostsAndChargesValue EntryCost { get; set; }
         
-        public decimal EntryCommission { get; set; }
+        public CostsAndChargesValue EntryCommission { get; set; }
         
-        public decimal ExitCommission { get; set; }
+        public CostsAndChargesValue EntryConsorsDonation { get; set; }
         
-        public decimal OvernightCost { get; set; }
+        public CostsAndChargesValue EntryForeignCurrencyCosts { get; set; }
+        
+        public CostsAndChargesValue RunningCostsSum { get; set; }
+        
+        public CostsAndChargesValue RunningCostsProductReturnsSum { get; set; }
+        
+        public CostsAndChargesValue OvernightCost { get; set; }
+        
+        public CostsAndChargesValue ReferenceRateAmount { get; set; }
+        
+        public CostsAndChargesValue RepoCost { get; set; }
+        
+        public CostsAndChargesValue RunningCommissions { get; set; }
+        
+        public CostsAndChargesValue RunningCostsConsorsDonation { get; set; }
+        
+        public CostsAndChargesValue RunningCostsForeignCurrencyCosts { get; set; }
+        
+        public CostsAndChargesValue ExitSum { get; set; }
+        
+        public CostsAndChargesValue ExitCost { get; set; }
+        
+        public CostsAndChargesValue ExitCommission { get; set; }
+        
+        public CostsAndChargesValue ExitConsorsDonation { get; set; }
+        
+        public CostsAndChargesValue ExitForeignCurrencyCosts { get; set; }
+        
+        public CostsAndChargesValue ProductsReturn { get; set; }
+        
+        public CostsAndChargesValue ServiceCost { get; set; }
+        
+        public CostsAndChargesValue ProductsReturnConsorsDonation { get; set; }
+        
+        public CostsAndChargesValue ProductsReturnForeignCurrencyCosts { get; set; }
+        
+        public CostsAndChargesValue OneTag { get; set; }
+        
+        
+        
+        
+        
     }
 }

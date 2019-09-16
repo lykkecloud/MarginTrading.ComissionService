@@ -48,7 +48,7 @@ namespace MarginTrading.CommissionService.Services
             var executionCommissions =
                 await CalculateCommissions(accountId, instrument, quantity, direction, currentBestPrice);
             var swaps = await CalculateOvernightSwaps(accountId, instrument, quantity, direction, currentBestPrice);
-            
+
             var calculation = new CostsAndChargesCalculation
             {
                 Id = Guid.NewGuid().ToString(),
@@ -57,11 +57,11 @@ namespace MarginTrading.CommissionService.Services
                 AccountId = accountId,
                 Volume = quantity,
                 Timestamp = _systemClock.UtcNow.UtcDateTime,
-                EntryCommission = executionCommissions.Entry,
-                EntryCost = spreadCosts.Entry,
-                ExitCommission = executionCommissions.Exit,
-                ExitCost = spreadCosts.Exit,
-                OvernightCost = swaps
+                EntryCommission = new CostsAndChargesValue {ValueInEur = executionCommissions.Entry},
+                EntryCost = new CostsAndChargesValue {ValueInEur = spreadCosts.Entry},
+                ExitCommission = new CostsAndChargesValue {ValueInEur = executionCommissions.Exit},
+                ExitCost = new CostsAndChargesValue {ValueInEur = spreadCosts.Exit},
+                OvernightCost = new CostsAndChargesValue {ValueInEur = swaps}
             };
 
             await _repository.Save(calculation);
