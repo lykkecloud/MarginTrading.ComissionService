@@ -112,6 +112,11 @@ namespace MarginTrading.CommissionService.Modules
                 .As<IFxRateCacheService>()
                 .SingleInstance()
                 .OnActivated(args => args.Instance.Start());
+
+            builder.RegisterType<InterestRatesCacheService>()
+                .As<IInterestRatesCacheService>()
+                .SingleInstance()
+                .OnActivated(args => args.Instance.InitCache());
             
             builder.RegisterType<AssetsCache>()
                 .As<IAssetsCache>()
@@ -143,6 +148,10 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<AccountRedisCache>()
                 .As<IAccountRedisCache>()
+                .SingleInstance();
+
+            builder.RegisterType<CostsAndChargesGenerationService>()
+                .As<ICostsAndChargesGenerationService>()
                 .SingleInstance();
         }
 
@@ -193,6 +202,10 @@ namespace MarginTrading.CommissionService.Modules
 
                 builder.RegisterType<OperationExecutionInfoRepository>()
                     .As<IOperationExecutionInfoRepository>()
+                    .SingleInstance();
+                
+                builder.RegisterType<CostsAndChargesRepository>()
+                    .As<ICostsAndChargesRepository>()
                     .SingleInstance();
             }
         }

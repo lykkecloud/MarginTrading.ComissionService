@@ -45,13 +45,20 @@ namespace MarginTrading.CommissionService.Services.Caches
 
         public decimal GetQuote(string instrument, OrderDirection orderDirection)
         {
+            var quote = GetBidAskPair(instrument);
+
+            return orderDirection == OrderDirection.Buy ? quote.Ask : quote.Bid;
+        }
+
+        public InstrumentBidAskPair GetBidAskPair(string instrument)
+        {
             _lockSlim.EnterReadLock();
             try
             {
                 if (!_cache.TryGetValue(instrument, out var quote))
                     throw new QuoteNotFoundException(instrument, $"There is no quote for instrument {instrument}");
 
-                return orderDirection == OrderDirection.Buy ? quote.Ask : quote.Bid;
+                return quote;
             }
             finally
             {

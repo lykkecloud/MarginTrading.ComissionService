@@ -9,6 +9,7 @@ namespace MarginTrading.CommissionService.Core.Services
     public interface IQuoteCacheService
     {
         decimal GetQuote(string instrument, OrderDirection orderDirection);
+        InstrumentBidAskPair GetBidAskPair(string instrument);
         Task SetQuote(InstrumentBidAskPair quote);
     }
 }

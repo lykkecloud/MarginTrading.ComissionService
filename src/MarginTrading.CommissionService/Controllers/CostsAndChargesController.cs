@@ -1,0 +1,115 @@
+﻿// Copyright (c) 2019 Lykke Corp.
+// See the LICENSE file in the project root for more information.
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Lykke.MarginTrading.CommissionService.Contracts;
+using Lykke.MarginTrading.CommissionService.Contracts.Models;
+using MarginTrading.CommissionService.Core;
+using MarginTrading.CommissionService.Core.Domain;
+using MarginTrading.CommissionService.Core.Domain.Abstractions;
+using MarginTrading.CommissionService.Core.Repositories;
+using MarginTrading.CommissionService.Core.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using MarginTrading.CommissionService.Core.Extensions;
+
+namespace MarginTrading.CommissionService.Controllers
+{
+	/// <inheritdoc cref="ICostsAndChargesApi" />
+	/// Manages costs and charges
+	[Authorize]
+	[Route("api/costsAndCharges")]
+	public class CostsAndChargesController : Controller, ICostsAndChargesApi
+	{
+		private readonly ICostsAndChargesGenerationService _costsAndChargesGenerationService;
+		private readonly ICostsAndChargesRepository _costsAndChargesRepository;
+
+		public CostsAndChargesController(ICostsAndChargesGenerationService costsAndChargesGenerationService,
+			ICostsAndChargesRepository costsAndChargesRepository)
+		{
+			_costsAndChargesGenerationService = costsAndChargesGenerationService;
+			_costsAndChargesRepository = costsAndChargesRepository;
+		}
+		
+		[ProducesResponseType(typeof(CostsAndChargesCalculationContract), 200)]
+		[ProducesResponseType(400)]
+		[HttpPost]
+		public async Task<CostsAndChargesCalculationContract> GenerateSingle(string accountId, string instrument, 
+		decimal quantity, OrderDirectionContract direction, bool withOnBehalf)
+		{
+			var calculation = await _costsAndChargesGenerationService.GenerateSingle(accountId, instrument, quantity,
+			direction.ToType<OrderDirection>(), withOnBehalf);
+
+			return Map(calculation);
+		}
+
+		[Route("for-account")]
+		[ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
+		[ProducesResponseType(400)]
+		[HttpPost]
+		public async Task<CostsAndChargesCalculationContract[]> GenerateForAccount(string accountId, bool withOnBehalf)
+		{
+			var calculations = await _costsAndChargesGenerationService.GenerateForAccount(accountId, withOnBehalf);
+
+			return calculations.Select(Map).ToArray();
+		}
+
+		[Route("for-instrument")]
+		[ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
+		[ProducesResponseType(400)]
+		[HttpPost]
+		public async Task<CostsAndChargesCalculationContract[]> GenerateForInstrument(string instrument, bool withOnBehalf)
+		{
+			var calculations = await _costsAndChargesGenerationService.GenerateForInstrument(instrument, withOnBehalf);
+
+			return calculations.Select(Map).ToArray();
+		}
+
+		[Route("")]
+		[ProducesResponseType(typeof(PaginatedResponseContract<CostsAndChargesCalculationContract>), 200)]
+		[ProducesResponseType(400)]
+		[HttpGet]
+		public async Task<PaginatedResponseContract<CostsAndChargesCalculationContract>> Search(string accountId, string
+		 instrument, decimal? quantity, OrderDirectionContract? direction, DateTime? @from,
+			DateTime? to, int? skip, int? take, bool isAscendingOrder = true)
+		{
+			var calculations = await _costsAndChargesRepository.Get(accountId, instrument, quantity, direction?.ToType<OrderDirection>(), from, to, skip, take, isAscendingOrder);
+
+			return new PaginatedResponseContract<CostsAndChargesCalculationContract>(
+				calculations.Contents.Select(Map).ToArray(), calculations.Start, calculations.Size,
+				calculations.TotalSize);
+		}
+
+		[Route("by-ids")]
+		[ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
+		[ProducesResponseType(400)]
+		[HttpGet]
+		public async Task<CostsAndChargesCalculationContract[]> Get(string[] ids)
+		{
+			var calculation = await _costsAndChargesRepository.GetByIds(ids);
+
+			return calculation.Select(Map).ToArray();
+		}
+
+		private CostsAndChargesCalculationContract Map(CostsAndChargesCalculation calculation)
+		{
+			return new CostsAndChargesCalculationContract
+			{
+				Id = calculation.Id,
+				Direction = calculation.Direction.ToType<OrderDirectionContract>(),
+				Instrument = calculation.Instrument,
+				Timestamp = calculation.Timestamp,
+				Volume = calculation.Volume,
+				AccountId = calculation.AccountId,
+				EntryCommission = calculation.EntryCommission,
+				EntryCost = calculation.EntryCost,
+				ExitCommission = calculation.ExitCommission,
+				ExitCost = calculation.ExitCost,
+				OvernightCost = calculation.OvernightCost
+			};
+		}
+	}
+}
