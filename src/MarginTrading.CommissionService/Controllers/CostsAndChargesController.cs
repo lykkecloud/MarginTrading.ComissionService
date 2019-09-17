@@ -94,7 +94,7 @@ namespace MarginTrading.CommissionService.Controllers
 			return calculation.Select(Map).ToArray();
 		}
 
-		private CostsAndChargesCalculationContract Map(CostsAndChargesCalculation calculation)
+		private static CostsAndChargesCalculationContract Map(CostsAndChargesCalculation calculation)
 		{
 			return new CostsAndChargesCalculationContract
 			{
@@ -158,9 +158,9 @@ namespace MarginTrading.CommissionService.Controllers
 			};
 		}
 
-		private CostsAndChargesValueContract Map(CostsAndChargesValue value)
+		private static CostsAndChargesValueContract Map(CostsAndChargesValue value)
 		{
-			return new CostsAndChargesValueContract
+			return value == null ? null : new CostsAndChargesValueContract
 			{
 				ValueInEur = value.ValueInEur,
 				ValueInPercent = value.ValueInPercent
