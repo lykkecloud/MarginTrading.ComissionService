@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Linq;
 
 namespace MarginTrading.CommissionService.Core.Domain
 {
@@ -68,9 +69,17 @@ namespace MarginTrading.CommissionService.Core.Domain
         public CostsAndChargesValue OneTag { get; set; }
 
 
-        public void SetPercents()
+        public void Prepare(int accuracy)
         {
-            //todo 
+            //todo calculate percents
+            
+            foreach (var propertyInfo in typeof(CostsAndChargesCalculation).GetProperties()
+                .Where(x => x.PropertyType == typeof(CostsAndChargesValue)))
+            {
+                var property = (CostsAndChargesValue)propertyInfo.GetValue(this);
+                property.ValueInEur = Math.Round(property.ValueInEur, accuracy);
+                property.ValueInPercent = Math.Round(property.ValueInPercent, accuracy);
+            }
         }
     }
 }
