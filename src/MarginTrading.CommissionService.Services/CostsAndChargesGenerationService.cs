@@ -45,7 +45,7 @@ namespace MarginTrading.CommissionService.Services
             var currentBestPrice = _quoteCacheService.GetBidAskPair(instrument);
 
             var spreadCosts = CalculateSpreadCosts(instrument, quantity, currentBestPrice);
-            var executionCommissions =
+            var executionCommissions = 
                 await CalculateCommissions(accountId, instrument, quantity, direction, currentBestPrice);
             var swaps = await CalculateOvernightSwaps(accountId, instrument, quantity, direction, currentBestPrice);
 
@@ -57,12 +57,32 @@ namespace MarginTrading.CommissionService.Services
                 AccountId = accountId,
                 Volume = quantity,
                 Timestamp = _systemClock.UtcNow.UtcDateTime,
-                EntryCommission = new CostsAndChargesValue {ValueInEur = executionCommissions.Entry},
+                EntrySum = new CostsAndChargesValue {ValueInEur = spreadCosts.Entry + executionCommissions.Entry},
                 EntryCost = new CostsAndChargesValue {ValueInEur = spreadCosts.Entry},
-                ExitCommission = new CostsAndChargesValue {ValueInEur = executionCommissions.Exit},
+                EntryCommission = new CostsAndChargesValue {ValueInEur = executionCommissions.Entry},
+                EntryConsorsDonation = null,
+                EntryForeignCurrencyCosts = new CostsAndChargesValue {ValueInEur = 0},
+                RunningCostsSum = null,
+                RunningCostsProductReturnsSum = null,
+                OvernightCost = new CostsAndChargesValue {ValueInEur = swaps},
+                ReferenceRateAmount = null,
+                RepoCost = null,
+                RunningCommissions = null,
+                RunningCostsConsorsDonation = null,
+                RunningCostsForeignCurrencyCosts = null,
+                ExitSum = null,
                 ExitCost = new CostsAndChargesValue {ValueInEur = spreadCosts.Exit},
-                OvernightCost = new CostsAndChargesValue {ValueInEur = swaps}
+                ExitCommission = new CostsAndChargesValue {ValueInEur = executionCommissions.Exit},
+                ExitConsorsDonation = null,
+                ExitForeignCurrencyCosts = null,
+                ProductsReturn = null,
+                ServiceCost = null,
+                ProductsReturnConsorsDonation = null,
+                ProductsReturnForeignCurrencyCosts = null,
+                TotalCosts = null,
+                OneTag = null,
             };
+            calculation.SetPercents();
 
             await _repository.Save(calculation);
 

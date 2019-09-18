@@ -63,6 +63,8 @@ namespace Lykke.MarginTrading.CommissionService.Contracts.Models
         
         public CostsAndChargesValueContract ProductsReturnForeignCurrencyCosts { get; set; }
         
+        public CostsAndChargesValueContract TotalCosts { get; set; }
+        
         public CostsAndChargesValueContract OneTag { get; set; }
     }
 }

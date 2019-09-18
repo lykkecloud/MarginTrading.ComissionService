@@ -86,8 +86,8 @@ namespace MarginTrading.CommissionService.Controllers
 		[Route("by-ids")]
 		[ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
 		[ProducesResponseType(400)]
-		[HttpGet]
-		public async Task<CostsAndChargesCalculationContract[]> Get(string[] ids)
+		[HttpPost]
+		public async Task<CostsAndChargesCalculationContract[]> GetByIds([FromBody] string[] ids)
 		{
 			var calculation = await _costsAndChargesRepository.GetByIds(ids);
 
@@ -153,6 +153,8 @@ namespace MarginTrading.CommissionService.Controllers
 				ProductsReturnConsorsDonation = Map(calculation.ProductsReturnConsorsDonation),
 
 				ProductsReturnForeignCurrencyCosts = Map(calculation.ProductsReturnForeignCurrencyCosts),
+				
+				TotalCosts = Map(calculation.TotalCosts),
 
 				OneTag = Map(calculation.OneTag)
 			};

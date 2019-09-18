@@ -27,7 +27,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
                 instrument, decimal? quantity, OrderDirectionContract? direction, DateTime? from, DateTime? to,
             int? skip, int? take, bool isAscendingOrder = true);
         
-        [Get("/api/costsAndCharges/by-ids")]
-        Task<CostsAndChargesCalculationContract[]> Get(string[] ids);
+        [Post("/api/costsAndCharges/by-ids")]
+        Task<CostsAndChargesCalculationContract[]> GetByIds([Body, CanBeNull] string[] ids);
     }
 }

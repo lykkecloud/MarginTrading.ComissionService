@@ -63,11 +63,14 @@ namespace MarginTrading.CommissionService.Core.Domain
         
         public CostsAndChargesValue ProductsReturnForeignCurrencyCosts { get; set; }
         
+        public CostsAndChargesValue TotalCosts { get; set; }
+        
         public CostsAndChargesValue OneTag { get; set; }
-        
-        
-        
-        
-        
+
+
+        public void SetPercents()
+        {
+            //todo 
+        }
     }
 }
