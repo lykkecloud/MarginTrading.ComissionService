@@ -2,10 +2,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AsyncFriendlyStackTrace;
+using Common;
 using JetBrains.Annotations;
 using Lykke.HttpClientGenerator;
+using Lykke.MarginTrading.CommissionService.Contracts;
+using Lykke.Snow.Common.Startup;
 using Newtonsoft.Json;
 using Refit;
 
@@ -52,12 +56,27 @@ namespace MarginTrading.CommissionService.TestClient
 
         private static async Task Run()
         {
-            var clientGenerator = new HttpClientGenerator("http://localhost:5007", null, null);//"TestClient");
+            var clientGenerator = HttpClientGenerator
+                .BuildForUrl("http://localhost:5050")
+                .WithServiceName<MtCoreHttpErrorResponse>("MT Core Commission Service")
+                .WithOptionalApiKey("margintrading")
+                .WithoutRetries()
+                .Create(); 
+                //new HttpClientGenerator("http://localhost:5050", null, null);//"TestClient");
             
             await CheckOvernightSwapApiWorking(clientGenerator);
+            await CheckCostAndChargesWorking(clientGenerator);
             // todo check other apis
 
             Console.WriteLine("Successfuly finished");
+        }
+
+        private static async Task CheckCostAndChargesWorking(HttpClientGenerator clientGenerator)
+        {
+            var client = clientGenerator.Generate<ICostsAndChargesApi>();
+            var result = await client.Get(new List<string>().ToArray());
+            
+            Console.WriteLine($"Cost and charges number: {result.Length}, data: {result.ToJson()}");
         }
 
         private static async Task CheckOvernightSwapApiWorking(HttpClientGenerator clientGenerator)
