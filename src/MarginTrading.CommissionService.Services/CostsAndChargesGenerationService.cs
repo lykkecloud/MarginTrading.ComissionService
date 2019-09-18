@@ -23,13 +23,15 @@ namespace MarginTrading.CommissionService.Services
         private readonly ISystemClock _systemClock;
         private readonly ICostsAndChargesRepository _repository;
         private readonly IPositionReceiveService _positionReceiveService;
+        private readonly ITradingInstrumentsCache _tradingInstrumentsCache;
 
         public CostsAndChargesGenerationService(ICommissionCalcService commissionCalcService,
             IQuoteCacheService quoteCacheService,
             IAssetsCache assetsCache,
             ISystemClock systemClock,
             ICostsAndChargesRepository repository,
-            IPositionReceiveService positionReceiveService)
+            IPositionReceiveService positionReceiveService, 
+            ITradingInstrumentsCache tradingInstrumentsCache)
         {
             _commissionCalcService = commissionCalcService;
             _quoteCacheService = quoteCacheService;
@@ -37,6 +39,7 @@ namespace MarginTrading.CommissionService.Services
             _systemClock = systemClock;
             _repository = repository;
             _positionReceiveService = positionReceiveService;
+            _tradingInstrumentsCache = tradingInstrumentsCache;
         }
         
         public async Task<CostsAndChargesCalculation> GenerateSingle(string accountId, string instrument,

@@ -153,6 +153,10 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<CostsAndChargesGenerationService>()
                 .As<ICostsAndChargesGenerationService>()
                 .SingleInstance();
+
+            builder.RegisterType<TradingInstrumentsCache>()
+                .As<ITradingInstrumentsCache>()
+                .SingleInstance();
         }
 
         private void RegisterRepositories(ContainerBuilder builder)
