@@ -10,7 +10,7 @@ namespace MarginTrading.CommissionService.Core.Services
     public interface ICostsAndChargesGenerationService
     {
         Task<CostsAndChargesCalculation> GenerateSingle(string accountId, string instrument, decimal quantity,
-            OrderDirection direction, bool withOnBehalf);
+            OrderDirection direction, bool withOnBehalf, decimal? anticipatedExecutionPrice = null);
 
         Task<List<CostsAndChargesCalculation>> GenerateForAccount(string accountId, bool withOnBehalf);
 

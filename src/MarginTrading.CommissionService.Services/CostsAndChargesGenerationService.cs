@@ -39,10 +39,12 @@ namespace MarginTrading.CommissionService.Services
             _positionReceiveService = positionReceiveService;
         }
         
-        public async Task<CostsAndChargesCalculation> GenerateSingle(string accountId, string instrument, decimal 
-        quantity, OrderDirection direction, bool withOnBehalf)
+        public async Task<CostsAndChargesCalculation> GenerateSingle(string accountId, string instrument,
+            decimal quantity, OrderDirection direction, bool withOnBehalf, decimal? anticipatedExecutionPrice = null)
         {
             var currentBestPrice = _quoteCacheService.GetBidAskPair(instrument);
+            anticipatedExecutionPrice = anticipatedExecutionPrice ?? 
+                                        (direction == OrderDirection.Buy ? currentBestPrice.Ask : currentBestPrice.Bid);//todo use it
 
             var spreadCosts = CalculateSpreadCosts(instrument, quantity, currentBestPrice);
             var executionCommissions = 
@@ -103,7 +105,8 @@ namespace MarginTrading.CommissionService.Services
             return await GenerateForPositionsList(positions, withOnBehalf);
         }
 
-        private async Task<List<CostsAndChargesCalculation>> GenerateForPositionsList(List<IOpenPosition> positions, bool withOnBehalf)
+        private async Task<List<CostsAndChargesCalculation>> GenerateForPositionsList(List<IOpenPosition> positions, 
+            bool withOnBehalf)
         {
             var groups = positions.GroupBy(p => (p.AccountId, p.AssetPairId, p.Direction));
             var result = new List<CostsAndChargesCalculation>();
@@ -115,7 +118,8 @@ namespace MarginTrading.CommissionService.Services
                     ? OrderDirection.Sell
                     : OrderDirection.Buy;
 
-                var calculation = await GenerateSingle(positionsGroup.Key.AccountId, positionsGroup.Key.AssetPairId,netVolume, direction, withOnBehalf);
+                var calculation = await GenerateSingle(positionsGroup.Key.AccountId, 
+                    positionsGroup.Key.AssetPairId,netVolume, direction, withOnBehalf);
                 
                 result.Add(calculation);
             }
