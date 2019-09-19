@@ -97,6 +97,8 @@ namespace MarginTrading.CommissionService.Services
             var productsReturnConsorsDonation = entryConsorsDonation + runningCostsConsorsDonation + exitConsorsDonation;
             var totalCosts = productsReturn + serviceCost + 0;
 
+            var percentCoef = 1 / transactionVolume * fxRate * 100;
+
             var calculation = new CostsAndChargesCalculation
             {
                 Id = Guid.NewGuid().ToString(),
@@ -105,32 +107,47 @@ namespace MarginTrading.CommissionService.Services
                 AccountId = accountId,
                 Volume = quantity,
                 Timestamp = _systemClock.UtcNow.UtcDateTime,
-                EntrySum = new CostsAndChargesValue {ValueInEur = entryCost + entryCommission},
-                EntryCost = new CostsAndChargesValue {ValueInEur = entryCost},
-                EntryCommission = new CostsAndChargesValue {ValueInEur = entryCommission},
-                EntryConsorsDonation = new CostsAndChargesValue {ValueInEur = entryConsorsDonation},
-                EntryForeignCurrencyCosts = new CostsAndChargesValue {ValueInEur = 0},
-                RunningCostsSum = new CostsAndChargesValue {ValueInEur = runningCostsProductReturnsSum + runningCostsConsorsDonation},
-                RunningCostsProductReturnsSum = new CostsAndChargesValue{ValueInEur = runningCostsProductReturnsSum},
-                OvernightCost = new CostsAndChargesValue {ValueInEur = overnightCost},
-                ReferenceRateAmount = new CostsAndChargesValue{ValueInEur = referenceRateAmount},
-                RepoCost = new CostsAndChargesValue{ValueInEur = repoCost},
-                RunningCommissions = new CostsAndChargesValue{ValueInEur = runningCommission},
-                RunningCostsConsorsDonation = new CostsAndChargesValue{ValueInEur = runningCostsConsorsDonation},
-                RunningCostsForeignCurrencyCosts = new CostsAndChargesValue {ValueInEur = 0},
-                ExitSum = new CostsAndChargesValue {ValueInEur = exitCost + exitCommission},
-                ExitCost = new CostsAndChargesValue {ValueInEur = exitCost},
-                ExitCommission = new CostsAndChargesValue {ValueInEur = exitCommission},
-                ExitConsorsDonation = new CostsAndChargesValue{ValueInEur = exitConsorsDonation},
-                ExitForeignCurrencyCosts = new CostsAndChargesValue {ValueInEur = 0},
-                ProductsReturn = new CostsAndChargesValue {ValueInEur = productsReturn},
-                ServiceCost =  new CostsAndChargesValue {ValueInEur = serviceCost},
-                ProductsReturnConsorsDonation = new CostsAndChargesValue {ValueInEur = productsReturnConsorsDonation},
-                ProductsReturnForeignCurrencyCosts = new CostsAndChargesValue {ValueInEur = 0},
-                TotalCosts = new CostsAndChargesValue {ValueInEur = totalCosts},
-                OneTag = new CostsAndChargesValue {ValueInEur = totalCosts},
+                EntrySum = new CostsAndChargesValue(entryCost + entryCommission, 
+                    (entryCost + entryCommission) * percentCoef),
+                EntryCost = new CostsAndChargesValue(entryCost, entryCost * percentCoef),
+                EntryCommission = new CostsAndChargesValue(entryCommission, 
+                    entryCommission * percentCoef),
+                EntryConsorsDonation = new CostsAndChargesValue(entryConsorsDonation, 
+                    entryConsorsDonation * percentCoef),
+                EntryForeignCurrencyCosts = new CostsAndChargesValue(0, 0),
+                RunningCostsSum = new CostsAndChargesValue(
+                    runningCostsProductReturnsSum + runningCostsConsorsDonation,
+                    (runningCostsProductReturnsSum + runningCostsConsorsDonation) * percentCoef),
+                RunningCostsProductReturnsSum = new CostsAndChargesValue(runningCostsProductReturnsSum,
+                    runningCostsProductReturnsSum * percentCoef),
+                OvernightCost = new CostsAndChargesValue(overnightCost, 
+                    overnightCost * percentCoef),
+                ReferenceRateAmount = new CostsAndChargesValue(referenceRateAmount, 
+                    referenceRateAmount * percentCoef),
+                RepoCost = new CostsAndChargesValue(repoCost, repoCost * percentCoef),
+                RunningCommissions = new CostsAndChargesValue(runningCommission, 
+                    runningCommission * percentCoef),
+                RunningCostsConsorsDonation = new CostsAndChargesValue(runningCostsConsorsDonation,
+                    runningCostsConsorsDonation * percentCoef),
+                RunningCostsForeignCurrencyCosts = new CostsAndChargesValue(0, 0),
+                ExitSum = new CostsAndChargesValue(exitCost + exitCommission,
+                    (exitCost + exitCommission) * percentCoef),
+                ExitCost = new CostsAndChargesValue(exitCost, exitCost * percentCoef),
+                ExitCommission = new CostsAndChargesValue(exitCommission, 
+                    exitCommission * percentCoef),
+                ExitConsorsDonation = new CostsAndChargesValue(exitConsorsDonation, 
+                    exitConsorsDonation * percentCoef),
+                ExitForeignCurrencyCosts = new CostsAndChargesValue(0, 0),
+                ProductsReturn = new CostsAndChargesValue(productsReturn, 
+                    productsReturn * percentCoef),
+                ServiceCost =  new CostsAndChargesValue(serviceCost, serviceCost * percentCoef),
+                ProductsReturnConsorsDonation = new CostsAndChargesValue(productsReturnConsorsDonation,
+                    productsReturnConsorsDonation * percentCoef),
+                ProductsReturnForeignCurrencyCosts = new CostsAndChargesValue(0, 0),
+                TotalCosts = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
+                OneTag = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
             };
-            calculation.Prepare(accuracy);
+            calculation.RoundValues(accuracy);
 
             await _repository.Save(calculation);
 

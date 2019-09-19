@@ -69,7 +69,7 @@ namespace MarginTrading.CommissionService.Core.Domain
         public CostsAndChargesValue OneTag { get; set; }
 
 
-        public void Prepare(int accuracy)
+        public void RoundValues(int accuracy)
         {
             //todo calculate percents
             

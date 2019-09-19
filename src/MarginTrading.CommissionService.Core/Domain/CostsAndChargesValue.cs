@@ -5,6 +5,14 @@ namespace MarginTrading.CommissionService.Core.Domain
 {
     public class CostsAndChargesValue
     {
+        public CostsAndChargesValue(){}
+        
+        public CostsAndChargesValue(decimal valueInEur, decimal valueInPercent)
+        {
+            ValueInEur = valueInEur;
+            ValueInPercent = valueInPercent;
+        }
+
         public decimal ValueInEur { get; set; }
         
         public decimal ValueInPercent { get; set; }
