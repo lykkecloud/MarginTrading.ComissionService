@@ -57,7 +57,7 @@ namespace MarginTrading.CommissionService.TestClient
         private static async Task Run()
         {
             var clientGenerator = HttpClientGenerator
-                .BuildForUrl("http://localhost:5050")
+                .BuildForUrl("http://mt-commission-service.mt.svc.cluster.local")
                 .WithServiceName<MtCoreHttpErrorResponse>("MT Core Commission Service")
                 .WithOptionalApiKey("margintrading")
                 .WithoutRetries()
@@ -74,7 +74,7 @@ namespace MarginTrading.CommissionService.TestClient
         private static async Task CheckCostAndChargesWorking(HttpClientGenerator clientGenerator)
         {
             var client = clientGenerator.Generate<ICostsAndChargesApi>();
-            var result = await client.GetByIds("AA2012", new List<string>().ToArray());
+            var result = await client.GetByIds("AA2012", null);//new List<string>().ToArray());
             
             Console.WriteLine($"Cost and charges number: {result.Length}, data: {result.ToJson()}");
         }

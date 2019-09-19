@@ -19,7 +19,6 @@ namespace MarginTrading.CommissionService.Services
     {
         private readonly ICommissionCalcService _commissionCalcService;
         private readonly IQuoteCacheService _quoteCacheService;
-        private readonly IAssetsCache _assetsCache;
         private readonly ISystemClock _systemClock;
         private readonly ICostsAndChargesRepository _repository;
         private readonly IPositionReceiveService _positionReceiveService;
@@ -30,8 +29,7 @@ namespace MarginTrading.CommissionService.Services
         private readonly IInterestRatesCacheService _interestRatesCacheService;
 
         public CostsAndChargesGenerationService(ICommissionCalcService commissionCalcService,
-            IQuoteCacheService quoteCacheService, 
-            IAssetsCache assetsCache,
+            IQuoteCacheService quoteCacheService,
             ISystemClock systemClock,
             ICostsAndChargesRepository repository,
             IPositionReceiveService positionReceiveService, 
@@ -42,7 +40,6 @@ namespace MarginTrading.CommissionService.Services
         {
             _commissionCalcService = commissionCalcService;
             _quoteCacheService = quoteCacheService;
-            _assetsCache = assetsCache;
             _systemClock = systemClock;
             _repository = repository;
             _positionReceiveService = positionReceiveService;
@@ -67,7 +64,6 @@ namespace MarginTrading.CommissionService.Services
                 account.LegalEntity);
             var commissionRate = await _rateSettingsService.GetOrderExecutionRate(instrument);
             var overnightSwapRate = await _rateSettingsService.GetOvernightSwapRate(instrument);
-            var accuracy = _assetsCache.GetAccuracy(instrument);
             var variableRateBase = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateBase);
             var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);
 
@@ -147,7 +143,7 @@ namespace MarginTrading.CommissionService.Services
                 TotalCosts = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
                 OneTag = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
             };
-            calculation.RoundValues(accuracy);
+            calculation.RoundValues(2);
 
             await _repository.Save(calculation);
 

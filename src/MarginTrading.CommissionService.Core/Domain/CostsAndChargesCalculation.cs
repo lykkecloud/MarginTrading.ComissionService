@@ -71,8 +71,6 @@ namespace MarginTrading.CommissionService.Core.Domain
 
         public void RoundValues(int accuracy)
         {
-            //todo calculate percents
-            
             foreach (var propertyInfo in typeof(CostsAndChargesCalculation).GetProperties()
                 .Where(x => x.PropertyType == typeof(CostsAndChargesValue)))
             {
