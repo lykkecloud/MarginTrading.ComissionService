@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
@@ -11,6 +11,7 @@ using MarginTrading.CommissionService.Core.Domain.Rates;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.SqlRepositories.Repositories;
+using Migration.Rates;
 using MoreLinq;
 using StackExchange.Redis;
 
@@ -27,12 +28,104 @@ namespace Migration
 
             try
             {
-                await Migrate(operationId);
+                //await Migrate(operationId);
+                await Rollback(operationId);
             }
             catch (Exception exception)
             {
                 Console.WriteLine($"[ERR] {exception.Message}: {exception.StackTrace}");
             }
+        }
+
+        private static async Task Rollback(string operationId)
+        {
+            var configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+            var appSettings = configuration.LoadSettings<AppSettings>().CurrentValue;
+            var blobRepo = new SqlBlobRepository(appSettings.CommissionService.Db.StateConnString);
+            var redisDatabase = ConnectionMultiplexer.Connect(
+                appSettings.CommissionService.RedisSettings.Configuration).GetDatabase();
+            
+            var migrationState = await blobRepo.ReadAsync<List<Migration>>(MigrationsContainer, MigrationsKey) ?? new List<Migration>();
+            var lastState = migrationState.Any() ? migrationState.MaxBy(x => x.Time) : null;
+            var migration = new Migration
+            {
+                Id = operationId,
+                Time = DateTime.UtcNow,
+                State = MigrationState.RollbackStarted,
+            };
+            
+            if (lastState != null && lastState.Id == operationId)
+            {
+                if (lastState.State != MigrationState.RolledBack)
+                {
+                    Console.WriteLine($"[WRN] Last migration rollback #{operationId} {lastState.Time:s} was not successful! The process goes forward.");
+                }
+                else
+                {
+                    Console.WriteLine($"[WRN] Migration rollback #{operationId} {lastState.Time:s} already finished!");
+                    Environment.Exit(1);
+                }
+            }
+            else
+            {
+                migrationState.Add(migration);
+                await blobRepo.WriteAsync(MigrationsContainer, MigrationsKey, migrationState);
+            } 
+            
+            var (orderExecutionRates, onBehalfRate) = await PrepareRollbackData(blobRepo);
+            
+            //migrate SQL
+            await blobRepo.WriteAsync(LykkeConstants.RateSettingsBlobContainer, 
+                LykkeConstants.OrderExecutionKey, orderExecutionRates);
+            await blobRepo.WriteAsync(LykkeConstants.RateSettingsBlobContainer, 
+                LykkeConstants.OnBehalfKey, onBehalfRate);
+            var swaps = await blobRepo.ReadAsync<IEnumerable<OvernightSwapRate>>(
+                LykkeConstants.RateSettingsBlobContainer, RateSettingsService.GetKey(LykkeConstants.OvernightSwapKey));
+            await blobRepo.WriteAsync(LykkeConstants.RateSettingsBlobContainer, LykkeConstants.OvernightSwapKey, swaps);
+
+            //migrate Redis
+            await redisDatabase.KeyDeleteAsync(RateSettingsService.GetKey(LykkeConstants.OrderExecutionKey));
+            await redisDatabase.HashSetAsync(RateSettingsService.GetKey(LykkeConstants.OrderExecutionKey),
+                orderExecutionRates.Select(x => new HashEntry(x.AssetPairId,
+                    RateSettingsService.Serialize(x))).ToArray());
+            
+            await redisDatabase.KeyDeleteAsync(RateSettingsService.GetKey(LykkeConstants.OnBehalfKey));
+            await redisDatabase.StringSetAsync(RateSettingsService.GetKey(LykkeConstants.OnBehalfKey), 
+                RateSettingsService.Serialize(onBehalfRate));
+
+            migration.Time = DateTime.UtcNow;
+            migration.State = MigrationState.RolledBack;
+            migrationState.RemoveAll(x => x.Id == operationId);
+            migrationState.Add(migration);
+            await blobRepo.WriteAsync(MigrationsContainer, MigrationsKey, migrationState);
+        }
+
+        private static async Task<(List<OldOrderExecutionRate>, OldOnBehalfRate)> PrepareRollbackData(SqlBlobRepository blobRepo)
+        {
+            var orderExecData = (await blobRepo.ReadAsync<IEnumerable<OrderExecutionRate>>(
+                blobContainer: LykkeConstants.RateSettingsBlobContainer,
+                key: RateSettingsService.GetKey(LykkeConstants.OrderExecutionKey)
+            ))?.ToList();
+            var oldOnBehalf = (await blobRepo.ReadAsync<OnBehalfRate[]>(
+                blobContainer: LykkeConstants.RateSettingsBlobContainer,
+                key: RateSettingsService.GetKey(LykkeConstants.OnBehalfKey)
+            ))?.FirstOrDefault();
+
+            return (orderExecData?.Select(x => new OldOrderExecutionRate
+                {
+                    AssetPairId = x.AssetPairId,
+                    CommissionCap = x.CommissionCap,
+                    CommissionFloor = x.CommissionFloor,
+                    CommissionRate = x.CommissionRate,
+                    CommissionAsset = x.CommissionAsset,
+                    LegalEntity = x.LegalEntity,
+                }).ToList(),
+                new OldOnBehalfRate
+                {
+                    Commission = oldOnBehalf.Commission,
+                    CommissionAsset = oldOnBehalf.CommissionAsset,
+                    LegalEntity = oldOnBehalf.LegalEntity,
+                });
         }
 
         private static async Task Migrate(string operationId)
