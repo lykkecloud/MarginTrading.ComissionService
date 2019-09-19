@@ -74,7 +74,7 @@ namespace MarginTrading.CommissionService.TestClient
         private static async Task CheckCostAndChargesWorking(HttpClientGenerator clientGenerator)
         {
             var client = clientGenerator.Generate<ICostsAndChargesApi>();
-            var result = await client.GetByIds(new List<string>().ToArray());
+            var result = await client.GetByIds("AA2012", new List<string>().ToArray());
             
             Console.WriteLine($"Cost and charges number: {result.Length}, data: {result.ToJson()}");
         }

@@ -15,6 +15,6 @@ namespace MarginTrading.CommissionService.Core.Repositories
         Task<PaginatedResponse<CostsAndChargesCalculation>> Get(string accountId, string instrument, decimal? quantity, 
         OrderDirection? direction, DateTime? from, DateTime? to, int? skip, int? take, bool isAscendingOrder = true);
 
-        Task<CostsAndChargesCalculation[]> GetByIds(string[] ids);
+        Task<CostsAndChargesCalculation[]> GetByIds(string accountId, string[] ids);
     }
 }

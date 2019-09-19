@@ -87,9 +87,9 @@ namespace MarginTrading.CommissionService.Controllers
 		[ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
 		[ProducesResponseType(400)]
 		[HttpPost]
-		public async Task<CostsAndChargesCalculationContract[]> GetByIds([FromBody] string[] ids)
+		public async Task<CostsAndChargesCalculationContract[]> GetByIds(string accountId, [FromBody] string[] ids)
 		{
-			var calculation = await _costsAndChargesRepository.GetByIds(ids);
+			var calculation = await _costsAndChargesRepository.GetByIds(accountId, ids);
 
 			return calculation.Select(Map).ToArray();
 		}

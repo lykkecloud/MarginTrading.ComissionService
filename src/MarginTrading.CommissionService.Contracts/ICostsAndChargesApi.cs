@@ -28,6 +28,6 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
             int? skip, int? take, bool isAscendingOrder = true);
         
         [Post("/api/costsAndCharges/by-ids")]
-        Task<CostsAndChargesCalculationContract[]> GetByIds([Body, CanBeNull] string[] ids);
+        Task<CostsAndChargesCalculationContract[]> GetByIds(string accountId, [Body, CanBeNull] string[] ids);
     }
 }

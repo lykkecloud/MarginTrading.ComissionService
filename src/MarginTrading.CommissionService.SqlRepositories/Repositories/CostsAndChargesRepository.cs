@@ -112,16 +112,16 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
             }
         }
 
-        public async Task<CostsAndChargesCalculation[]> GetByIds(string[] ids)
+        public async Task<CostsAndChargesCalculation[]> GetByIds(string accountId, string[] ids)
         {
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
-                var whereClause = "WHERE 1=1 " +
+                var whereClause = "WHERE [AccountId] = @accountId " +
                                   (ids != null && ids.Any() ? " AND Id IN @ids" : "");
                 
                 var entities = await conn.QueryAsync<CostsAndChargesEntity>(
                     $"SELECT * FROM {TableName} {whereClause}", 
-                    new { ids });
+                    new { accountId, ids });
                 
                 return entities.Select(Map).ToArray();
             }
