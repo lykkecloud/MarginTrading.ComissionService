@@ -172,7 +172,7 @@ namespace MarginTrading.CommissionService.Services
 
             foreach (var positionsGroup in groups)
             {
-                var netVolume = positions.Sum(p => Math.Abs(p.CurrentVolume));
+                var netVolume = positionsGroup.Sum(p => Math.Abs(p.CurrentVolume));
                 var direction = positionsGroup.Key.Direction == PositionDirection.Long
                     ? OrderDirection.Sell
                     : OrderDirection.Buy;
