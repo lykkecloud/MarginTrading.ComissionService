@@ -38,7 +38,7 @@ namespace MarginTrading.CommissionService.Controllers
 		[ProducesResponseType(400)]
 		[HttpPost]
 		public async Task<CostsAndChargesCalculationContract> GenerateSingle(string accountId, string instrument,
-			decimal quantity, OrderDirectionContract direction, bool withOnBehalf, decimal anticipatedExecutionPrice)
+			decimal quantity, OrderDirectionContract direction, bool withOnBehalf, decimal? anticipatedExecutionPrice)
 		{
 			var calculation = await _costsAndChargesGenerationService.GenerateSingle(accountId, instrument, quantity,
 				direction.ToType<OrderDirection>(), withOnBehalf, anticipatedExecutionPrice);

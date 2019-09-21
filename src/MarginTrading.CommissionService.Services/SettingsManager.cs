@@ -157,21 +157,6 @@ namespace MarginTrading.CommissionService.Services
             {
                 TradingConditionId = tic.TradingConditionId,
                 Instrument = tic.Instrument,
-                LeverageInit = tic.LeverageInit,
-                LeverageMaintenance = tic.LeverageMaintenance,
-                SwapLong = tic.SwapLong,
-                SwapShort = tic.SwapShort,
-                Delta = tic.Delta,
-                DealMinLimit = tic.DealMinLimit,
-                DealMaxLimit = tic.DealMaxLimit,
-                PositionLimit = tic.PositionLimit,
-                ShortPosition = tic.ShortPosition,
-                LiquidationThreshold = tic.LiquidationThreshold,
-                OvernightMarginMultiplier = tic.OvernightMarginMultiplier,
-                CommissionRate = tic.CommissionRate,
-                CommissionMin = tic.CommissionMin,
-                CommissionMax = tic.CommissionMax,
-                CommissionCurrency = tic.CommissionCurrency,
                 HedgeCost = tic.HedgeCost,
             };
     }
