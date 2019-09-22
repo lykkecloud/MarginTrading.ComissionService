@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <NoWarn>$(NoWarn);1591</NoWarn>
-    <Version>1.10.3</Version>
+    <Version>1.10.4</Version>
     <AssemblyName>MarginTrading.CommissionService</AssemblyName>
     <RootNamespace>MarginTrading.CommissionService</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

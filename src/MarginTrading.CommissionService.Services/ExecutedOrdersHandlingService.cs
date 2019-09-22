@@ -51,18 +51,8 @@ namespace MarginTrading.CommissionService.Services
                 return Task.CompletedTask;
             }
 
-            new List<Task>
+            var taskList = new List<Task>
             {
-                //on behalf
-                _cqrsMessageSender.SendHandleOnBehalfInternalCommand(new HandleOnBehalfInternalCommand(
-                    operationId: $"{order.Id}-{OnBehalfPostfix}",
-                    createdTimestamp: _systemClock.UtcNow.UtcDateTime,
-                    accountId: order.AccountId,
-                    accountAssetId: order.AccountAssetId,
-                    orderId: order.Id,
-                    assetPairId: order.AssetPairId,
-                    tradingDay: order.ModifiedTimestamp
-                )),
                 //order exec commission
                 _cqrsMessageSender.SendHandleExecutedOrderInternalCommand(new HandleOrderExecInternalCommand(
                     operationId: $"{order.Id}-{OrderExecPostfix}",
@@ -75,7 +65,23 @@ namespace MarginTrading.CommissionService.Services
                     tradingDay: order.ModifiedTimestamp,
                     orderExecutionPrice: order.ExecutionPrice.RequiredNotNull(nameof(order.ExecutionPrice)))
                 )
-            }.ForEach(task => Task.Run(async () =>
+            };
+            
+            if (order.HasOnBehalf)
+            {
+                //on behalf
+                taskList.Add(_cqrsMessageSender.SendHandleOnBehalfInternalCommand(new HandleOnBehalfInternalCommand(
+                    operationId: $"{order.Id}-{OnBehalfPostfix}",
+                    createdTimestamp: _systemClock.UtcNow.UtcDateTime,
+                    accountId: order.AccountId,
+                    accountAssetId: order.AccountAssetId,
+                    orderId: order.Id,
+                    assetPairId: order.AssetPairId,
+                    tradingDay: order.ModifiedTimestamp
+                )));
+            }
+            
+            taskList.ForEach(task => Task.Run(async () =>
             {
                 try
                 {
