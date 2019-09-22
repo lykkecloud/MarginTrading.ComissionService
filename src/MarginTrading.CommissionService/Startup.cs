@@ -31,6 +31,7 @@ using MarginTrading.CommissionService.Modules;
 using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Services.Caches;
 using MarginTrading.CommissionService.SqlRepositories.Repositories;
+using MarginTrading.CommissionService.Workflow;
 using MarginTrading.OrderbookAggregator.Contracts.Messages;
 using MarginTrading.SettingsService.Contracts.Messages;
 using Microsoft.AspNetCore.Builder;
@@ -163,6 +164,7 @@ namespace MarginTrading.CommissionService
                 var quotesCacheService = ApplicationContainer.Resolve<IQuoteCacheService>();
                 var executedOrdersHandlingService = ApplicationContainer.Resolve<IExecutedOrdersHandlingService>();
                 var assetPairManager = ApplicationContainer.Resolve<ISettingsManager>();
+                var accountMarginEventsProjection = ApplicationContainer.Resolve<AccountMarginEventsProjection>();
 
                 rabbitMqService.Subscribe(settings.RabbitMq.Consumers.FxRateRabbitMqSettings, false,
                     fxRateCacheService.SetQuote,
@@ -178,6 +180,10 @@ namespace MarginTrading.CommissionService
                 rabbitMqService.Subscribe(settings.RabbitMq.Consumers.SettingsChanged, false,
                     arg => assetPairManager.HandleSettingsChanged(arg),
                     rabbitMqService.GetJsonDeserializer<SettingsChangedEvent>(), settings.InstanceId);
+
+                rabbitMqService.Subscribe(settings.RabbitMq.Consumers.AccountMarginEvents, true,
+                    arg => accountMarginEventsProjection.Handle(arg),
+                    rabbitMqService.GetJsonDeserializer<MarginEventMessage>(), settings.InstanceId);
 
                 Log?.WriteMonitorAsync("", "", "Started").Wait();
             }
