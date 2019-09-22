@@ -27,6 +27,7 @@ namespace MarginTrading.CommissionService.Services
         private readonly IOrderEventsApi _orderEventsApi;
         private readonly IAccountRedisCache _accountRedisCache;
         private readonly ILog _log;
+        private readonly IInterestRatesCacheService _interestRatesCacheService;
 
         public CommissionCalcService(
             ICfdCalculatorService cfdCalculatorService,
@@ -34,7 +35,8 @@ namespace MarginTrading.CommissionService.Services
             IRateSettingsService rateSettingsService,
             IOrderEventsApi orderEventsApi,
             IAccountRedisCache accountRedisCache,
-            ILog log)
+            ILog log,
+            IInterestRatesCacheService interestRatesCacheService)
         {
             _cfdCalculatorService = cfdCalculatorService;
             _assetsCache = assetsCache;
@@ -42,51 +44,54 @@ namespace MarginTrading.CommissionService.Services
             _orderEventsApi = orderEventsApi;
             _accountRedisCache = accountRedisCache;
             _log = log;
+            _interestRatesCacheService = interestRatesCacheService;
         }
 
         /// <summary>
         /// Value must be charged as it is, without negation
         /// </summary>
-        public async Task<(decimal Swap, string Details)> GetOvernightSwap(Dictionary<string, decimal> interestRates,
-            IOpenPosition openPosition, IAssetPair assetPair, int numberOfFinancingDays, int financingDaysPerYear)
+        public async Task<(decimal Swap, string Details)> GetOvernightSwap(string accountId, string instrument,
+            decimal volume, decimal closePrice, PositionDirection direction, int numberOfFinancingDays,
+            int financingDaysPerYear)
         {
-            var rateSettings = await _rateSettingsService.GetOvernightSwapRate(assetPair.Id);
-            var account = await _accountRedisCache.GetAccount(openPosition.AccountId);
+            var rateSettings = await _rateSettingsService.GetOvernightSwapRate(instrument);
+            var account = await _accountRedisCache.GetAccount(accountId);
 
             var calculationBasis = _cfdCalculatorService.GetFxRateForAssetPair(account.BaseAssetId,
-                                       openPosition.AssetPairId, assetPair.LegalEntity)
-                                   * Math.Abs(openPosition.CurrentVolume) * openPosition.ClosePrice;
+                                       instrument, account.LegalEntity)
+                                   * Math.Abs(volume) * closePrice;
 
-            interestRates.TryGetValue(rateSettings.VariableRateBase ?? string.Empty, out var variableRateBase);
-            interestRates.TryGetValue(rateSettings.VariableRateQuote ?? string.Empty, out var variableRateQuote);
-            
-            var financingRate = - rateSettings.FixRate
-                - (openPosition.Direction == PositionDirection.Short ? rateSettings.RepoSurchargePercent : 0)
-                + (variableRateBase - variableRateQuote)
-                              * (openPosition.Direction == PositionDirection.Long ? 1 : -1);
+            var variableRateBase = _interestRatesCacheService.GetRate(rateSettings.VariableRateBase);
+            var variableRateQuote = _interestRatesCacheService.GetRate(rateSettings.VariableRateQuote);
+
+            var financingRate = -rateSettings.FixRate
+                                - (direction == PositionDirection.Short
+                                    ? rateSettings.RepoSurchargePercent
+                                    : 0)
+                                + (variableRateBase - variableRateQuote)
+                                * (direction == PositionDirection.Long ? 1 : -1);
 
             var dayFactor = (decimal) numberOfFinancingDays / financingDaysPerYear;
 
-            return (Math.Round(calculationBasis * financingRate * dayFactor, 
+            return (Math.Round(calculationBasis * financingRate * dayFactor,
                         _assetsCache.GetAccuracy(account.BaseAssetId)),
-                new
-                {
-                    CalculationBasis = calculationBasis,
-                    FinancingRate = financingRate,
-                    DayFactor = dayFactor,
-                    FixRate = rateSettings.FixRate
-                }.ToJson()
-            );
+                    new
+                    {
+                        CalculationBasis = calculationBasis,
+                        FinancingRate = financingRate,
+                        DayFactor = dayFactor,
+                        FixRate = rateSettings.FixRate
+                    }.ToJson()
+                );
         }
 
-        public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument,
-            string legalEntity, decimal volume, decimal orderExecutionPrice)
+        public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument, decimal volume, decimal orderExecutionPrice)
         {
             var rateSettings = await _rateSettingsService.GetOrderExecutionRate(instrument);
             var account = await _accountRedisCache.GetAccount(accountId);
 
             var volumeInCommissionAsset = _cfdCalculatorService.GetFxRateForAssetPair(rateSettings.CommissionAsset,
-                                              instrument, legalEntity)
+                                              instrument, account.LegalEntity)
                                           * Math.Abs(volume) * orderExecutionPrice;
             var commissionToAccountRate = _cfdCalculatorService.GetFxRate(rateSettings.CommissionAsset, 
                 account.BaseAssetId, rateSettings.LegalEntity);

@@ -32,6 +32,10 @@ namespace MarginTrading.CommissionService.Modules
                 "MT Trading Core",
                 _settings.CurrentValue.CommissionService.Services.Backend);
             
+            RegisterClientWithName<IPricesApi>(builder,
+                "MT Trading Core",
+                _settings.CurrentValue.CommissionService.Services.Backend);
+            
             RegisterClientWithName<IOrderEventsApi>(builder,
                 "MT Trading History",
                 _settings.CurrentValue.CommissionService.Services.TradingHistory);

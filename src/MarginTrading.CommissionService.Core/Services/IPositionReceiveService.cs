@@ -3,12 +3,14 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using MarginTrading.CommissionService.Core.Domain;
+using MarginTrading.CommissionService.Core.Domain.Abstractions;
 
 namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IPositionReceiveService
     {
-        Task<IEnumerable<OpenPosition>> GetActive();
+        Task<List<IOpenPosition>> GetActive();
+        Task<List<IOpenPosition>> GetByAccount(string accountId);
+        Task<List<IOpenPosition>> GetByInstrument(string instrument);
     }
 }

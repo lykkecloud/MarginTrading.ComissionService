@@ -28,6 +28,9 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="appsettings.dev.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Target Name="CopySerilogConfig" AfterTargets="AfterBuild">
     <Copy SourceFiles="appsettings.Serilog.json" DestinationFolder="$(OutDir)" />
@@ -47,7 +50,7 @@
     <PackageReference Include="Lykke.Logs.Serilog" Version="2.0.0" />
     <PackageReference Include="Lykke.MarginTrading.AccountsManagement.Contracts" Version="1.12.8" />
     <PackageReference Include="Lykke.MarginTrading.BackendSnow.Contracts" Version="1.13.2" />
-    <PackageReference Include="Lykke.MarginTrading.SettingsService.Contracts" Version="1.3.1" />
+    <PackageReference Include="Lykke.MarginTrading.SettingsService.Contracts" Version="1.3.2" />
     <PackageReference Include="Lykke.Snow.Common.Startup" Version="1.2.9" />
     <PackageReference Include="MarginTrading.TradingHistory.Client" Version="3.4.9" />
     <PackageReference Include="Lykke.Messaging" Version="5.0.0" />

@@ -31,6 +31,7 @@ using MarginTrading.CommissionService.Modules;
 using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Services.Caches;
 using MarginTrading.CommissionService.SqlRepositories.Repositories;
+using MarginTrading.CommissionService.Workflow;
 using MarginTrading.OrderbookAggregator.Contracts.Messages;
 using MarginTrading.SettingsService.Contracts.Messages;
 using Microsoft.AspNetCore.Builder;
@@ -155,32 +156,35 @@ namespace MarginTrading.CommissionService
             try
             {
                 //TODO that's only to get swap commission values - EOD keeper will provide interest rates
-                
+
                 // NOTE: Service not yet receives and processes requests here
                 var settings = ApplicationContainer.Resolve<CommissionServiceSettings>();
                 var rabbitMqService = ApplicationContainer.Resolve<IRabbitMqService>();
                 var fxRateCacheService = ApplicationContainer.Resolve<IFxRateCacheService>();
+                var quotesCacheService = ApplicationContainer.Resolve<IQuoteCacheService>();
                 var executedOrdersHandlingService = ApplicationContainer.Resolve<IExecutedOrdersHandlingService>();
                 var assetPairManager = ApplicationContainer.Resolve<ISettingsManager>();
-                
-                if (settings.RabbitMq.Consumers.FxRateRabbitMqSettings != null)
-                {
-                    rabbitMqService.Subscribe(settings.RabbitMq.Consumers.FxRateRabbitMqSettings, false,
-                        fxRateCacheService.SetQuote, rabbitMqService.GetMsgPackDeserializer<ExternalExchangeOrderbookMessage>(), settings.InstanceId);
-                }
-                if (settings.RabbitMq.Consumers.OrderExecutedSettings != null)
-                {
-                    rabbitMqService.Subscribe(settings.RabbitMq.Consumers.OrderExecutedSettings, true,
-                        executedOrdersHandlingService.Handle, rabbitMqService.GetJsonDeserializer<OrderHistoryEvent>());
-                }
+                var accountMarginEventsProjection = ApplicationContainer.Resolve<AccountMarginEventsProjection>();
 
-                if (settings.RabbitMq.Consumers.SettingsChanged != null)
-                {
-                    rabbitMqService.Subscribe(settings.RabbitMq.Consumers.SettingsChanged, false, 
-                        arg => assetPairManager.HandleSettingsChanged(arg), 
-                        rabbitMqService.GetJsonDeserializer<SettingsChangedEvent>(), settings.InstanceId);
-                }
+                rabbitMqService.Subscribe(settings.RabbitMq.Consumers.FxRateRabbitMqSettings, false,
+                    fxRateCacheService.SetQuote,
+                    rabbitMqService.GetMsgPackDeserializer<ExternalExchangeOrderbookMessage>(), settings.InstanceId);
                 
+                rabbitMqService.Subscribe(settings.RabbitMq.Consumers.QuotesRabbitMqSettings, false,
+                    quote => quotesCacheService.SetQuote(quote),
+                    rabbitMqService.GetJsonDeserializer<InstrumentBidAskPair>(), settings.InstanceId);
+
+                rabbitMqService.Subscribe(settings.RabbitMq.Consumers.OrderExecutedSettings, true,
+                    executedOrdersHandlingService.Handle, rabbitMqService.GetJsonDeserializer<OrderHistoryEvent>());
+
+                rabbitMqService.Subscribe(settings.RabbitMq.Consumers.SettingsChanged, false,
+                    arg => assetPairManager.HandleSettingsChanged(arg),
+                    rabbitMqService.GetJsonDeserializer<SettingsChangedEvent>(), settings.InstanceId);
+
+                rabbitMqService.Subscribe(settings.RabbitMq.Consumers.AccountMarginEvents, true,
+                    arg => accountMarginEventsProjection.Handle(arg),
+                    rabbitMqService.GetJsonDeserializer<MarginEventMessage>(), settings.InstanceId);
+
                 Log?.WriteMonitorAsync("", "", "Started").Wait();
             }
             catch (Exception ex)
@@ -188,7 +192,7 @@ namespace MarginTrading.CommissionService
                 Log?.WriteFatalErrorAsync(nameof(Startup), nameof(StartApplication), "", ex).Wait();
                 throw;
             }
-            
+
             return Task.CompletedTask;
         }
 

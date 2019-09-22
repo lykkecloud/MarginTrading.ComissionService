@@ -61,7 +61,7 @@ namespace MarginTrading.CommissionService.Services
 		/// Filter orders that are already calculated
 		/// </summary>
 		/// <returns></returns>
-		private async Task<IReadOnlyList<OpenPosition>> GetOrdersForCalculationAsync(DateTime tradingDay)
+		private async Task<IReadOnlyList<IOpenPosition>> GetOrdersForCalculationAsync(DateTime tradingDay)
 		{
 			var now = _systemClock.UtcNow.UtcDateTime;
 			if (tradingDay < now.Date.AddDays(-1))

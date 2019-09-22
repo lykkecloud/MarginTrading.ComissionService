@@ -37,48 +37,40 @@ namespace MarginTrading.CommissionService.Services
 	{
 		private const string DistributedLockKey = "CommissionService:OvernightSwapProcess";
 		
-		private readonly IAssetPairsApi _assetPairsApi;
 		private readonly ICommissionCalcService _commissionCalcService;
 		private readonly IOvernightSwapHistoryRepository _overnightSwapHistoryRepository;
-		private readonly IInterestRatesRepository _interestRatesRepository;
 		private readonly IPositionReceiveService _positionReceiveService;
 		private readonly ISystemClock _systemClock;
-		private readonly IConvertService _convertService;
 		private readonly ILog _log;
 		private readonly IDatabase _database;
 		private readonly CommissionServiceSettings _commissionServiceSettings;
-
-		private Dictionary<string, decimal> _currentInterestRates;
+		private readonly IInterestRatesCacheService _interestRatesCacheService;
 
 		public OvernightSwapService(
-			IAssetPairsApi assetPairsApi,
 			ICommissionCalcService commissionCalcService,
 			IOvernightSwapHistoryRepository overnightSwapHistoryRepository,
-			IInterestRatesRepository interestRatesRepository,
 			IPositionReceiveService positionReceiveService,
 			ISystemClock systemClock,
-			IConvertService convertService,
 			ILog log,
 			IDatabase database,
-			CommissionServiceSettings commissionServiceSettings)
+			CommissionServiceSettings commissionServiceSettings,
+			IInterestRatesCacheService interestRatesCacheService)
 		{
-			_assetPairsApi = assetPairsApi;
 			_commissionCalcService = commissionCalcService;
 			_overnightSwapHistoryRepository = overnightSwapHistoryRepository;
-			_interestRatesRepository = interestRatesRepository;
 			_positionReceiveService = positionReceiveService;
 			_systemClock = systemClock;
-			_convertService = convertService;
 			_log = log;
 			_database = database;
 			_commissionServiceSettings = commissionServiceSettings;
+			_interestRatesCacheService = interestRatesCacheService;
 		}
 
 		/// <summary>
 		/// Filter orders that are already calculated
 		/// </summary>
 		/// <returns></returns>
-		private async Task<IReadOnlyList<OpenPosition>> GetOrdersForCalculationAsync(DateTime tradingDay)
+		private async Task<IReadOnlyList<IOpenPosition>> GetOrdersForCalculationAsync(DateTime tradingDay)
 		{
 			var openPositions = (await _positionReceiveService.GetActive()).ToList();
 			
@@ -131,17 +123,14 @@ namespace MarginTrading.CommissionService.Services
 				await _log.WriteInfoAsync(nameof(OvernightSwapService), nameof(Calculate),
 					$"Started, # of positions: {filteredPositions.Count}.", DateTime.UtcNow);
 
-				var assetPairs = (await _assetPairsApi.List())
-					.Select(x => _convertService.Convert<AssetPairContract, AssetPair>(x)).ToList();
-				_currentInterestRates = (await _interestRatesRepository.GetAllLatest())
-					.ToDictionary(x => x.AssetPairId, x => x.Rate);
+				// We need to re-init cache because new rates should have been uploaded according to the workflow
+				_interestRatesCacheService.InitCache();
 				
 				foreach (var position in filteredPositions)
 				{
 					try
 					{
-						var assetPair = assetPairs.First(x => x.Id == position.AssetPairId);
-						var calculation = await ProcessPosition(position, assetPair, operationId, 
+						var calculation = await ProcessPosition(position, operationId, 
 							numberOfFinancingDays, financingDaysPerYear, tradingDay);
 						if (calculation != null)
 						{
@@ -150,7 +139,7 @@ namespace MarginTrading.CommissionService.Services
 					}
 					catch (Exception ex)
 					{
-						resultingCalculations.Add(await ProcessPosition(position, null, operationId, 
+						resultingCalculations.Add(await ProcessPosition(position, operationId, 
 							numberOfFinancingDays, financingDaysPerYear, tradingDay, ex));
 						await _log.WriteErrorAsync(nameof(OvernightSwapService), nameof(Calculate),
 							$"Error calculating swaps for position: {position?.ToJson()}. Operation : {operationId}", ex);
@@ -173,7 +162,7 @@ namespace MarginTrading.CommissionService.Services
 		/// <summary>
 		/// Calculate overnight swap
 		/// </summary>
-		private async Task<IOvernightSwapCalculation> ProcessPosition(IOpenPosition position, IAssetPair assetPair,
+		private async Task<IOvernightSwapCalculation> ProcessPosition(IOpenPosition position,
 			string operationId, int numberOfFinancingDays, int financingDaysPerYear, DateTime tradingDay,
 			Exception exception = null)
 		{
@@ -194,8 +183,8 @@ namespace MarginTrading.CommissionService.Services
 					exception: exception);
 			}
 			
-			var (swap, details) = await _commissionCalcService.GetOvernightSwap(_currentInterestRates, position,
-				assetPair, numberOfFinancingDays, financingDaysPerYear);
+			var (swap, details) = await _commissionCalcService.GetOvernightSwap(position.AccountId, position
+					.AssetPairId, position.CurrentVolume, position.ClosePrice, position.Direction, numberOfFinancingDays, financingDaysPerYear);
 
 			return new OvernightSwapCalculation(
 				operationId: operationId,
