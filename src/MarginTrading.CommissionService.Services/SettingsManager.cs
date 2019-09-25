@@ -158,6 +158,7 @@ namespace MarginTrading.CommissionService.Services
                 TradingConditionId = tic.TradingConditionId,
                 Instrument = tic.Instrument,
                 HedgeCost = tic.HedgeCost,
+                Spread = tic.Spread
             };
     }
 }

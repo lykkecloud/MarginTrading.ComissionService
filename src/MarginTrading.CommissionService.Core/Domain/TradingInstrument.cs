@@ -6,9 +6,12 @@ namespace MarginTrading.CommissionService.Core.Domain
     public class TradingInstrument
     {
         public string TradingConditionId { get; set; }
+        
         public string Instrument { get; set; }
         
         public decimal HedgeCost { get; set; }
+        
+        public decimal Spread { get; set; }
         
         public (string, string) GetKey() => (TradingConditionId, Instrument);
     }
