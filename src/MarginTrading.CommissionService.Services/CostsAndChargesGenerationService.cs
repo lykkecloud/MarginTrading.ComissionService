@@ -78,11 +78,9 @@ namespace MarginTrading.CommissionService.Services
                                        * spread * units * fxRate / 4;
             var entryCost = -spread * units / 2 / fxRate 
                             - entryConsorsDonation;
-            var entryCommission =
-                -Math.Min(
-                    Math.Max(commissionRate.CommissionFloor,
-                        commissionRate.CommissionRate * transactionVolume / fxRate), commissionRate.CommissionCap) +
-                entryConsorsDonation;
+            var entryCommission = -Math.Min(Math.Max(commissionRate.CommissionFloor,
+                                          commissionRate.CommissionRate * transactionVolume / fxRate),
+                                      commissionRate.CommissionCap) + entryConsorsDonation;
             var overnightCost =
                 await CalculateOvernightSwaps(accountId, instrument, units, direction, currentBestPrice);
             var referenceRateAmount = -(variableRateBase - variableRateQuote) * transactionVolume / fxRate / 365 * 1; //todo DaysCount always 1 ??
@@ -93,9 +91,9 @@ namespace MarginTrading.CommissionService.Services
             var runningCommission = runningCostsConsorsDonation;
             var exitConsorsDonation = -(1-tradingInstrument.HedgeCost) * spread * units / fxRate / 2 / 2;
             var exitCost = -spread * units / 2 / fxRate - exitConsorsDonation;
-            var exitCommission = -Math.Min(Math.Max(commissionRate.CommissionFloor, transactionVolume / fxRate),
-                                     commissionRate.CommissionCap)
-                                 + exitConsorsDonation;
+            var exitCommission = -Math.Min(Math.Max(commissionRate.CommissionFloor,
+                                         commissionRate.CommissionRate * transactionVolume / fxRate),
+                                     commissionRate.CommissionCap) + exitConsorsDonation;
             var productsReturn = entryCost + overnightCost + repoCost + exitCost;
             var serviceCost = entryCommission + runningCommission + exitCommission;
             var productsReturnConsorsDonation = entryConsorsDonation + runningCostsConsorsDonation + exitConsorsDonation;
