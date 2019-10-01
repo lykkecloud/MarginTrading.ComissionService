@@ -46,5 +46,7 @@ namespace MarginTrading.CommissionService.Core.Settings
 
         [Optional]
         public string InstanceId { get; set; }
+        
+        public SignatureSettings SignatureSettings { get; set; }
     }
 }

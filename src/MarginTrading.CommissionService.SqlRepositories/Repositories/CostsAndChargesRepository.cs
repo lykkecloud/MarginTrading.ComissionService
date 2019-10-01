@@ -5,7 +5,10 @@ using System;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Security.Cryptography.Xml;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Serialization;
 using Common.Log;
 using Dapper;
@@ -138,6 +141,8 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
                 data = writer.ToString();
             }
 
+            var signedData = RsaHelper.SignData(data, _settings.SignatureSettings);
+
             return new CostsAndChargesEntity
             {
                 Id = calculation.Id,
@@ -146,12 +151,17 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
                 Volume = calculation.Volume,
                 Direction = calculation.Direction.ToString(),
                 Timestamp = calculation.Timestamp,
-                Data = data
+                Data = signedData
             };
         }
 
         private CostsAndChargesCalculation Map(CostsAndChargesEntity entity)
         {
+            if (!RsaHelper.ValidateSign(entity.Data, _settings.SignatureSettings, out var error))
+            {
+                throw new Exception($"Document with id {entity} has invalid signature. Error: {error}");
+            }
+            
             var serializer = new XmlSerializer(typeof(CostsAndChargesCalculation));
             
             using (var reader = new StringReader(entity.Data))
