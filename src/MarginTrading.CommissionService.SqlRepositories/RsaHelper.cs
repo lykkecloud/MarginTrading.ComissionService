@@ -109,7 +109,7 @@ namespace MarginTrading.CommissionService.SqlRepositories
 
             using (TextWriter privateKeyTextWriter = new StringWriter())
             {
-                PemWriter pemWriter = new PemWriter(privateKeyTextWriter);
+                var pemWriter = new PemWriter(privateKeyTextWriter);
                 pemWriter.WriteObject(keyPair.Private);
                 pemWriter.Writer.Flush();
                 File.WriteAllText(privateKeyFilePath, privateKeyTextWriter.ToString());
@@ -117,7 +117,7 @@ namespace MarginTrading.CommissionService.SqlRepositories
 
             using (TextWriter publicKeyTextWriter = new StringWriter())
             {
-                PemWriter pemWriter = new PemWriter(publicKeyTextWriter);
+                var pemWriter = new PemWriter(publicKeyTextWriter);
                 pemWriter.WriteObject(keyPair.Public);
                 pemWriter.Writer.Flush();
                 File.WriteAllText(publicKeyFilePath, publicKeyTextWriter.ToString());
@@ -162,22 +162,24 @@ namespace MarginTrading.CommissionService.SqlRepositories
             
             using (TextReader privateKeyTextReader = new StringReader(keyValue))
             {
-                AsymmetricCipherKeyPair readKeyPair = (AsymmetricCipherKeyPair)new PemReader(privateKeyTextReader).ReadObject();
+                var readKeyPair = (AsymmetricCipherKeyPair)new PemReader(privateKeyTextReader).ReadObject();
 
-                RsaPrivateCrtKeyParameters privateKeyParams = ((RsaPrivateCrtKeyParameters)readKeyPair.Private);
-                RSACryptoServiceProvider cryptoServiceProvider = new RSACryptoServiceProvider();
-                RSAParameters parms = new RSAParameters();
+                var privateKeyParams = ((RsaPrivateCrtKeyParameters)readKeyPair.Private);
+                var cryptoServiceProvider = new RSACryptoServiceProvider();
+                var parameters = new RSAParameters
+                {
+                    Modulus = privateKeyParams.Modulus.ToByteArrayUnsigned(),
+                    P = privateKeyParams.P.ToByteArrayUnsigned(),
+                    Q = privateKeyParams.Q.ToByteArrayUnsigned(),
+                    DP = privateKeyParams.DP.ToByteArrayUnsigned(),
+                    DQ = privateKeyParams.DQ.ToByteArrayUnsigned(),
+                    InverseQ = privateKeyParams.QInv.ToByteArrayUnsigned(),
+                    D = privateKeyParams.Exponent.ToByteArrayUnsigned(),
+                    Exponent = privateKeyParams.PublicExponent.ToByteArrayUnsigned()
+                };
 
-                parms.Modulus = privateKeyParams.Modulus.ToByteArrayUnsigned();
-                parms.P = privateKeyParams.P.ToByteArrayUnsigned();
-                parms.Q = privateKeyParams.Q.ToByteArrayUnsigned();
-                parms.DP = privateKeyParams.DP.ToByteArrayUnsigned();
-                parms.DQ = privateKeyParams.DQ.ToByteArrayUnsigned();
-                parms.InverseQ = privateKeyParams.QInv.ToByteArrayUnsigned();
-                parms.D = privateKeyParams.Exponent.ToByteArrayUnsigned();
-                parms.Exponent = privateKeyParams.PublicExponent.ToByteArrayUnsigned();
 
-                cryptoServiceProvider.ImportParameters(parms);
+                cryptoServiceProvider.ImportParameters(parameters);
 
                 return cryptoServiceProvider;
             }
@@ -205,15 +207,17 @@ namespace MarginTrading.CommissionService.SqlRepositories
             
             using (TextReader publicKeyTextReader = new StringReader(keyValue))
             {
-                RsaKeyParameters publicKeyParam = (RsaKeyParameters)new PemReader(publicKeyTextReader).ReadObject();
+                var publicKeyParam = (RsaKeyParameters)new PemReader(publicKeyTextReader).ReadObject();
 
-                RSACryptoServiceProvider cryptoServiceProvider = new RSACryptoServiceProvider();
-                RSAParameters parms = new RSAParameters();
+                var cryptoServiceProvider = new RSACryptoServiceProvider();
+                var parameters = new RSAParameters
+                {
+                    Modulus = publicKeyParam.Modulus.ToByteArrayUnsigned(),
+                    Exponent = publicKeyParam.Exponent.ToByteArrayUnsigned()
+                };
 
-                parms.Modulus = publicKeyParam.Modulus.ToByteArrayUnsigned();
-                parms.Exponent = publicKeyParam.Exponent.ToByteArrayUnsigned();
 
-                cryptoServiceProvider.ImportParameters(parms);
+                cryptoServiceProvider.ImportParameters(parameters);
 
                 return cryptoServiceProvider;
             }

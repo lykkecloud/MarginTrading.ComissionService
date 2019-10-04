@@ -159,7 +159,7 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
         {
             if (!RsaHelper.ValidateSign(entity.Data, _settings.SignatureSettings, out var error))
             {
-                throw new Exception($"Document with id {entity} has invalid signature. Error: {error}");
+                throw new Exception($"Document with id {entity.Id} has invalid signature. {error}");
             }
             
             var serializer = new XmlSerializer(typeof(CostsAndChargesCalculation));
