@@ -83,11 +83,13 @@ namespace MarginTrading.CommissionService.Services
                                       commissionRate.CommissionCap) + entryConsorsDonation;
             var overnightCost =
                 await CalculateOvernightSwaps(accountId, instrument, units, direction, currentBestPrice);
-            var referenceRateAmount = -(variableRateBase - variableRateQuote) * transactionVolume / fxRate / 365 * 1; //todo DaysCount always 1 ??
-            var repoCost = -overnightSwapRate.RepoSurchargePercent * transactionVolume / fxRate / 365 * 1; //same;
+            var directionMultiplier = direction == OrderDirection.Sell ? -1 : 1;
+            var referenceRateAmount = directionMultiplier * -(variableRateBase - variableRateQuote) * transactionVolume / fxRate / 365 * 1; //todo DaysCount always 1 ??
+            var repoCost = direction == OrderDirection.Sell
+                ? -overnightSwapRate.RepoSurchargePercent * transactionVolume / fxRate / 365 * 1 //same;
+                : 0;
             var runningCostsProductReturnsSum = overnightCost + referenceRateAmount + repoCost;
-            var runningCostsConsorsDonation = -(1-tradingInstrument.HedgeCost) 
-                                              * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 * 1 / 2;//same
+            var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 * 1 / 2;//same
             var runningCommission = runningCostsConsorsDonation;
             var exitConsorsDonation = -(1-tradingInstrument.HedgeCost) * spread * units / fxRate / 2 / 2;
             var exitCost = -spread * units / 2 / fxRate - exitConsorsDonation;
