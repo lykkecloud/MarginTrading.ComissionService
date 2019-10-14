@@ -157,6 +157,10 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<TradingInstrumentsCache>()
                 .As<ITradingInstrumentsCache>()
                 .SingleInstance();
+            
+            builder.RegisterType<TradingDaysInfoProvider>()
+                .As<ITradingDaysInfoProvider>()
+                .SingleInstance();
         }
 
         private void RegisterRepositories(ContainerBuilder builder)

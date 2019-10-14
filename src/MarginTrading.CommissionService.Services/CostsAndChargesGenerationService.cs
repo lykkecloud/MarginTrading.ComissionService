@@ -27,6 +27,8 @@ namespace MarginTrading.CommissionService.Services
         private readonly IAccountRedisCache _accountRedisCache;
         private readonly IRateSettingsService _rateSettingsService;
         private readonly IInterestRatesCacheService _interestRatesCacheService;
+        private readonly IAssetPairsCache _assetPairsCache;
+        private readonly ITradingDaysInfoProvider _tradingDaysInfoProvider;
 
         public CostsAndChargesGenerationService(ICommissionCalcService commissionCalcService,
             IQuoteCacheService quoteCacheService,
@@ -36,7 +38,10 @@ namespace MarginTrading.CommissionService.Services
             ITradingInstrumentsCache tradingInstrumentsCache,
             ICfdCalculatorService cfdCalculatorService, 
             IAccountRedisCache accountRedisCache, 
-            IRateSettingsService rateSettingsService, IInterestRatesCacheService interestRatesCacheService)
+            IRateSettingsService rateSettingsService, 
+            IInterestRatesCacheService interestRatesCacheService,
+            IAssetPairsCache assetPairsCache,
+            ITradingDaysInfoProvider tradingDaysInfoProvider)
         {
             _commissionCalcService = commissionCalcService;
             _quoteCacheService = quoteCacheService;
@@ -48,6 +53,8 @@ namespace MarginTrading.CommissionService.Services
             _accountRedisCache = accountRedisCache;
             _rateSettingsService = rateSettingsService;
             _interestRatesCacheService = interestRatesCacheService;
+            _assetPairsCache = assetPairsCache;
+            _tradingDaysInfoProvider = tradingDaysInfoProvider;
         }
         
         public async Task<CostsAndChargesCalculation> GenerateSingle(string accountId, string instrument,
@@ -81,15 +88,19 @@ namespace MarginTrading.CommissionService.Services
             var entryCommission = -Math.Min(Math.Max(commissionRate.CommissionFloor,
                                           commissionRate.CommissionRate * transactionVolume / fxRate),
                                       commissionRate.CommissionCap) + entryConsorsDonation;
+            var asset = _assetPairsCache.GetAssetPairById(instrument);
+            var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(asset.MarketId,
+                _systemClock.UtcNow.UtcDateTime, false);
             var overnightCost =
-                await CalculateOvernightSwaps(accountId, instrument, units, direction, currentBestPrice);
+                await CalculateOvernightSwaps(accountId, instrument, units, direction, currentBestPrice, overnightFeeDays);
             var directionMultiplier = direction == OrderDirection.Sell ? -1 : 1;
-            var referenceRateAmount = directionMultiplier * -(variableRateBase - variableRateQuote) * transactionVolume / fxRate / 365 * 1; //todo DaysCount always 1 ??
+            var referenceRateAmount = directionMultiplier * -(variableRateBase - variableRateQuote) *
+                                      transactionVolume / fxRate / 365 * overnightFeeDays;
             var repoCost = direction == OrderDirection.Sell
-                ? -overnightSwapRate.RepoSurchargePercent * transactionVolume / fxRate / 365 * 1 //same;
+                ? -overnightSwapRate.RepoSurchargePercent * transactionVolume / fxRate / 365 * overnightFeeDays
                 : 0;
             var runningCostsProductReturnsSum = overnightCost + referenceRateAmount + repoCost;
-            var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 * 1 / 2;//same
+            var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 * overnightFeeDays / 2;//same
             var runningCommission = runningCostsConsorsDonation;
             var exitConsorsDonation = -(1-tradingInstrument.HedgeCost) * spread * units / fxRate / 2 / 2;
             var exitCost = -spread * units / 2 / fxRate - exitConsorsDonation;
@@ -195,12 +206,12 @@ namespace MarginTrading.CommissionService.Services
         }
 
         private async Task<decimal> CalculateOvernightSwaps(string accountId, string instrument, 
-            decimal quantity, OrderDirection direction, InstrumentBidAskPair bestPrice)
+            decimal quantity, OrderDirection direction, InstrumentBidAskPair bestPrice, int overnightFeeDays)
         {
             var closePrice = direction == OrderDirection.Buy ? bestPrice.Bid : bestPrice.Ask;
             var positionDirection = direction == OrderDirection.Buy ? PositionDirection.Long : PositionDirection.Short;
 
-            var swap = await _commissionCalcService.GetOvernightSwap(accountId, instrument, quantity, closePrice,positionDirection, 1, 365);
+            var swap = await _commissionCalcService.GetOvernightSwap(accountId, instrument, quantity, closePrice,positionDirection, overnightFeeDays, 365);
 
             return swap.Swap;
         }

@@ -41,11 +41,11 @@ namespace MarginTrading.CommissionService.Services.Caches
             }
         }
 
-        public IAssetPair GetAssetPairByIdOrDefault(string assetPairId)
+        public IAssetPair[] GetAll()
         {
             lock (_lock)
             {
-                return _assetPairs.GetValueOrDefault(assetPairId);
+                return _assetPairs.Values.ToArray();
             }
         }
         
