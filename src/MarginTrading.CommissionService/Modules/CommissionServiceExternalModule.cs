@@ -60,6 +60,10 @@ namespace MarginTrading.CommissionService.Modules
                 "MT Settings",
                 _settings.CurrentValue.CommissionService.Services.SettingsService);
             
+            RegisterClientWithName<IScheduleSettingsApi>(builder,
+                "MT Settings",
+                _settings.CurrentValue.CommissionService.Services.SettingsService);
+            
             builder.Populate(_services);
         }
 

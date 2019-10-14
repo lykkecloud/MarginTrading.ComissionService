@@ -63,5 +63,10 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
         /// You cannot specify a value lower or equal to 0 to ensure positive resulting values.
         /// </remarks>
         decimal StpMultiplierMarkupAsk { get; }
+        
+        /// <summary>
+        /// Market
+        /// </summary>
+        string MarketId { get; }
     }
 }

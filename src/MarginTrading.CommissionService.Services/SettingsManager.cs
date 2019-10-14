@@ -4,6 +4,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
+using Castle.MicroKernel;
 using Common.Log;
 using JetBrains.Annotations;
 using MarginTrading.CommissionService.Core.Caches;
@@ -15,6 +16,7 @@ using MarginTrading.SettingsService.Contracts.Asset;
 using MarginTrading.SettingsService.Contracts.AssetPair;
 using MarginTrading.SettingsService.Contracts.Enums;
 using MarginTrading.SettingsService.Contracts.Messages;
+using MarginTrading.SettingsService.Contracts.Scheduling;
 using MarginTrading.SettingsService.Contracts.TradingConditions;
 using Newtonsoft.Json;
 
@@ -33,6 +35,8 @@ namespace MarginTrading.CommissionService.Services
         private readonly ITradingInstrumentsApi _tradingInstrumentsApi;
         private readonly IConvertService _convertService;
         private readonly ILog _log;
+        private readonly ITradingDaysInfoProvider _tradingDaysInfoProvider;
+        private readonly IScheduleSettingsApi _scheduleSettingsApi;
 
         public SettingsManager(
             IAssetPairsCache assetPairsCache,
@@ -42,7 +46,9 @@ namespace MarginTrading.CommissionService.Services
             IAssetsApi assetsApi, 
             ITradingInstrumentsApi tradingInstrumentsApi,
             IConvertService convertService, 
-            ILog log)
+            ILog log,
+            ITradingDaysInfoProvider tradingDaysInfoProvider,
+            IScheduleSettingsApi scheduleSettingsApi)
         {
             _assetPairsCache = assetPairsCache;
             _assetsCache = assetsCache;
@@ -52,6 +58,8 @@ namespace MarginTrading.CommissionService.Services
             _tradingInstrumentsApi = tradingInstrumentsApi;
             _convertService = convertService;
             _log = log;
+            _tradingDaysInfoProvider = tradingDaysInfoProvider;
+            _scheduleSettingsApi = scheduleSettingsApi;
         }
 
         public void Start()
@@ -59,6 +67,7 @@ namespace MarginTrading.CommissionService.Services
             InitAssetPairs();
             InitAssets();
             InitTradingInstruments();
+            InitSchedules();
         }
 
         private void InitAssetPairs()
@@ -91,6 +100,18 @@ namespace MarginTrading.CommissionService.Services
                     .GetAwaiter().GetResult()
                     .Select(Map);
                 _tradingInstrumentsCache.InitCache(tradingInstruments);
+            }
+        }
+        
+        private void InitSchedules()
+        {
+            lock (Lock)
+            {
+                var markets = _assetPairsCache.GetAll().Select(p => p.MarketId).Distinct().ToArray();
+                var schedules = _scheduleSettingsApi.GetMarketsInfo(markets)
+                    .GetAwaiter().GetResult()
+                    .ToDictionary(k => k.Key, v => Map(v.Value));
+                _tradingDaysInfoProvider.Initialize(schedules);
             }
         }
         
@@ -150,6 +171,10 @@ namespace MarginTrading.CommissionService.Services
             {
                 await UpdateTradingInstrumentsCacheAsync(evt.ChangedEntityId);
             }
+            else if (evt.SettingsType == SettingsTypeContract.ScheduleSettings)
+            {
+                InitSchedules();
+            }
         }
 
         private static TradingInstrument Map(TradingInstrumentContract tic) =>
@@ -160,5 +185,11 @@ namespace MarginTrading.CommissionService.Services
                 HedgeCost = tic.HedgeCost,
                 Spread = tic.Spread
             };
+
+        private static TradingDayInfo Map(TradingDayInfoContract contract) => new TradingDayInfo
+        {
+            LastTradingDay = contract.LastTradingDay,
+            NextTradingDayStart = contract.NextTradingDayStart
+        };
     }
 }
