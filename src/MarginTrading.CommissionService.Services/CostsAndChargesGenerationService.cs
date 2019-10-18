@@ -78,7 +78,7 @@ namespace MarginTrading.CommissionService.Services
 
             if (spread == 0)
             {
-                spread = currentBestPrice.Ask * tradingInstrument.Spread;
+                spread = currentBestPrice.Ask * tradingInstrument.Spread / 100;
             }
             
             var entryConsorsDonation = -(1 - tradingInstrument.HedgeCost)
