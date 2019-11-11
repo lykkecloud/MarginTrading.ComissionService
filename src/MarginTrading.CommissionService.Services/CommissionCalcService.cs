@@ -107,7 +107,7 @@ namespace MarginTrading.CommissionService.Services
         }
 
         public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId,
-            string assetPairId)
+            string accountAssetId, string assetPairId)
         {
             var events = await ApiHelpers
                 .RefitRetryPolicy<List<OrderEventWithAdditionalContract>>(
