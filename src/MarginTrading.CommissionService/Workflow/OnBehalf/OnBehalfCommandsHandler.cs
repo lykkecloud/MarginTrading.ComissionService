@@ -57,7 +57,7 @@ namespace MarginTrading.CommissionService.Workflow.OnBehalf
             if (executionInfo?.Data?.State == CommissionOperationState.Initiated)
             {
                 var (actionsNum, commission) = await _commissionCalcService.CalculateOnBehalfCommissionAsync(
-                    command.OrderId, command.AccountAssetId);
+                    command.OrderId, command.AccountAssetId, command.AssetPairId);
 
                 //no failure handling.. so operation will be retried on fail
 

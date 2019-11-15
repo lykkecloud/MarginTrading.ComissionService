@@ -107,7 +107,7 @@ namespace MarginTrading.CommissionService.Services
         }
 
         public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId,
-            string accountAssetId)
+            string accountAssetId, string assetPairId)
         {
             var events = await ApiHelpers
                 .RefitRetryPolicy<List<OrderEventWithAdditionalContract>>(
@@ -124,12 +124,12 @@ namespace MarginTrading.CommissionService.Services
                                     e.UpdateType == OrderUpdateTypeContract.Cancel))
                 {
                     _log.WriteWarning(nameof(CalculateOnBehalfCommissionAsync), events.ToJson(),
-                        $"Order {orderId} for instrument {accountAssetId} was not executed and on-behalf will not be charged");
+                        $"Order {orderId} for instrument {assetPairId} was not executed and on-behalf will not be charged");
                     return (0, 0);
                 }
 
                 throw new Exception(
-                    $"Order {orderId} for instrument {accountAssetId} was not executed or rejected/cancelled. On-behalf can not be calculated");
+                    $"Order {orderId} for instrument {assetPairId} was not executed or rejected/cancelled. On-behalf can not be calculated");
             }
 
             var onBehalfEvents = events.Where(CheckOnBehalfFlag).ToList();

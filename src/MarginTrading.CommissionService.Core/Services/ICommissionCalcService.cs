@@ -16,6 +16,6 @@ namespace MarginTrading.CommissionService.Core.Services
         Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument,
             decimal volume, decimal commandOrderExecutionPrice);
         Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId,
-            string accountAssetId);
+            string accountAssetId, string assetPairId);
     }
 }
