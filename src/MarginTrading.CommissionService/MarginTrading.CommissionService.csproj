@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <NoWarn>$(NoWarn);1591</NoWarn>
-    <Version>1.10.11</Version>
+    <Version>1.10.12</Version>
     <AssemblyName>MarginTrading.CommissionService</AssemblyName>
     <RootNamespace>MarginTrading.CommissionService</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
