@@ -15,6 +15,7 @@ using MarginTrading.CommissionService.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MarginTrading.CommissionService.Core.Extensions;
+using MarginTrading.CommissionService.Middleware;
 
 namespace MarginTrading.CommissionService.Controllers
 {
@@ -22,7 +23,8 @@ namespace MarginTrading.CommissionService.Controllers
 	/// Manages costs and charges
 	[Authorize]
 	[Route("api/costsAndCharges")]
-	public class CostsAndChargesController : Controller, ICostsAndChargesApi
+    [MiddlewareFilter(typeof(RequestLoggingPipeline))]
+    public class CostsAndChargesController : Controller, ICostsAndChargesApi
 	{
 		private readonly ICostsAndChargesGenerationService _costsAndChargesGenerationService;
 		private readonly ICostsAndChargesRepository _costsAndChargesRepository;

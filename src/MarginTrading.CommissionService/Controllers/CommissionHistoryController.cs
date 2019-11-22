@@ -14,6 +14,7 @@ using MarginTrading.CommissionService.Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MarginTrading.CommissionService.Core.Extensions;
+using MarginTrading.CommissionService.Middleware;
 
 namespace MarginTrading.CommissionService.Controllers
 {
@@ -21,7 +22,8 @@ namespace MarginTrading.CommissionService.Controllers
 	/// Manages commission history
 	[Authorize]
 	[Route("api/commission")]
-	public class CommissionHistoryController : Controller, ICommissionHistoryApi
+    [MiddlewareFilter(typeof(RequestLoggingPipeline))]
+    public class CommissionHistoryController : Controller, ICommissionHistoryApi
 	{
 		private readonly IOvernightSwapHistoryRepository _overnightSwapHistoryRepository;
 		private readonly IDailyPnlHistoryRepository _dailyPnlHistoryRepository;

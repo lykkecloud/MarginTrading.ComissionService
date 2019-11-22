@@ -8,6 +8,7 @@ using Lykke.MarginTrading.CommissionService.Contracts;
 using Lykke.MarginTrading.CommissionService.Contracts.Commands;
 using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Settings;
+using MarginTrading.CommissionService.Middleware;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Internal;
@@ -17,6 +18,7 @@ namespace MarginTrading.CommissionService.Controllers
     [Authorize]
     [Route("api/overnight-swap")]
     [Route("api/overnightswap")]
+    [MiddlewareFilter(typeof(RequestLoggingPipeline))]
     public class OvernightSwapController : Controller, IOvernightSwapApi
     {
         private readonly ICqrsEngine _cqrsEngine;

@@ -12,6 +12,7 @@ using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Rates;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
+using MarginTrading.CommissionService.Middleware;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,6 +20,7 @@ namespace MarginTrading.CommissionService.Controllers
 {
     [Authorize]
     [Route("api/rates")]
+    [MiddlewareFilter(typeof(RequestLoggingPipeline))]
     public class RateSettingsController : Controller, IRateSettingsApi
     {
         private readonly IRateSettingsService _rateSettingsService;
