@@ -91,23 +91,22 @@ namespace MarginTrading.CommissionService.Services
             var asset = _assetPairsCache.GetAssetPairById(instrument);
             var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(asset.MarketId,
                 _systemClock.UtcNow.UtcDateTime, false);
-            var overnightCost =
-                await CalculateOvernightSwaps(accountId, instrument, units, direction, currentBestPrice, overnightFeeDays);
+            var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 * overnightFeeDays / 2;//same
             var directionMultiplier = direction == OrderDirection.Sell ? -1 : 1;
             var referenceRateAmount = directionMultiplier * -(variableRateBase - variableRateQuote) *
                                       transactionVolume / fxRate / 365 * overnightFeeDays;
             var repoCost = direction == OrderDirection.Sell
                 ? -overnightSwapRate.RepoSurchargePercent * transactionVolume / fxRate / 365 * overnightFeeDays
                 : 0;
-            var runningCostsProductReturnsSum = overnightCost + referenceRateAmount + repoCost;
-            var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 * overnightFeeDays / 2;//same
+            var runningCostsProductReturnsSum = runningCostsConsorsDonation + referenceRateAmount + repoCost;
+            
             var runningCommission = runningCostsConsorsDonation;
             var exitConsorsDonation = -(1-tradingInstrument.HedgeCost) * spread * units / fxRate / 2 / 2;
             var exitCost = -spread * units / 2 / fxRate - exitConsorsDonation;
             var exitCommission = -Math.Min(Math.Max(commissionRate.CommissionFloor,
                                          commissionRate.CommissionRate * transactionVolume / fxRate),
                                      commissionRate.CommissionCap) + exitConsorsDonation;
-            var productsReturn = entryCost + overnightCost + repoCost + exitCost;
+            var productsReturn = entryCost + runningCostsConsorsDonation + repoCost + exitCost;
             var serviceCost = entryCommission + runningCommission + exitCommission;
             var productsReturnConsorsDonation = entryConsorsDonation + runningCostsConsorsDonation + exitConsorsDonation;
             var totalCosts = productsReturn + serviceCost + 0;
@@ -135,8 +134,8 @@ namespace MarginTrading.CommissionService.Services
                     (runningCostsProductReturnsSum + runningCostsConsorsDonation) * percentCoef),
                 RunningCostsProductReturnsSum = new CostsAndChargesValue(runningCostsProductReturnsSum,
                     runningCostsProductReturnsSum * percentCoef),
-                OvernightCost = new CostsAndChargesValue(overnightCost, 
-                    overnightCost * percentCoef),
+                OvernightCost = new CostsAndChargesValue(runningCostsConsorsDonation, 
+                    runningCostsConsorsDonation * percentCoef),
                 ReferenceRateAmount = new CostsAndChargesValue(referenceRateAmount, 
                     referenceRateAmount * percentCoef),
                 RepoCost = new CostsAndChargesValue(repoCost, repoCost * percentCoef),
