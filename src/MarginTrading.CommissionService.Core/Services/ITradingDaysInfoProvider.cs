@@ -9,7 +9,7 @@ namespace MarginTrading.CommissionService.Core.Services
 {
     public interface ITradingDaysInfoProvider
     {
-        int GetNumberOfNightsUntilNextTradingDay(string marketId, DateTime currentDateTime, bool calculateAsOfNextDay);
+        int GetNumberOfNightsUntilNextTradingDay(string marketId, DateTime currentDateTime);
 
         void Initialize(Dictionary<string, TradingDayInfo> infos);
     }

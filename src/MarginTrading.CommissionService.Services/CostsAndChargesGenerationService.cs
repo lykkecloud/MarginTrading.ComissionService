@@ -90,7 +90,7 @@ namespace MarginTrading.CommissionService.Services
                                       commissionRate.CommissionCap) + entryConsorsDonation;
             var asset = _assetPairsCache.GetAssetPairById(instrument);
             var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(asset.MarketId,
-                _systemClock.UtcNow.UtcDateTime, false);
+                _systemClock.UtcNow.UtcDateTime);
             var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 * overnightFeeDays / 2;//same
             var directionMultiplier = direction == OrderDirection.Sell ? -1 : 1;
             var referenceRateAmount = directionMultiplier * -(variableRateBase - variableRateQuote) *

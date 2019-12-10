@@ -38,15 +38,15 @@ namespace MarginTrading.CommissionService.Services.Caches
         /// </summary>
         /// <param name="marketId">ID of the market</param>
         /// <param name="currentDateTime">Current timestamp</param>
-        /// <param name="calculateAsOfNextDay">True, if calculation should be performed as at the beginning of the next trading day</param>
         /// <returns></returns>
-        public int GetNumberOfNightsUntilNextTradingDay(string marketId, DateTime currentDateTime, bool calculateAsOfNextDay)
+        public int GetNumberOfNightsUntilNextTradingDay(string marketId, DateTime currentDateTime)
         {
             _lock.EnterReadLock();
+            TradingDayInfo marketInfo;
 
             try
             {
-                if (_cache.TryGetValue(marketId, out var marketInfo) && marketInfo.LastTradingDay.Date == currentDateTime.Date)
+                if (_cache.TryGetValue(marketId, out marketInfo) && marketInfo.LastTradingDay.Date == currentDateTime.Date)
                 {
                     return CalculateNumberOfDays(marketInfo);
                 }
@@ -60,7 +60,8 @@ namespace MarginTrading.CommissionService.Services.Caches
 
             try
             {
-                var infos = _scheduleApi.GetMarketsInfo(new[] {marketId}).GetAwaiter().GetResult();
+                var infos = _scheduleApi.GetMarketsInfo(new[] {marketId}, marketInfo?.NextTradingDayStart)
+                    .GetAwaiter().GetResult();
 
                 if (!infos.TryGetValue(marketId, out var info))
                 {
@@ -70,8 +71,6 @@ namespace MarginTrading.CommissionService.Services.Caches
                     return 1;
                 }
 
-                //TODO: if calculateAsOfNextDay = true, compare LastTradingDay and currentDateTime and probably request one more time
-                
                 var days = new TradingDayInfo
                 {
                     LastTradingDay = info.LastTradingDay,
