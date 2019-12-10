@@ -8,6 +8,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
+using MarginTrading.Backend.Contracts;
+using MarginTrading.Backend.Contracts.Prices;
 using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
@@ -22,15 +24,15 @@ namespace MarginTrading.CommissionService.Services.Caches
     public class FxRateCacheService : IFxRateCacheService
     {
         private readonly ILog _log;
-        private readonly IMarginTradingBlobRepository _blobRepository;
+        private readonly IPricesApi _pricesApi;
         private Dictionary<string, InstrumentBidAskPair> _quotes;
         private readonly ReaderWriterLockSlim _lockSlim = new ReaderWriterLockSlim();
-        private const string BlobName = "CommissionFxRates";
+        
 
-        public FxRateCacheService(ILog log, IMarginTradingBlobRepository blobRepository)
+        public FxRateCacheService(ILog log, IPricesApi pricesApi)
         {
             _log = log;
-            _blobRepository = blobRepository;
+            _pricesApi = pricesApi;
             _quotes = new Dictionary<string, InstrumentBidAskPair>();
         }
 
@@ -43,19 +45,6 @@ namespace MarginTrading.CommissionService.Services.Caches
                     throw new FxRateNotFoundException(instrument, $"There is no fx rate for instrument {instrument}");
 
                 return quote;
-            }
-            finally
-            {
-                _lockSlim.ExitReadLock();
-            }
-        }
-
-        public Dictionary<string, InstrumentBidAskPair> GetAllQuotes()
-        {
-            _lockSlim.EnterReadLock();
-            try
-            {
-                return _quotes.ToDictionary(x => x.Key, y => y.Value);
             }
             finally
             {
@@ -155,10 +144,11 @@ namespace MarginTrading.CommissionService.Services.Caches
         public void Start()
         {
             _quotes =
-                _blobRepository
-                    .Read<Dictionary<string, InstrumentBidAskPair>>(LykkeConstants.StateBlobContainer, BlobName)
-                    ?.ToDictionary(d => d.Key, d => d.Value) ??
-                new Dictionary<string, InstrumentBidAskPair>();
+                _pricesApi.GetBestFxAsync(new InitPricesBackendRequest()).GetAwaiter().GetResult()
+                    ?.ToDictionary(d => d.Key,
+                        d => new InstrumentBidAskPair
+                            {Instrument = d.Value.Id, Ask = d.Value.Ask, Bid = d.Value.Bid, Date = d.Value.Timestamp})
+                ?? new Dictionary<string, InstrumentBidAskPair>();
         }
     }
 }
