@@ -10,6 +10,7 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.AzureQueueIntegration;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Logs;
@@ -18,6 +19,8 @@ using Lykke.Logs.MsSql.Repositories;
 using Lykke.Logs.Serilog;
 using Lykke.MarginTrading.CommissionService.Contracts.Api;
 using Lykke.SettingsReader;
+using Lykke.SlackNotification.AzureQueue;
+using Lykke.SlackNotifications;
 using Lykke.Snow.Common.Startup;
 using Lykke.Snow.Common.Startup.ApiKey;
 using MarginTrading.Backend.Contracts.Events;
@@ -241,29 +244,62 @@ namespace MarginTrading.CommissionService
         private static ILog CreateLog(IConfiguration configuration, IServiceCollection services, 
             IReloadingManager<AppSettings> settings)
         {
+            const string requestsLogName = "CommissionServiceRequestsLog";
+            const string logName = "CommissionServiceLog";
             var consoleLogger = new LogToConsole();
-            var aggregateLogger = new AggregateLogger();
 
-            aggregateLogger.AddLog(consoleLogger);
+            #region Logs settings validation
+
+            if (!settings.CurrentValue.CommissionService.UseSerilog
+                && string.IsNullOrWhiteSpace(settings.CurrentValue.CommissionService.Db.LogsConnString))
+            {
+                throw new Exception("Either UseSerilog must be true or LogsConnString must be set");
+            }
+
+            #endregion Logs settings validation
 
             if (settings.CurrentValue.CommissionService.UseSerilog)
             {
-                aggregateLogger.AddLog(new SerilogLogger(typeof(Startup).Assembly, configuration));
-            }
-            else if (settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.SqlServer)
-            {
-                aggregateLogger.AddLog(new LogToSql(new SqlLogRepository("CommissionServiceLog",
-                    settings.CurrentValue.CommissionService.Db.LogsConnString)));
-            }
-            else if (settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.Azure)
-            {
-                aggregateLogger.AddLog(services.UseLogToAzureStorage(settings.Nested(s => s.CommissionService.Db.LogsConnString),
-                    null, "CommissionServiceLog", consoleLogger));
+                var serilogLogger = new SerilogLogger(typeof(Startup).Assembly, configuration);
+
+                LogLocator.RequestsLog = LogLocator.CommonLog = serilogLogger;
+
+                return serilogLogger;
             }
 
-            LogLocator.Log = aggregateLogger;
-            
-            return aggregateLogger;
+            if (settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.SqlServer)
+            {
+                LogLocator.CommonLog = new AggregateLogger(
+                    new LogToSql(new SqlLogRepository(logName,
+                        settings.CurrentValue.CommissionService.Db.LogsConnString)),
+                    new LogToConsole());
+
+                LogLocator.RequestsLog = new AggregateLogger(
+                    new LogToSql(new SqlLogRepository(requestsLogName,
+                        settings.CurrentValue.CommissionService.Db.LogsConnString)),
+                    new LogToConsole());
+
+                return LogLocator.CommonLog;
+            }
+
+            if (settings.CurrentValue.CommissionService.Db.StorageMode != StorageMode.Azure)
+            {
+                throw new Exception("Wrong config! Logging must be set either to Serilog, SqlServer or Azure.");
+            }
+
+            #region Azure logging
+
+            LogLocator.RequestsLog = services.UseLogToAzureStorage(settings.Nested(s =>
+                    s.CommissionService.Db.LogsConnString),
+                null, requestsLogName, consoleLogger);
+
+            LogLocator.CommonLog = services.UseLogToAzureStorage(settings.Nested(s =>
+                    s.CommissionService.Db.LogsConnString),
+                null, logName, consoleLogger);
+
+            return LogLocator.CommonLog;
+
+            #endregion Azure logging
         }
     }
 }

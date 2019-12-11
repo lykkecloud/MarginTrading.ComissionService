@@ -51,7 +51,7 @@ namespace MarginTrading.CommissionService
                 catch (Exception e)
                 {
                     Console.WriteLine($"Error: {e.Message}{Environment.NewLine}{e.StackTrace}{Environment.NewLine}Restarting...");
-                    LogLocator.Log?.WriteFatalErrorAsync(
+                    LogLocator.CommonLog?.WriteFatalErrorAsync(
                         "MT CommissionService", "Restart host", $"Attempts left: {restartAttemptsLeft}", e);
                     restartAttemptsLeft--;
                     Thread.Sleep(restartAttemptsInterval);

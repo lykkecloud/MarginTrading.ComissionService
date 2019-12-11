@@ -36,6 +36,7 @@ namespace MarginTrading.CommissionService.Modules
         {
             builder.RegisterInstance(_settings.Nested(s => s.CommissionService)).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService).SingleInstance();
+            builder.RegisterInstance(_settings.CurrentValue.CommissionService.RequestLoggerSettings).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.DefaultRateSettings).SingleInstance();
             builder.RegisterInstance(_log).As<ILog>().SingleInstance();
             builder.RegisterType<SystemClock>().As<ISystemClock>().SingleInstance();
