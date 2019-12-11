@@ -38,7 +38,7 @@ namespace MarginTrading.CommissionService.Middleware
         public async Task Invoke(HttpContext context)
         {
             var requestContext =
-                $"Request path: {context?.Request?.Path}, {Environment.NewLine}Method: {context?.Request?.Method}";
+                $"Request path: {context?.Request?.Path}{context?.Request?.QueryString}, {Environment.NewLine}Method: {context?.Request?.Method}";
             try
             {
                 if (_settings.Enabled && (_settings.EnabledForGet || context.Request.Method.ToUpper() != "GET"))
@@ -56,9 +56,7 @@ namespace MarginTrading.CommissionService.Middleware
                     {
                         var body = await StreamHelpers.GetStreamPart(originalRequestBody, _settings.MaxPartSize);
                         var headers = context.Request.Headers.Where(h => !_personalDataHeaders.Contains(h.Key)).ToJson();
-                        var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                        var info =
-                            $"UserId:{userId} {Environment.NewLine}Body:{body} {Environment.NewLine}Headers:{headers}";
+                        var info = $"Body:{body} {Environment.NewLine}Headers:{headers}";
                         if (info.Length > MaxStorageFieldLength)
                         {
                             info = info.Substring(0, MaxStorageFieldLength);
