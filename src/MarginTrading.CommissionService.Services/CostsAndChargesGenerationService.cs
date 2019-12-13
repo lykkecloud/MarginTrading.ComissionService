@@ -106,7 +106,7 @@ namespace MarginTrading.CommissionService.Services
             var exitCommission = -Math.Min(Math.Max(commissionRate.CommissionFloor,
                                          commissionRate.CommissionRate * transactionVolume / fxRate),
                                      commissionRate.CommissionCap) + exitConsorsDonation;
-            var productsReturn = entryCost + runningCostsConsorsDonation + repoCost + exitCost;
+            var productsReturn = entryCost + runningCostsProductReturnsSum + exitCost;
             var serviceCost = entryCommission + runningCommission + exitCommission;
             var productsReturnConsorsDonation = entryConsorsDonation + runningCostsConsorsDonation + exitConsorsDonation;
             var totalCosts = productsReturn + serviceCost + 0;
