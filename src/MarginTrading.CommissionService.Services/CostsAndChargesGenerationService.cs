@@ -82,7 +82,7 @@ namespace MarginTrading.CommissionService.Services
             }
             
             var entryConsorsDonation = -(1 - tradingInstrument.HedgeCost)
-                                       * spread * units * fxRate / 4;
+                                       * spread * units / fxRate / 4;
             var entryCost = -spread * units / 2 / fxRate 
                             - entryConsorsDonation;
             var entryCommission = -Math.Min(Math.Max(commissionRate.CommissionFloor,
@@ -111,7 +111,7 @@ namespace MarginTrading.CommissionService.Services
             var productsReturnConsorsDonation = entryConsorsDonation + runningCostsConsorsDonation + exitConsorsDonation;
             var totalCosts = productsReturn + serviceCost + 0;
 
-            var percentCoef = 1 / transactionVolume * fxRate * 100;
+            var percentCoef = 1 / transactionVolume / fxRate * 100;
 
             var calculation = new CostsAndChargesCalculation
             {
