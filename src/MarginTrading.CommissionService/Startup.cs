@@ -23,6 +23,8 @@ using Lykke.SlackNotification.AzureQueue;
 using Lykke.SlackNotifications;
 using Lykke.Snow.Common.Startup;
 using Lykke.Snow.Common.Startup.ApiKey;
+using Lykke.Snow.Common.Startup.Hosting;
+using Lykke.Snow.Common.Startup.Log;
 using MarginTrading.Backend.Contracts.Events;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
@@ -41,6 +43,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.PlatformAbstractions;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
@@ -101,6 +104,8 @@ namespace MarginTrading.CommissionService
                 var builder = new ContainerBuilder();
 
                 Log = CreateLog(Configuration, services, appSettings);
+
+                services.AddSingleton<ILoggerFactory>(x => new WebHostLoggerFactory(Log));
 
                 builder.RegisterModule(new CommissionServiceModule(appSettings, Log));
                 builder.RegisterModule(new CommissionServiceExternalModule(appSettings));
@@ -187,6 +192,8 @@ namespace MarginTrading.CommissionService
                 rabbitMqService.Subscribe(settings.RabbitMq.Consumers.AccountMarginEvents, true,
                     arg => accountMarginEventsProjection.Handle(arg),
                     rabbitMqService.GetJsonDeserializer<MarginEventMessage>(), settings.InstanceId);
+
+                Program.Host.WriteLogsAsync(Environment, LogLocator.CommonLog).Wait();
 
                 Log?.WriteMonitorAsync("", "", "Started").Wait();
             }
