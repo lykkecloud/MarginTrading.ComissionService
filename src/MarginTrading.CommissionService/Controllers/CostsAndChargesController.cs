@@ -95,6 +95,17 @@ namespace MarginTrading.CommissionService.Controllers
 
 			return calculation.Select(Map).ToArray();
 		}
+		
+        [Route("by-day")]
+        [ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
+        [ProducesResponseType(400)]
+        [HttpPost]
+        public async Task<CostsAndChargesCalculationContract[]> GetByDay(string accountId, DateTime? date, int? skip, int? take)
+        {
+            var calculation = await _costsAndChargesRepository.GetAllByDay(date ?? DateTime.Today, skip, take);
+
+            return calculation.Select(Map).ToArray();
+        }
 
 		private static CostsAndChargesCalculationContract Map(CostsAndChargesCalculation calculation)
 		{
