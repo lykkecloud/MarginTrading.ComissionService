@@ -100,7 +100,7 @@ namespace MarginTrading.CommissionService.Controllers
         [ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
         [ProducesResponseType(400)]
         [HttpPost]
-        public async Task<CostsAndChargesCalculationContract[]> GetByDay(string accountId, DateTime? date, int? skip, int? take)
+        public async Task<CostsAndChargesCalculationContract[]> GetByDay(DateTime? date, int? skip, int? take)
         {
             var calculation = await _costsAndChargesRepository.GetAllByDay(date ?? DateTime.Today, skip, take);
 
