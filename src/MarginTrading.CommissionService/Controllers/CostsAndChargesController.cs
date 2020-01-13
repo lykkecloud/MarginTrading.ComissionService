@@ -28,12 +28,16 @@ namespace MarginTrading.CommissionService.Controllers
 	{
 		private readonly ICostsAndChargesGenerationService _costsAndChargesGenerationService;
 		private readonly ICostsAndChargesRepository _costsAndChargesRepository;
+		private readonly IReportGenService _reportGenService;
 
-		public CostsAndChargesController(ICostsAndChargesGenerationService costsAndChargesGenerationService,
-			ICostsAndChargesRepository costsAndChargesRepository)
+		public CostsAndChargesController(
+			ICostsAndChargesGenerationService costsAndChargesGenerationService,
+			ICostsAndChargesRepository costsAndChargesRepository,
+			IReportGenService reportGenService)
 		{
 			_costsAndChargesGenerationService = costsAndChargesGenerationService;
 			_costsAndChargesRepository = costsAndChargesRepository;
+			_reportGenService = reportGenService;
 		}
 		
 		[ProducesResponseType(typeof(CostsAndChargesCalculationContract), 200)]
@@ -95,8 +99,19 @@ namespace MarginTrading.CommissionService.Controllers
 
 			return calculation.Select(Map).ToArray();
 		}
+
+		[Route("pdf-by-ids")]
+		[ProducesResponseType(typeof(byte[]), 200)]
+		[ProducesResponseType(400)]
+		[HttpPost]
+		public async Task<byte[]> GenerateBafinCncReport(string accountId, [FromBody] string[] ids)
+		{
+			var calculation = await _costsAndChargesRepository.GetByIds(accountId, ids);
+
+			return _reportGenService.GenerateBafinCncReport(calculation);
+		}
 		
-        [Route("by-day")]
+		[Route("by-day")]
         [ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
         [ProducesResponseType(400)]
         [HttpPost]
