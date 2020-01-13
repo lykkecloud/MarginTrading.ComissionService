@@ -57,5 +57,21 @@ namespace MarginTrading.CommissionService.Services.Caches
                 _lock.ExitReadLock();
             }
         }
+
+        public string GetName(string id)
+        {
+            _lock.EnterReadLock();
+
+            try
+            {
+                return id != null && _cache.TryGetValue(id, out var result)
+                    ? result.Name
+                    : id;
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
     }
 }

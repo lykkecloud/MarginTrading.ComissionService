@@ -12,5 +12,7 @@ namespace MarginTrading.CommissionService.Core.Caches
         void Initialize(Dictionary<string, Asset> data);
 
         int GetAccuracy(string id);
+
+        string GetName(string id);
     }
 }
