@@ -21,6 +21,7 @@
     <PackageReference Include="Lykke.MarginTrading.SettingsService.Contracts" Version="1.3.4" />
     <PackageReference Include="MarginTrading.TradingHistory.Client" Version="3.4.9" />
     <PackageReference Include="morelinq" Version="2.10.0" />
+    <PackageReference Include="PdfRpt.Core" Version="1.4.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
     <PackageReference Include="Lykke.Cqrs" Version="9.0.1" />
     <PackageReference Include="StackExchange.Redis" Version="1.2.6" />
