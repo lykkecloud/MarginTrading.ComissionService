@@ -19,182 +19,182 @@ using MarginTrading.CommissionService.Middleware;
 
 namespace MarginTrading.CommissionService.Controllers
 {
-	/// <inheritdoc cref="ICostsAndChargesApi" />
-	/// Manages costs and charges
-	[Authorize]
-	[Route("api/costsAndCharges")]
+    /// <inheritdoc cref="ICostsAndChargesApi" />
+    /// Manages costs and charges
+    [Authorize]
+    [Route("api/costsAndCharges")]
     [MiddlewareFilter(typeof(RequestLoggingPipeline))]
     public class CostsAndChargesController : Controller, ICostsAndChargesApi
-	{
-		private readonly ICostsAndChargesGenerationService _costsAndChargesGenerationService;
-		private readonly ICostsAndChargesRepository _costsAndChargesRepository;
-		private readonly IReportGenService _reportGenService;
+    {
+        private readonly ICostsAndChargesGenerationService _costsAndChargesGenerationService;
+        private readonly ICostsAndChargesRepository _costsAndChargesRepository;
+        private readonly IReportGenService _reportGenService;
 
-		public CostsAndChargesController(
-			ICostsAndChargesGenerationService costsAndChargesGenerationService,
-			ICostsAndChargesRepository costsAndChargesRepository,
-			IReportGenService reportGenService)
-		{
-			_costsAndChargesGenerationService = costsAndChargesGenerationService;
-			_costsAndChargesRepository = costsAndChargesRepository;
-			_reportGenService = reportGenService;
-		}
-		
-		[ProducesResponseType(typeof(CostsAndChargesCalculationContract), 200)]
-		[ProducesResponseType(400)]
-		[HttpPost]
-		public async Task<CostsAndChargesCalculationContract> GenerateSingle(string accountId, string instrument,
-			decimal quantity, OrderDirectionContract direction, bool withOnBehalf, decimal? anticipatedExecutionPrice)
-		{
-			var calculation = await _costsAndChargesGenerationService.GenerateSingle(accountId, instrument, quantity,
-				direction.ToType<OrderDirection>(), withOnBehalf, anticipatedExecutionPrice);
+        public CostsAndChargesController(
+            ICostsAndChargesGenerationService costsAndChargesGenerationService,
+            ICostsAndChargesRepository costsAndChargesRepository,
+            IReportGenService reportGenService)
+        {
+            _costsAndChargesGenerationService = costsAndChargesGenerationService;
+            _costsAndChargesRepository = costsAndChargesRepository;
+            _reportGenService = reportGenService;
+        }
 
-			return Map(calculation);
-		}
+        [ProducesResponseType(typeof(CostsAndChargesCalculationContract), 200)]
+        [ProducesResponseType(400)]
+        [HttpPost]
+        public async Task<CostsAndChargesCalculationContract> GenerateSingle(string accountId, string instrument,
+            decimal quantity, OrderDirectionContract direction, bool withOnBehalf, decimal? anticipatedExecutionPrice)
+        {
+            var calculation = await _costsAndChargesGenerationService.GenerateSingle(accountId, instrument, quantity,
+                direction.ToType<OrderDirection>(), withOnBehalf, anticipatedExecutionPrice);
 
-		[Route("for-account")]
-		[ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
-		[ProducesResponseType(400)]
-		[HttpPost]
-		public async Task<CostsAndChargesCalculationContract[]> GenerateForAccount(string accountId, bool withOnBehalf)
-		{
-			var calculations = await _costsAndChargesGenerationService.GenerateForAccount(accountId, withOnBehalf);
+            return Map(calculation);
+        }
 
-			return calculations.Select(Map).ToArray();
-		}
-
-		[Route("for-instrument")]
-		[ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
-		[ProducesResponseType(400)]
-		[HttpPost]
-		public async Task<CostsAndChargesCalculationContract[]> GenerateForInstrument(string instrument, bool withOnBehalf)
-		{
-			var calculations = await _costsAndChargesGenerationService.GenerateForInstrument(instrument, withOnBehalf);
-
-			return calculations.Select(Map).ToArray();
-		}
-
-		[Route("")]
-		[ProducesResponseType(typeof(PaginatedResponseContract<CostsAndChargesCalculationContract>), 200)]
-		[ProducesResponseType(400)]
-		[HttpGet]
-		public async Task<PaginatedResponseContract<CostsAndChargesCalculationContract>> Search(string accountId, string
-		 instrument, decimal? quantity, OrderDirectionContract? direction, DateTime? @from,
-			DateTime? to, int? skip, int? take, bool isAscendingOrder = true)
-		{
-			var calculations = await _costsAndChargesRepository.Get(accountId, instrument, quantity, direction?.ToType<OrderDirection>(), from, to, skip, take, isAscendingOrder);
-
-			return new PaginatedResponseContract<CostsAndChargesCalculationContract>(
-				calculations.Contents.Select(Map).ToArray(), calculations.Start, calculations.Size,
-				calculations.TotalSize);
-		}
-
-		[Route("by-ids")]
-		[ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
-		[ProducesResponseType(400)]
-		[HttpPost]
-		public async Task<CostsAndChargesCalculationContract[]> GetByIds(string accountId, [FromBody] string[] ids)
-		{
-			var calculation = await _costsAndChargesRepository.GetByIds(accountId, ids);
-
-			return calculation.Select(Map).ToArray();
-		}
-
-		[Route("pdf-by-ids")]
-		[ProducesResponseType(typeof(byte[]), 200)]
-		[ProducesResponseType(400)]
-		[HttpPost]
-		public async Task<byte[]> GenerateBafinCncReport(string accountId, [FromBody] string[] ids)
-		{
-			var calculation = await _costsAndChargesRepository.GetByIds(accountId, ids);
-
-			return _reportGenService.GenerateBafinCncReport(calculation);
-		}
-		
-		[Route("by-day")]
+        [Route("for-account")]
         [ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
         [ProducesResponseType(400)]
         [HttpPost]
-        public async Task<CostsAndChargesCalculationContract[]> GetByDay(DateTime? date, int? skip, int? take)
+        public async Task<CostsAndChargesCalculationContract[]> GenerateForAccount(string accountId, bool withOnBehalf)
         {
-            var calculation = await _costsAndChargesRepository.GetAllByDay(date ?? DateTime.Today, skip, take);
+            var calculations = await _costsAndChargesGenerationService.GenerateForAccount(accountId, withOnBehalf);
+
+            return calculations.Select(Map).ToArray();
+        }
+
+        [Route("for-instrument")]
+        [ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
+        [ProducesResponseType(400)]
+        [HttpPost]
+        public async Task<CostsAndChargesCalculationContract[]> GenerateForInstrument(string instrument, bool withOnBehalf)
+        {
+            var calculations = await _costsAndChargesGenerationService.GenerateForInstrument(instrument, withOnBehalf);
+
+            return calculations.Select(Map).ToArray();
+        }
+
+        [Route("")]
+        [ProducesResponseType(typeof(PaginatedResponseContract<CostsAndChargesCalculationContract>), 200)]
+        [ProducesResponseType(400)]
+        [HttpGet]
+        public async Task<PaginatedResponseContract<CostsAndChargesCalculationContract>> Search(string accountId, string
+         instrument, decimal? quantity, OrderDirectionContract? direction, DateTime? @from,
+            DateTime? to, int? skip, int? take, bool isAscendingOrder = true)
+        {
+            var calculations = await _costsAndChargesRepository.Get(accountId, instrument, quantity, direction?.ToType<OrderDirection>(), from, to, skip, take, isAscendingOrder);
+
+            return new PaginatedResponseContract<CostsAndChargesCalculationContract>(
+                calculations.Contents.Select(Map).ToArray(), calculations.Start, calculations.Size,
+                calculations.TotalSize);
+        }
+
+        [Route("by-ids")]
+        [ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
+        [ProducesResponseType(400)]
+        [HttpPost]
+        public async Task<CostsAndChargesCalculationContract[]> GetByIds(string accountId, [FromBody] string[] ids)
+        {
+            var calculation = await _costsAndChargesRepository.GetByIds(accountId, ids);
 
             return calculation.Select(Map).ToArray();
         }
 
-		private static CostsAndChargesCalculationContract Map(CostsAndChargesCalculation calculation)
-		{
-			return new CostsAndChargesCalculationContract
-			{
-				Id = calculation.Id,
-				
-				Direction = calculation.Direction.ToType<OrderDirectionContract>(),
-				
-				Instrument = calculation.Instrument,
-				
-				Timestamp = calculation.Timestamp,
-				
-				Volume = calculation.Volume,
-				
-				AccountId = calculation.AccountId,
+        [Route("pdf-by-ids")]
+        [ProducesResponseType(typeof(byte[]), 200)]
+        [ProducesResponseType(400)]
+        [HttpPost]
+        public async Task<byte[]> GenerateBafinCncReport(string accountId, [FromBody] string[] ids)
+        {
+            var calculation = await _costsAndChargesRepository.GetByIds(accountId, ids);
 
-				EntrySum = Map(calculation.EntrySum),
+            return _reportGenService.GenerateBafinCncReport(calculation);
+        }
 
-				EntryCost = Map(calculation.EntryCost),
+        [Route("by-day")]
+        [ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
+        [ProducesResponseType(400)]
+        [HttpPost]
+        public async Task<IEnumerable<byte[]>> GetByDay(DateTime? date, int? skip, int? take)
+        {
+            var calculations = await _costsAndChargesRepository.GetAllByDay(date ?? DateTime.Today, skip, take);
 
-				EntryCommission = Map(calculation.EntryCommission),
+            return calculations.Select(c => _reportGenService.GenerateBafinCncReport(new[] { c })).ToArray();
+        }
 
-				EntryConsorsDonation = Map(calculation.EntryConsorsDonation),
+        private static CostsAndChargesCalculationContract Map(CostsAndChargesCalculation calculation)
+        {
+            return new CostsAndChargesCalculationContract
+            {
+                Id = calculation.Id,
 
-				EntryForeignCurrencyCosts = Map(calculation.EntryForeignCurrencyCosts),
+                Direction = calculation.Direction.ToType<OrderDirectionContract>(),
 
-				RunningCostsSum = Map(calculation.RunningCostsSum),
+                Instrument = calculation.Instrument,
 
-				RunningCostsProductReturnsSum = Map(calculation.RunningCostsProductReturnsSum),
+                Timestamp = calculation.Timestamp,
 
-				OvernightCost = Map(calculation.OvernightCost),
+                Volume = calculation.Volume,
 
-				ReferenceRateAmount = Map(calculation.ReferenceRateAmount),
+                AccountId = calculation.AccountId,
 
-				RepoCost = Map(calculation.RepoCost),
+                EntrySum = Map(calculation.EntrySum),
 
-				RunningCommissions = Map(calculation.RunningCommissions),
+                EntryCost = Map(calculation.EntryCost),
 
-				RunningCostsConsorsDonation = Map(calculation.RunningCostsConsorsDonation),
+                EntryCommission = Map(calculation.EntryCommission),
 
-				RunningCostsForeignCurrencyCosts = Map(calculation.RunningCostsForeignCurrencyCosts),
+                EntryConsorsDonation = Map(calculation.EntryConsorsDonation),
 
-				ExitSum = Map(calculation.ExitSum),
+                EntryForeignCurrencyCosts = Map(calculation.EntryForeignCurrencyCosts),
 
-				ExitCost = Map(calculation.ExitCost),
+                RunningCostsSum = Map(calculation.RunningCostsSum),
 
-				ExitCommission = Map(calculation.ExitCommission),
+                RunningCostsProductReturnsSum = Map(calculation.RunningCostsProductReturnsSum),
 
-				ExitConsorsDonation = Map(calculation.ExitConsorsDonation),
+                OvernightCost = Map(calculation.OvernightCost),
 
-				ExitForeignCurrencyCosts = Map(calculation.ExitForeignCurrencyCosts),
+                ReferenceRateAmount = Map(calculation.ReferenceRateAmount),
 
-				ProductsReturn = Map(calculation.ProductsReturn),
+                RepoCost = Map(calculation.RepoCost),
 
-				ServiceCost = Map(calculation.ServiceCost),
+                RunningCommissions = Map(calculation.RunningCommissions),
 
-				ProductsReturnConsorsDonation = Map(calculation.ProductsReturnConsorsDonation),
+                RunningCostsConsorsDonation = Map(calculation.RunningCostsConsorsDonation),
 
-				ProductsReturnForeignCurrencyCosts = Map(calculation.ProductsReturnForeignCurrencyCosts),
-				
-				TotalCosts = Map(calculation.TotalCosts),
+                RunningCostsForeignCurrencyCosts = Map(calculation.RunningCostsForeignCurrencyCosts),
 
-				OneTag = Map(calculation.OneTag)
-			};
-		}
+                ExitSum = Map(calculation.ExitSum),
 
-		private static CostsAndChargesValueContract Map(CostsAndChargesValue value)
-		{
-			return value == null ? null : new CostsAndChargesValueContract
-			{
-				ValueInEur = value.ValueInEur,
-				ValueInPercent = value.ValueInPercent
-			};
-		}
-	}
+                ExitCost = Map(calculation.ExitCost),
+
+                ExitCommission = Map(calculation.ExitCommission),
+
+                ExitConsorsDonation = Map(calculation.ExitConsorsDonation),
+
+                ExitForeignCurrencyCosts = Map(calculation.ExitForeignCurrencyCosts),
+
+                ProductsReturn = Map(calculation.ProductsReturn),
+
+                ServiceCost = Map(calculation.ServiceCost),
+
+                ProductsReturnConsorsDonation = Map(calculation.ProductsReturnConsorsDonation),
+
+                ProductsReturnForeignCurrencyCosts = Map(calculation.ProductsReturnForeignCurrencyCosts),
+
+                TotalCosts = Map(calculation.TotalCosts),
+
+                OneTag = Map(calculation.OneTag)
+            };
+        }
+
+        private static CostsAndChargesValueContract Map(CostsAndChargesValue value)
+        {
+            return value == null ? null : new CostsAndChargesValueContract
+            {
+                ValueInEur = value.ValueInEur,
+                ValueInPercent = value.ValueInPercent
+            };
+        }
+    }
 }

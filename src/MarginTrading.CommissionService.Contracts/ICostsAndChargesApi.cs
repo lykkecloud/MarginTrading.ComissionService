@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Lykke.MarginTrading.CommissionService.Contracts.Models;
@@ -31,7 +32,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         Task<CostsAndChargesCalculationContract[]> GetByIds(string accountId, [Body, CanBeNull] string[] ids);
 
         [Post("/api/costsAndCharges/by-day")]
-        Task<CostsAndChargesCalculationContract[]> GetByDay(DateTime? date, int? skip, int? take);
+        Task<IEnumerable<byte[]>> GetByDay(DateTime? date, int? skip, int? take);
 
         [Post("/api/costsAndCharges/pdf-by-ids")]
         Task<byte[]> GenerateBafinCncReport(string accountId, [Body, CanBeNull] string[] ids);
