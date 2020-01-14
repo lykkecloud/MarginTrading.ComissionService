@@ -31,7 +31,7 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         [Post("/api/costsAndCharges/by-ids")]
         Task<CostsAndChargesCalculationContract[]> GetByIds(string accountId, [Body, CanBeNull] string[] ids);
 
-        [Post("/api/costsAndCharges/by-day")]
+        [Post("/api/costsAndCharges/pdf-by-day")]
         Task<IEnumerable<byte[]>> GetByDay(DateTime? date, int? skip, int? take);
 
         [Post("/api/costsAndCharges/pdf-by-ids")]
