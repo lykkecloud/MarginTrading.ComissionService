@@ -17,6 +17,6 @@ namespace MarginTrading.CommissionService.Core.Repositories
 
         Task<CostsAndChargesCalculation[]> GetByIds(string accountId, string[] ids);
 
-        Task<CostsAndChargesCalculation[]> GetAllByDay(DateTime date, int? skip, int? take);
+        Task<PaginatedResponse<CostsAndChargesCalculation>> GetAllByDay(DateTime date, int? skip, int? take);
     }
 }

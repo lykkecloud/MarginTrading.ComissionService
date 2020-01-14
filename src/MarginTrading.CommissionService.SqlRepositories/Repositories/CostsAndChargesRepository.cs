@@ -131,22 +131,30 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
             }
         }
 
-        public async Task<CostsAndChargesCalculation[]> GetAllByDay(DateTime date, int? skip, int? take)
+        public async Task<PaginatedResponse<CostsAndChargesCalculation>> GetAllByDay(DateTime date, int? skip, int? take)
         {
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
                 var whereClause = "WHERE TimeStamp >= @day AND TimeStamp < @nextDay";
                 var paginationClause = $"ORDER BY [TimeStamp] OFFSET {skip ?? 0} ROWS FETCH NEXT {take ?? BulkPageSize} ROWS ONLY";
 
-                var entities = await conn.QueryAsync<CostsAndChargesEntity>(
-                    $"SELECT * FROM {TableName} {whereClause} {paginationClause}",
+                var reader = await conn.QueryMultipleAsync(
+                    $"SELECT * FROM {TableName} {whereClause} {paginationClause}; SELECT COUNT(*) FROM {TableName} {whereClause}",
                     new
                     {
                         day = date.Date,
                         nextDay = date.Date.AddDays(1)
                     });
 
-                return entities.Select(Map).ToArray();
+                var contents = (await reader.ReadAsync<CostsAndChargesEntity>()).ToList();
+                var totalCount = await reader.ReadSingleAsync<int>();
+
+                return new PaginatedResponse<CostsAndChargesCalculation>(
+                    contents: contents.Select(Map).ToArray(),
+                    start: skip ?? 0,
+                    size: contents.Count,
+                    totalSize: totalCount
+                );
             }
         }
 

@@ -111,15 +111,16 @@ namespace MarginTrading.CommissionService.Controllers
             return _reportGenService.GenerateBafinCncReport(calculation);
         }
 
-        [Route("by-day")]
+        [Route("pdf-by-day")]
         [ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
         [ProducesResponseType(400)]
         [HttpPost]
-        public async Task<IEnumerable<byte[]>> GetByDay(DateTime? date, int? skip, int? take)
+        public async Task<PaginatedResponseContract<byte[]>> GetByDay(DateTime? date, int? skip, int? take)
         {
-            var calculations = await _costsAndChargesRepository.GetAllByDay(date ?? DateTime.Today, skip, take);
+            var response = await _costsAndChargesRepository.GetAllByDay(date ?? DateTime.Today, skip, take);
+            var pdfs = response.Contents.Select(c => _reportGenService.GenerateBafinCncReport(new[] { c })).ToArray();
 
-            return calculations.Select(c => _reportGenService.GenerateBafinCncReport(new[] { c })).ToArray();
+            return new PaginatedResponseContract<byte[]>(pdfs, response.Start, response.Size, response.TotalSize);
         }
 
         private static CostsAndChargesCalculationContract Map(CostsAndChargesCalculation calculation)
