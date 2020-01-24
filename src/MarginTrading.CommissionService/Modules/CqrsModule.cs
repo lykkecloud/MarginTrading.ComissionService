@@ -9,11 +9,13 @@ using Lykke.Cqrs.Configuration;
 using Lykke.Cqrs.Configuration.BoundedContext;
 using Lykke.Cqrs.Configuration.Routing;
 using Lykke.Cqrs.Configuration.Saga;
+using Lykke.Cqrs.Middleware.Logging;
 using Lykke.MarginTrading.CommissionService.Contracts.Commands;
 using Lykke.MarginTrading.CommissionService.Contracts.Events;
 using Lykke.Messaging;
 using Lykke.Messaging.Contract;
 using Lykke.Messaging.RabbitMq;
+using Lykke.Messaging.Serialization;
 using MarginTrading.AccountsManagement.Contracts.Commands;
 using MarginTrading.AccountsManagement.Contracts.Events;
 using MarginTrading.CommissionService.Core.Settings;
@@ -85,9 +87,10 @@ namespace MarginTrading.CommissionService.Modules
         {
             var rabbitMqConventionEndpointResolver = new RabbitMqConventionEndpointResolver(
                 "RabbitMq",
-                "messagepack",
+                SerializationFormat.MessagePack,
                 environment: _settings.EnvironmentName);
-            return new CqrsEngine(
+            
+            var engine = new CqrsEngine(
                 _log,
                 ctx.Resolve<IDependencyResolver>(),
                 messagingEngine,
@@ -97,7 +100,13 @@ namespace MarginTrading.CommissionService.Modules
                 RegisterDefaultRouting(),
                 RegisterChargeCommissionSaga(),
                 RegisterAccountListenerSaga(),
-                RegisterContext());
+                RegisterContext(),
+                Register.CommandInterceptors(new DefaultCommandLoggingInterceptor(_log)),
+                Register.EventInterceptors(new DefaultEventLoggingInterceptor(_log)));
+            
+            engine.StartPublishers();
+
+            return engine;
         }
 
         private IRegistration RegisterContext()

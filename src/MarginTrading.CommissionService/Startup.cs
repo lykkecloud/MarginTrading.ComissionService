@@ -13,6 +13,7 @@ using JetBrains.Annotations;
 using Lykke.AzureQueueIntegration;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
+using Lykke.Cqrs;
 using Lykke.Logs;
 using Lykke.Logs.MsSql;
 using Lykke.Logs.MsSql.Repositories;
@@ -173,6 +174,7 @@ namespace MarginTrading.CommissionService
                 var executedOrdersHandlingService = ApplicationContainer.Resolve<IExecutedOrdersHandlingService>();
                 var assetPairManager = ApplicationContainer.Resolve<ISettingsManager>();
                 var accountMarginEventsProjection = ApplicationContainer.Resolve<AccountMarginEventsProjection>();
+                var cqrsEngine = ApplicationContainer.Resolve<ICqrsEngine>();
 
                 rabbitMqService.Subscribe(settings.RabbitMq.Consumers.FxRateRabbitMqSettings, false,
                     fxRateCacheService.SetQuote,
@@ -192,6 +194,9 @@ namespace MarginTrading.CommissionService
                 rabbitMqService.Subscribe(settings.RabbitMq.Consumers.AccountMarginEvents, true,
                     arg => accountMarginEventsProjection.Handle(arg),
                     rabbitMqService.GetJsonDeserializer<MarginEventMessage>(), settings.InstanceId);
+                
+                cqrsEngine.StartSubscribers();
+                cqrsEngine.StartProcesses();
 
                 Program.Host.WriteLogsAsync(Environment, LogLocator.CommonLog).Wait();
 
