@@ -104,23 +104,33 @@ namespace MarginTrading.CommissionService.Controllers
         [ProducesResponseType(typeof(byte[]), 200)]
         [ProducesResponseType(400)]
         [HttpPost]
-        public async Task<byte[]> GenerateBafinCncReport(string accountId, [FromBody] string[] ids)
+        public async Task<FileContract[]> GenerateBafinCncReport(string accountId, [FromBody] string[] ids)
         {
             var calculation = await _costsAndChargesRepository.GetByIds(accountId, ids);
 
-            return _reportGenService.GenerateBafinCncReport(calculation);
+            return calculation.Select(ConvertToFileContract).ToArray();;
         }
 
         [Route("pdf-by-day")]
         [ProducesResponseType(typeof(CostsAndChargesCalculationContract[]), 200)]
         [ProducesResponseType(400)]
         [HttpPost]
-        public async Task<PaginatedResponseContract<byte[]>> GetByDay(DateTime? date, int? skip, int? take)
+        public async Task<PaginatedResponseContract<FileContract>> GetByDay(DateTime? date, int? skip, int? take)
         {
             var response = await _costsAndChargesRepository.GetAllByDay(date ?? DateTime.Today, skip, take);
-            var pdfs = response.Contents.Select(c => _reportGenService.GenerateBafinCncReport(new[] { c })).ToArray();
+            var pdfs = response.Contents.Select(ConvertToFileContract).ToArray();
 
-            return new PaginatedResponseContract<byte[]>(pdfs, response.Start, response.Size, response.TotalSize);
+            return new PaginatedResponseContract<FileContract>(pdfs, response.Start, response.Size, response.TotalSize);
+        }
+
+        private FileContract ConvertToFileContract(CostsAndChargesCalculation calculation)
+        {
+            return new FileContract
+            {
+                Name = $"{calculation.AccountId}_{calculation.Instrument}_{calculation.Timestamp:yyyyMMddHHmmssff}",
+                Extension = ".pdf",
+                Content = _reportGenService.GenerateBafinCncReport(new[] { calculation })
+            };
         }
 
         private static CostsAndChargesCalculationContract Map(CostsAndChargesCalculation calculation)
