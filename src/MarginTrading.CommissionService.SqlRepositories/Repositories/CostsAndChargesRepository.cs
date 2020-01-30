@@ -22,6 +22,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
 {
     public class CostsAndChargesRepository : ICostsAndChargesRepository
     {
+        private const int BulkPageSize = 10000;
         private const string TableName = "CostsAndChangesCalculations";
         private const string CreateTableScript = @"CREATE TABLE [{0}](
   [Id] [nvarchar] (128) NOT NULL PRIMARY KEY,
@@ -127,6 +128,33 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
                     new { accountId, ids });
                 
                 return entities.Select(Map).ToArray();
+            }
+        }
+
+        public async Task<PaginatedResponse<CostsAndChargesCalculation>> GetAllByDay(DateTime date, int? skip, int? take)
+        {
+            using (var conn = new SqlConnection(_settings.Db.StateConnString))
+            {
+                var whereClause = "WHERE TimeStamp >= @day AND TimeStamp < @nextDay";
+                var paginationClause = $"ORDER BY [TimeStamp] OFFSET {skip ?? 0} ROWS FETCH NEXT {take ?? BulkPageSize} ROWS ONLY";
+
+                var reader = await conn.QueryMultipleAsync(
+                    $"SELECT * FROM {TableName} {whereClause} {paginationClause}; SELECT COUNT(*) FROM {TableName} {whereClause}",
+                    new
+                    {
+                        day = date.Date,
+                        nextDay = date.Date.AddDays(1)
+                    });
+
+                var contents = (await reader.ReadAsync<CostsAndChargesEntity>()).ToList();
+                var totalCount = await reader.ReadSingleAsync<int>();
+
+                return new PaginatedResponse<CostsAndChargesCalculation>(
+                    contents: contents.Select(Map).ToArray(),
+                    start: skip ?? 0,
+                    size: contents.Count,
+                    totalSize: totalCount
+                );
             }
         }
 

@@ -162,6 +162,9 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<TradingDaysInfoProvider>()
                 .As<ITradingDaysInfoProvider>()
                 .SingleInstance();
+
+            builder.Register<IReportGenService>(ctx =>
+                new ReportGenService(ctx.Resolve<IAssetsCache>(), "./Fonts/")).SingleInstance();
         }
 
         private void RegisterRepositories(ContainerBuilder builder)

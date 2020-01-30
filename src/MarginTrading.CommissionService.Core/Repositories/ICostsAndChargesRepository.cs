@@ -16,5 +16,7 @@ namespace MarginTrading.CommissionService.Core.Repositories
         OrderDirection? direction, DateTime? from, DateTime? to, int? skip, int? take, bool isAscendingOrder = true);
 
         Task<CostsAndChargesCalculation[]> GetByIds(string accountId, string[] ids);
+
+        Task<PaginatedResponse<CostsAndChargesCalculation>> GetAllByDay(DateTime date, int? skip, int? take);
     }
 }
