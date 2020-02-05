@@ -19,6 +19,7 @@ namespace MarginTrading.CommissionService.Core.Domain
         public decimal ClosePrice { get; set; }
         public decimal CurrentVolume { get; set; }
         public decimal PnL { get; set; }
+        public decimal UnrealizedPnl { get; set; }
         public decimal ChargedPnl { get; set; }
         public decimal Margin { get; set; }
         public decimal FxRate { get; set; }
