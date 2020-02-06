@@ -12,5 +12,7 @@ namespace MarginTrading.CommissionService.Core.Settings
         [Optional] public string TradingEngine { get; set; } = nameof(TradingEngine);
 
         [Optional] public string CommissionService { get; set; } = nameof(CommissionService);
+
+        [Optional] public string SettingsService { get; set; } = nameof(SettingsService);
     }
 }

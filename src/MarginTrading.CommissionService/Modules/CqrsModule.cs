@@ -31,6 +31,7 @@ using MarginTrading.CommissionService.Workflow.ChargeCommission;
 using MarginTrading.CommissionService.Workflow.DailyPnl;
 using MarginTrading.CommissionService.Workflow.OnBehalf;
 using MarginTrading.CommissionService.Workflow.OvernightSwap;
+using MarginTrading.SettingsService.Contracts.AssetPair;
 
 namespace MarginTrading.CommissionService.Modules
 {
@@ -100,6 +101,7 @@ namespace MarginTrading.CommissionService.Modules
                 RegisterDefaultRouting(),
                 RegisterChargeCommissionSaga(),
                 RegisterAccountListenerSaga(),
+                RegisterAssetPairListenerSaga(),
                 RegisterContext(),
                 Register.CommandInterceptors(new DefaultCommandLoggingInterceptor(_log)),
                 Register.EventInterceptors(new DefaultEventLoggingInterceptor(_log)));
@@ -239,11 +241,24 @@ namespace MarginTrading.CommissionService.Modules
         private IRegistration RegisterAccountListenerSaga()
         {
             var sagaRegistration = RegisterSaga<AccountListenerSaga>();
-            
+
             sagaRegistration
                 .ListeningEvents(
                     typeof(AccountChangedEvent))
                 .From(_contextNames.AccountsManagement)
+                .On(DefaultRoute);
+
+            return sagaRegistration;
+        }
+
+        private IRegistration RegisterAssetPairListenerSaga()
+        {
+            var sagaRegistration = RegisterSaga<AssetPairListenerSaga>();
+            
+            sagaRegistration
+                .ListeningEvents(
+                    typeof(AssetPairChangedEvent))
+                .From(_contextNames.SettingsService)
                 .On(DefaultRoute);
 
             return sagaRegistration;

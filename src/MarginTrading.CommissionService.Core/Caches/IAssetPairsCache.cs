@@ -16,5 +16,9 @@ namespace MarginTrading.CommissionService.Core.Caches
         IAssetPair FindAssetPair(string asset1, string asset2, string legalEntity);
 
         void InitPairsCache(Dictionary<string, IAssetPair> instruments);
+
+        void AddOrUpdate(IAssetPair assetPair);
+
+        void Remove(string assetPairId);
     }
 }
