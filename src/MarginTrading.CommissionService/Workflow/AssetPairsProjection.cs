@@ -17,13 +17,13 @@ namespace MarginTrading.CommissionService.Workflow
     /// <see cref="IAssetPairsCache"/>
     /// </summary>
     [UsedImplicitly]
-    public class AssetPairListenerSaga
+    public class AssetPairsProjection
     {
         private readonly IAssetPairsCache _assetPairsCache;
         private readonly ILog _log;
         private readonly IConvertService _convertService;
 
-        public AssetPairListenerSaga(
+        public AssetPairsProjection(
             IAssetPairsCache assetPairsCache,
             ILog log,
             IConvertService convertService)
@@ -39,7 +39,7 @@ namespace MarginTrading.CommissionService.Workflow
             //deduplication is not required, it's ok if an object is updated multiple times
             if (@event.AssetPair?.Id == null)
             {
-                await _log.WriteWarningAsync(nameof(AssetPairListenerSaga), nameof(Handle),
+                await _log.WriteWarningAsync(nameof(AssetPairsProjection), nameof(Handle),
                     "AssetPairChangedEvent contained no asset pair id");
                 return;
             }

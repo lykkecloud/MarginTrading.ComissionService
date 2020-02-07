@@ -37,6 +37,7 @@ namespace MarginTrading.CommissionService.Modules
 {
     internal class CqrsModule : Module
     {
+        private const string EventsRoute = "events";
         private const string DefaultRoute = "self";
         private const string DefaultPipeline = "commands";
         private readonly CqrsSettings _settings;
@@ -101,7 +102,6 @@ namespace MarginTrading.CommissionService.Modules
                 RegisterDefaultRouting(),
                 RegisterChargeCommissionSaga(),
                 RegisterAccountListenerSaga(),
-                RegisterAssetPairListenerSaga(),
                 RegisterContext(),
                 Register.CommandInterceptors(new DefaultCommandLoggingInterceptor(_log)),
                 Register.EventInterceptors(new DefaultEventLoggingInterceptor(_log)));
@@ -122,6 +122,7 @@ namespace MarginTrading.CommissionService.Modules
             RegisterOnBehalfCommandsHandler(contextRegistration);
             RegisterOvernightSwapCommandHandler(contextRegistration);
             RegisterDailyPnlCommandsHandler(contextRegistration);
+            RegisterAssetPairsProjection(contextRegistration);
             return contextRegistration;
         }
 
@@ -251,17 +252,15 @@ namespace MarginTrading.CommissionService.Modules
             return sagaRegistration;
         }
 
-        private IRegistration RegisterAssetPairListenerSaga()
+        private void RegisterAssetPairsProjection(
+            ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
         {
-            var sagaRegistration = RegisterSaga<AssetPairListenerSaga>();
-            
-            sagaRegistration
-                .ListeningEvents(
+            contextRegistration.ListeningEvents(
                     typeof(AssetPairChangedEvent))
-                .From(_contextNames.SettingsService)
-                .On(DefaultRoute);
-
-            return sagaRegistration;
+                .From(_settings.ContextNames.SettingsService)
+                .On(EventsRoute)
+                .WithProjection(
+                    typeof(AssetPairsProjection), _settings.ContextNames.SettingsService);
         }
 
         private ISagaRegistration RegisterSaga<TSaga>()
