@@ -18,6 +18,7 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
         decimal ClosePrice { get; }
         decimal CurrentVolume { get; }
         decimal PnL { get; }
+        decimal UnrealizedPnl { get; }
         decimal Margin { get; }
         decimal FxRate { get; }
         string TradeId { get; }

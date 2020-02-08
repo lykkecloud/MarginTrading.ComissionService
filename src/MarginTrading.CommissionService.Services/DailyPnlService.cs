@@ -202,8 +202,6 @@ namespace MarginTrading.CommissionService.Services
 					exception: exception
 				);
 			}
-			
-			var value = position.PnL - position.ChargedPnl;
 
 			return new DailyPnlCalculation(
 				operationId: operationId,
@@ -215,8 +213,8 @@ namespace MarginTrading.CommissionService.Services
 				fxRate: position.FxRate,
 				positionId: position.Id,
 				pnl: accuracy.HasValue
-					? Math.Round(value, accuracy.Value)
-					: value,
+					? Math.Round(position.UnrealizedPnl, accuracy.Value)
+					: position.UnrealizedPnl,
 				isSuccess: true
 			);
 		}
