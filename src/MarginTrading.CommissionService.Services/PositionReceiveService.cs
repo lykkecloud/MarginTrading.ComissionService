@@ -25,13 +25,6 @@ namespace MarginTrading.CommissionService.Services
             _positionsApi = positionsApi;
         }
         
-        public async Task<List<IOpenPosition>> GetActive()
-        {
-            var positions = await _positionsApi.ListAsync();
-            return positions.Select(x => (IOpenPosition) _convertService.Convert<OpenPositionContract, OpenPosition>(x))
-                .ToList();
-        }
-        
         public async Task<List<IOpenPosition>> GetByAccount(string accountId)
         {
             var positions = await _positionsApi.ListAsync(accountId);

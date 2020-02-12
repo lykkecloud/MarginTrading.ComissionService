@@ -13,6 +13,7 @@ using Common.Log;
 using Lykke.Common;
 using Lykke.Cqrs;
 using Lykke.SettingsReader;
+using MarginTrading.Backend.Contracts.Positions;
 using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
@@ -45,6 +46,8 @@ namespace MarginTrading.CommissionService.Services
 		private readonly IDatabase _database;
 		private readonly CommissionServiceSettings _commissionServiceSettings;
 		private readonly IInterestRatesCacheService _interestRatesCacheService;
+		private readonly ITradingEngineSnapshotRepository _snapshotRepository;
+		private readonly IConvertService _convertService;
 
 		public OvernightSwapService(
 			ICommissionCalcService commissionCalcService,
@@ -54,7 +57,9 @@ namespace MarginTrading.CommissionService.Services
 			ILog log,
 			IDatabase database,
 			CommissionServiceSettings commissionServiceSettings,
-			IInterestRatesCacheService interestRatesCacheService)
+			IInterestRatesCacheService interestRatesCacheService, 
+			ITradingEngineSnapshotRepository snapshotRepository, 
+			IConvertService convertService)
 		{
 			_commissionCalcService = commissionCalcService;
 			_overnightSwapHistoryRepository = overnightSwapHistoryRepository;
@@ -64,6 +69,8 @@ namespace MarginTrading.CommissionService.Services
 			_database = database;
 			_commissionServiceSettings = commissionServiceSettings;
 			_interestRatesCacheService = interestRatesCacheService;
+			_snapshotRepository = snapshotRepository;
+			_convertService = convertService;
 		}
 
 		/// <summary>
@@ -72,7 +79,7 @@ namespace MarginTrading.CommissionService.Services
 		/// <returns></returns>
 		private async Task<IReadOnlyList<IOpenPosition>> GetOrdersForCalculationAsync(DateTime tradingDay)
 		{
-			var openPositions = (await _positionReceiveService.GetActive()).ToList();
+			var openPositions = await _snapshotRepository.GetPositionsAsync(tradingDay);
 			
 			//prepare the list of orders. Explicit end of the day is ok for DateTime From by requirements.
 			var allLast = await _overnightSwapHistoryRepository.GetAsync(tradingDay, null);
@@ -102,8 +109,8 @@ namespace MarginTrading.CommissionService.Services
 						$"Overnight swap calculation failed for some positions and they were closed before recalculation: {string.Join(", ", failedClosedOrders)}."),
 					DateTime.UtcNow);
 			}
-			
-			return filteredOrders.ToList();
+
+			return filteredOrders.Select(x => _convertService.Convert<OpenPositionContract, OpenPosition>(x)).ToList();
 		}
 
 		public async Task<IReadOnlyList<IOvernightSwapCalculation>> Calculate(string operationId,

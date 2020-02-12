@@ -169,57 +169,38 @@ namespace MarginTrading.CommissionService.Modules
 
         private void RegisterRepositories(ContainerBuilder builder)
         {
-            if (_settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.Azure)
+            if (_settings.CurrentValue.CommissionService.Db.StorageMode != StorageMode.SqlServer)
             {
-                builder.Register<IMarginTradingBlobRepository>(ctx =>
-                    AzureRepoFactories.MarginTrading.CreateBlobRepository(_settings.Nested(s =>
-                        s.CommissionService.Db.StateConnString))).SingleInstance();
-
-                builder.Register<IOvernightSwapHistoryRepository>(ctx =>
-                        AzureRepoFactories.MarginTrading.CreateOvernightSwapHistoryRepository(
-                            _settings.Nested(s => s.CommissionService.Db.StateConnString), _log))
-                    .SingleInstance();
-
-                builder.Register<IDailyPnlHistoryRepository>(ctx =>
-                        AzureRepoFactories.MarginTrading.CreateDailyPnlHistoryRepository(
-                            _settings.Nested(s => s.CommissionService.Db.StateConnString), _log))
-                    .SingleInstance();
-
-                builder.Register<IInterestRatesRepository>(ctx =>
-                    AzureRepoFactories.MarginTrading.CreateInterestRatesRepository(
-                        _settings.Nested(s => s.CommissionService.Db.StateConnString), _log));
-                
-                builder.Register<IOperationExecutionInfoRepository>(ctx =>
-                        AzureRepoFactories.MarginTrading.CreateOperationExecutionInfoRepository(
-                            _settings.Nested(s => s.CommissionService.Db.StateConnString), _log, ctx.Resolve<ISystemClock>()))
-                    .SingleInstance();
-            } 
-            else if (_settings.CurrentValue.CommissionService.Db.StorageMode == StorageMode.SqlServer)
-            {
-                builder.Register<IMarginTradingBlobRepository>(ctx =>
-                        new SqlBlobRepository(_settings.CurrentValue.CommissionService.Db.StateConnString))
-                    .SingleInstance();
-                
-                builder.RegisterType<OvernightSwapHistoryRepository>()
-                    .As<IOvernightSwapHistoryRepository>()
-                    .SingleInstance();
-                
-                builder.RegisterType<DailyPnlHistoryRepository>()
-                    .As<IDailyPnlHistoryRepository>()
-                    .SingleInstance();
-
-                builder.RegisterType<InterestRatesRepository>()
-                    .As<IInterestRatesRepository>()
-                    .SingleInstance();
-
-                builder.RegisterType<OperationExecutionInfoRepository>()
-                    .As<IOperationExecutionInfoRepository>()
-                    .SingleInstance();
-                
-                builder.RegisterType<CostsAndChargesRepository>()
-                    .As<ICostsAndChargesRepository>()
-                    .SingleInstance();
+                throw new InvalidOperationException("Storage mode other than SqlServer is not supported");
             }
+
+            builder.Register<IMarginTradingBlobRepository>(ctx =>
+                    new SqlBlobRepository(_settings.CurrentValue.CommissionService.Db.StateConnString))
+                .SingleInstance();
+
+            builder.RegisterType<OvernightSwapHistoryRepository>()
+                .As<IOvernightSwapHistoryRepository>()
+                .SingleInstance();
+
+            builder.RegisterType<DailyPnlHistoryRepository>()
+                .As<IDailyPnlHistoryRepository>()
+                .SingleInstance();
+
+            builder.RegisterType<InterestRatesRepository>()
+                .As<IInterestRatesRepository>()
+                .SingleInstance();
+
+            builder.RegisterType<OperationExecutionInfoRepository>()
+                .As<IOperationExecutionInfoRepository>()
+                .SingleInstance();
+
+            builder.RegisterType<CostsAndChargesRepository>()
+                .As<ICostsAndChargesRepository>()
+                .SingleInstance();
+
+            builder.RegisterType<TradingEngineSnapshotRepository>()
+                .As<ITradingEngineSnapshotRepository>()
+                .SingleInstance();
         }
 
         private void RegisterRedis(ContainerBuilder builder)

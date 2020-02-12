@@ -3,12 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
 using Lykke.Common.Log;
+using MarginTrading.Backend.Contracts.Positions;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
@@ -36,6 +38,8 @@ namespace MarginTrading.CommissionService.Services
 		private readonly ILog _log;
 		private readonly IDatabase _database;
 		private readonly CommissionServiceSettings _commissionServiceSettings;
+		private readonly ITradingEngineSnapshotRepository _snapshotRepository;
+		private readonly IConvertService _convertService;
 
 		public DailyPnlService(
 			IPositionReceiveService positionReceiveService,
@@ -45,7 +49,9 @@ namespace MarginTrading.CommissionService.Services
 			ISystemClock systemClock,
 			ILog log,
 			IDatabase database,
-			CommissionServiceSettings commissionServiceSettings)
+			CommissionServiceSettings commissionServiceSettings, 
+			ITradingEngineSnapshotRepository snapshotRepository, 
+			IConvertService convertService)
 		{
 			_positionReceiveService = positionReceiveService;
 			_accountRedisCache = accountRedisCache;
@@ -55,6 +61,8 @@ namespace MarginTrading.CommissionService.Services
 			_log = log;
 			_database = database;
 			_commissionServiceSettings = commissionServiceSettings;
+			_snapshotRepository = snapshotRepository;
+			_convertService = convertService;
 		}
 		
 		/// <summary>
@@ -75,7 +83,13 @@ namespace MarginTrading.CommissionService.Services
 				return new List<OpenPosition>();
 			}
 
-			var openPositions = (await _positionReceiveService.GetActive()).ToList();
+			var openPositions = await _snapshotRepository.GetPositionsAsync(tradingDay);
+
+			if (openPositions == null)
+			{
+				throw new InvalidOperationException(
+					$"The positions are not available from snapshot data for {tradingDay.ToString(CultureInfo.InvariantCulture)}");
+			}
 			
 			//prepare the list of orders. Explicit end of the day is ok for DateTime From by requirements.
 			var allLast = await _dailyPnlHistoryRepository.GetAsync(tradingDay, null);
@@ -105,8 +119,8 @@ namespace MarginTrading.CommissionService.Services
 						$"Daily PnL calculation failed for some positions and they were closed before recalculation: {string.Join(", ", failedClosedOrders)}."),
 					DateTime.UtcNow);
 			}
-			
-			return filteredOrders.ToList();
+
+			return filteredOrders.Select(x => _convertService.Convert<OpenPositionContract, OpenPosition>(x)).ToList();
 		}
 
 		public async Task<IReadOnlyList<IDailyPnlCalculation>> Calculate(string operationId, DateTime tradingDay)
