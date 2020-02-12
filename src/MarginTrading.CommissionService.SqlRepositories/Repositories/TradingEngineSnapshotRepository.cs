@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Dapper;
 using MarginTrading.Backend.Contracts.Positions;
 using MarginTrading.CommissionService.Core.Repositories;
+using MarginTrading.CommissionService.Core.Settings;
 using Newtonsoft.Json;
 
 namespace MarginTrading.CommissionService.SqlRepositories.Repositories
@@ -16,9 +17,9 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
     {
         private readonly string _connectionString;
 
-        public TradingEngineSnapshotRepository(string connectionString)
+        public TradingEngineSnapshotRepository(CommissionServiceSettings settings)
         {
-            _connectionString = connectionString;
+            _connectionString = settings.Db.StateConnString;
         }
 
         public async Task<List<OpenPositionContract>> GetPositionsAsync(DateTime tradingDay)
