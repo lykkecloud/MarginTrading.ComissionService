@@ -84,16 +84,6 @@ namespace MarginTrading.CommissionService.Services
 			//prepare the list of orders. Explicit end of the day is ok for DateTime From by requirements.
 			var allLast = await _overnightSwapHistoryRepository.GetAsync(tradingDay, null);
 
-			if (allLast.Any())
-			{
-				var lastMaxCalcTime = allLast.Max(x => x.TradingDay);
-				
-				if (lastMaxCalcTime.Date > tradingDay)
-				{
-					throw new Exception($"Calculation started for {tradingDay:d}, but there already was calculation for a newer date {lastMaxCalcTime:d}");
-				}
-			}
-			
 			var calculatedIds = allLast.Where(x => x.IsSuccess).Select(x => x.PositionId).ToHashSet();
 			//select only non-calculated positions, changed before current invocation time
 			var filteredOrders = openPositions.Where(x => !calculatedIds.Contains(x.Id) 
