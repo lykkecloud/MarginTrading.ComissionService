@@ -9,7 +9,6 @@ namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IPositionReceiveService
     {
-        Task<List<IOpenPosition>> GetActive();
         Task<List<IOpenPosition>> GetByAccount(string accountId);
         Task<List<IOpenPosition>> GetByInstrument(string instrument);
     }
