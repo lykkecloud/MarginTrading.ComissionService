@@ -159,11 +159,7 @@ namespace MarginTrading.CommissionService.Services
 
         public async Task HandleSettingsChanged(SettingsChangedEvent evt)
         {
-            if (evt.SettingsType == SettingsTypeContract.AssetPair)
-            {
-                InitAssetPairs();
-            }
-            else if (evt.SettingsType == SettingsTypeContract.Asset)
+            if (evt.SettingsType == SettingsTypeContract.Asset)
             {
                 InitAssets();
             }
