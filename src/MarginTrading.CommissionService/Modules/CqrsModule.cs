@@ -31,11 +31,13 @@ using MarginTrading.CommissionService.Workflow.ChargeCommission;
 using MarginTrading.CommissionService.Workflow.DailyPnl;
 using MarginTrading.CommissionService.Workflow.OnBehalf;
 using MarginTrading.CommissionService.Workflow.OvernightSwap;
+using MarginTrading.SettingsService.Contracts.AssetPair;
 
 namespace MarginTrading.CommissionService.Modules
 {
     internal class CqrsModule : Module
     {
+        private const string EventsRoute = "events";
         private const string DefaultRoute = "self";
         private const string DefaultPipeline = "commands";
         private readonly CqrsSettings _settings;
@@ -120,6 +122,7 @@ namespace MarginTrading.CommissionService.Modules
             RegisterOnBehalfCommandsHandler(contextRegistration);
             RegisterOvernightSwapCommandHandler(contextRegistration);
             RegisterDailyPnlCommandsHandler(contextRegistration);
+            RegisterAssetPairsProjection(contextRegistration);
             return contextRegistration;
         }
 
@@ -239,7 +242,7 @@ namespace MarginTrading.CommissionService.Modules
         private IRegistration RegisterAccountListenerSaga()
         {
             var sagaRegistration = RegisterSaga<AccountListenerSaga>();
-            
+
             sagaRegistration
                 .ListeningEvents(
                     typeof(AccountChangedEvent))
@@ -247,6 +250,17 @@ namespace MarginTrading.CommissionService.Modules
                 .On(DefaultRoute);
 
             return sagaRegistration;
+        }
+
+        private void RegisterAssetPairsProjection(
+            ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
+        {
+            contextRegistration.ListeningEvents(
+                    typeof(AssetPairChangedEvent))
+                .From(_settings.ContextNames.SettingsService)
+                .On(EventsRoute)
+                .WithProjection(
+                    typeof(AssetPairsProjection), _settings.ContextNames.SettingsService);
         }
 
         private ISagaRegistration RegisterSaga<TSaga>()
