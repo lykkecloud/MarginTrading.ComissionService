@@ -4,7 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
+using Common.Log;
+using Lykke.Common.Log;
 using Lykke.MarginTrading.CommissionService.Contracts;
 using Lykke.MarginTrading.CommissionService.Contracts.Models;
 using MarginTrading.CommissionService.Core;
@@ -29,15 +32,17 @@ namespace MarginTrading.CommissionService.Controllers
         private readonly ICostsAndChargesGenerationService _costsAndChargesGenerationService;
         private readonly ICostsAndChargesRepository _costsAndChargesRepository;
         private readonly IReportGenService _reportGenService;
+        private readonly ILog _log;
 
         public CostsAndChargesController(
             ICostsAndChargesGenerationService costsAndChargesGenerationService,
             ICostsAndChargesRepository costsAndChargesRepository,
-            IReportGenService reportGenService)
+            IReportGenService reportGenService, ILog log)
         {
             _costsAndChargesGenerationService = costsAndChargesGenerationService;
             _costsAndChargesRepository = costsAndChargesRepository;
             _reportGenService = reportGenService;
+            _log = log;
         }
 
         [ProducesResponseType(typeof(CostsAndChargesCalculationContract), 200)]
@@ -50,6 +55,31 @@ namespace MarginTrading.CommissionService.Controllers
                 direction.ToType<OrderDirection>(), withOnBehalf, anticipatedExecutionPrice);
 
             return Map(calculation);
+        }
+
+        [Route("shared")]
+        [ProducesResponseType(typeof(SharedCostsAndChargesCalculationContract), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(400)]
+        [HttpPost]
+        public async Task<SharedCostsAndChargesCalculationContract> PrepareShared(string instrument,
+            OrderDirectionContract direction, string baseAssetId, string tradingConditionId)
+        {
+            try
+            {
+                await _costsAndChargesGenerationService.GenerateSharedAsync(instrument,
+                    direction.ToType<OrderDirection>(),
+                    baseAssetId, 
+                    tradingConditionId);
+            }
+            catch (ArgumentNullException e)
+            {
+                _log.Error(e, "Invalid input parameters");
+
+                return new SharedCostsAndChargesCalculationContract
+                    {Error = SharedCostsAndChargesCalculationError.InvalidInput};
+            }
+
+            return new SharedCostsAndChargesCalculationContract {Error = SharedCostsAndChargesCalculationError.None};
         }
 
         [Route("for-account")]

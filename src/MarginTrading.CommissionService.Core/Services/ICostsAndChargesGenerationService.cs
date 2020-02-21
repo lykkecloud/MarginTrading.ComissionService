@@ -12,6 +12,9 @@ namespace MarginTrading.CommissionService.Core.Services
         Task<CostsAndChargesCalculation> GenerateSingle(string accountId, string instrument, decimal quantity,
             OrderDirection direction, bool withOnBehalf, decimal? anticipatedExecutionPrice = null);
 
+        Task<SharedCostsAndChargesCalculation> GenerateSharedAsync(string instrument, OrderDirection direction,
+            string baseAssetId, string tradingConditionId);
+
         Task<List<CostsAndChargesCalculation>> GenerateForAccount(string accountId, bool withOnBehalf);
 
         Task<List<CostsAndChargesCalculation>> GenerateForInstrument(string instrument, bool withOnBehalf);

@@ -153,6 +153,7 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<CostsAndChargesGenerationService>()
                 .As<ICostsAndChargesGenerationService>()
+                .WithParameter(TypedParameter.From(_settings.CurrentValue.CommissionService.LegalEntity))
                 .SingleInstance();
 
             builder.RegisterType<TradingInstrumentsCache>()
@@ -200,6 +201,10 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<TradingEngineSnapshotRepository>()
                 .As<ITradingEngineSnapshotRepository>()
+                .SingleInstance();
+
+            builder.RegisterType<SharedCostsAndChargesRepository>()
+                .As<ISharedCostsAndChargesRepository>()
                 .SingleInstance();
         }
 

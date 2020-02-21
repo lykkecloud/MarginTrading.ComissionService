@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
@@ -17,10 +16,10 @@ namespace MarginTrading.CommissionService.Services
 {
     public class CostsAndChargesGenerationService : ICostsAndChargesGenerationService
     {
-        private readonly ICommissionCalcService _commissionCalcService;
         private readonly IQuoteCacheService _quoteCacheService;
         private readonly ISystemClock _systemClock;
         private readonly ICostsAndChargesRepository _repository;
+        private readonly ISharedCostsAndChargesRepository _sharedRepository;
         private readonly IPositionReceiveService _positionReceiveService;
         private readonly ITradingInstrumentsCache _tradingInstrumentsCache;
         private readonly ICfdCalculatorService _cfdCalculatorService;
@@ -29,11 +28,14 @@ namespace MarginTrading.CommissionService.Services
         private readonly IInterestRatesCacheService _interestRatesCacheService;
         private readonly IAssetPairsCache _assetPairsCache;
         private readonly ITradingDaysInfoProvider _tradingDaysInfoProvider;
+        private readonly string _legalEntity;
 
-        public CostsAndChargesGenerationService(ICommissionCalcService commissionCalcService,
-            IQuoteCacheService quoteCacheService,
+        private const decimal DefaultCcVolume = 5000;
+
+        public CostsAndChargesGenerationService(IQuoteCacheService quoteCacheService,
             ISystemClock systemClock,
             ICostsAndChargesRepository repository,
+            ISharedCostsAndChargesRepository sharedRepository,
             IPositionReceiveService positionReceiveService, 
             ITradingInstrumentsCache tradingInstrumentsCache,
             ICfdCalculatorService cfdCalculatorService, 
@@ -41,9 +43,9 @@ namespace MarginTrading.CommissionService.Services
             IRateSettingsService rateSettingsService, 
             IInterestRatesCacheService interestRatesCacheService,
             IAssetPairsCache assetPairsCache,
-            ITradingDaysInfoProvider tradingDaysInfoProvider)
+            ITradingDaysInfoProvider tradingDaysInfoProvider, 
+            string legalEntity)
         {
-            _commissionCalcService = commissionCalcService;
             _quoteCacheService = quoteCacheService;
             _systemClock = systemClock;
             _repository = repository;
@@ -55,6 +57,8 @@ namespace MarginTrading.CommissionService.Services
             _interestRatesCacheService = interestRatesCacheService;
             _assetPairsCache = assetPairsCache;
             _tradingDaysInfoProvider = tradingDaysInfoProvider;
+            _legalEntity = legalEntity;
+            _sharedRepository = sharedRepository;
         }
         
         public async Task<CostsAndChargesCalculation> GenerateSingle(string accountId, string instrument,
@@ -72,7 +76,7 @@ namespace MarginTrading.CommissionService.Services
             var overnightSwapRate = await _rateSettingsService.GetOvernightSwapRate(instrument);
             var variableRateBase = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateBase);
             var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);
-            var units = 5000 / anticipatedExecutionPrice.Value * fxRate;
+            var units = DefaultCcVolume / anticipatedExecutionPrice.Value * fxRate;
             var transactionVolume = units * anticipatedExecutionPrice.Value;
             var spread = currentBestPrice.Ask - currentBestPrice.Bid;
 
@@ -168,6 +172,128 @@ namespace MarginTrading.CommissionService.Services
             return calculation;
         }
 
+        public async Task<SharedCostsAndChargesCalculation> GenerateSharedAsync(string instrument,
+            OrderDirection direction, string baseAssetId, string tradingConditionId)
+        {
+            if (string.IsNullOrEmpty(instrument))
+                throw new ArgumentNullException(nameof(instrument));
+
+            if (string.IsNullOrEmpty(baseAssetId))
+                throw new ArgumentNullException(nameof(baseAssetId));
+
+            if (string.IsNullOrEmpty(tradingConditionId))
+                throw new ArgumentNullException(nameof(tradingConditionId));
+
+            var currentBestPrice = _quoteCacheService.GetBidAskPair(instrument);
+            var executionPrice = direction == OrderDirection.Buy ? currentBestPrice.Ask : currentBestPrice.Bid;
+            var tradingInstrument = _tradingInstrumentsCache.Get(tradingConditionId, instrument);
+            var fxRate = 1 / _cfdCalculatorService.GetFxRateForAssetPair(baseAssetId, instrument, _legalEntity);
+            var commissionRate = await _rateSettingsService.GetOrderExecutionRate(instrument);
+            var overnightSwapRate = await _rateSettingsService.GetOvernightSwapRate(instrument);
+            var variableRateBase = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateBase);
+            var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);
+            var units = DefaultCcVolume / executionPrice * fxRate;
+            var transactionVolume = units * executionPrice;
+            var spread = currentBestPrice.Ask - currentBestPrice.Bid;
+
+            if (spread == 0)
+            {
+                spread = tradingInstrument.Spread;
+            }
+
+            var entryConsorsDonation = -(1 - tradingInstrument.HedgeCost) * spread * units / fxRate / 4;
+            var entryCost = -spread * units / 2 / fxRate - entryConsorsDonation;
+            var entryCommission =
+                -Math.Min(
+                    Math.Max(commissionRate.CommissionFloor,
+                        commissionRate.CommissionRate * transactionVolume / fxRate), commissionRate.CommissionCap) +
+                entryConsorsDonation;
+            var asset = _assetPairsCache.GetAssetPairById(instrument);
+            var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(asset.MarketId,
+                _systemClock.UtcNow.UtcDateTime);
+            var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
+                                              overnightFeeDays / 2; //same
+            var directionMultiplier = direction == OrderDirection.Sell ? -1 : 1;
+            var referenceRateAmount = directionMultiplier * -(variableRateBase - variableRateQuote) *
+                                      transactionVolume / fxRate / 365 * overnightFeeDays;
+            var repoCost = direction == OrderDirection.Sell
+                ? -overnightSwapRate.RepoSurchargePercent * transactionVolume / fxRate / 365 * overnightFeeDays
+                : 0;
+            var runningCostsProductReturnsSum = runningCostsConsorsDonation + referenceRateAmount + repoCost;
+
+            var runningCommission = runningCostsConsorsDonation;
+            var exitConsorsDonation = -(1 - tradingInstrument.HedgeCost) * spread * units / fxRate / 2 / 2;
+            var exitCost = -spread * units / 2 / fxRate - exitConsorsDonation;
+            var exitCommission =
+                -Math.Min(
+                    Math.Max(commissionRate.CommissionFloor,
+                        commissionRate.CommissionRate * transactionVolume / fxRate), commissionRate.CommissionCap) +
+                exitConsorsDonation;
+            var productsReturn = entryCost + runningCostsProductReturnsSum + exitCost;
+            var serviceCost = entryCommission + runningCommission + exitCommission;
+            var productsReturnConsorsDonation =
+                entryConsorsDonation + runningCostsConsorsDonation + exitConsorsDonation;
+            var totalCosts = productsReturn + serviceCost + 0;
+
+            var percentCoef = 1 / transactionVolume / fxRate * 100;
+
+            var calculation = new SharedCostsAndChargesCalculation
+            {
+                Id = Guid.NewGuid().ToString(),
+                Direction = direction,
+                Instrument = instrument,
+                BaseAssetId = baseAssetId,
+                TradingConditionId = tradingConditionId,
+                LegalEntity = _legalEntity,
+                Volume = units,
+                Timestamp = _systemClock.UtcNow.UtcDateTime,
+                EntrySum = new CostsAndChargesValue(entryCost + entryCommission,
+                    (entryCost + entryCommission) * percentCoef),
+                EntryCost = new CostsAndChargesValue(entryCost, entryCost * percentCoef),
+                EntryCommission = new CostsAndChargesValue(entryCommission,
+                    entryCommission * percentCoef),
+                EntryConsorsDonation = new CostsAndChargesValue(entryConsorsDonation,
+                    entryConsorsDonation * percentCoef),
+                EntryForeignCurrencyCosts = new CostsAndChargesValue(0, 0),
+                RunningCostsSum = new CostsAndChargesValue(
+                    runningCostsProductReturnsSum + runningCostsConsorsDonation,
+                    (runningCostsProductReturnsSum + runningCostsConsorsDonation) * percentCoef),
+                RunningCostsProductReturnsSum = new CostsAndChargesValue(runningCostsProductReturnsSum,
+                    runningCostsProductReturnsSum * percentCoef),
+                OvernightCost = new CostsAndChargesValue(runningCostsConsorsDonation,
+                    runningCostsConsorsDonation * percentCoef),
+                ReferenceRateAmount = new CostsAndChargesValue(referenceRateAmount,
+                    referenceRateAmount * percentCoef),
+                RepoCost = new CostsAndChargesValue(repoCost, repoCost * percentCoef),
+                RunningCommissions = new CostsAndChargesValue(runningCommission,
+                    runningCommission * percentCoef),
+                RunningCostsConsorsDonation = new CostsAndChargesValue(runningCostsConsorsDonation,
+                    runningCostsConsorsDonation * percentCoef),
+                RunningCostsForeignCurrencyCosts = new CostsAndChargesValue(0, 0),
+                ExitSum = new CostsAndChargesValue(exitCost + exitCommission,
+                    (exitCost + exitCommission) * percentCoef),
+                ExitCost = new CostsAndChargesValue(exitCost, exitCost * percentCoef),
+                ExitCommission = new CostsAndChargesValue(exitCommission,
+                    exitCommission * percentCoef),
+                ExitConsorsDonation = new CostsAndChargesValue(exitConsorsDonation,
+                    exitConsorsDonation * percentCoef),
+                ExitForeignCurrencyCosts = new CostsAndChargesValue(0, 0),
+                ProductsReturn = new CostsAndChargesValue(productsReturn,
+                    productsReturn * percentCoef),
+                ServiceCost = new CostsAndChargesValue(serviceCost, serviceCost * percentCoef),
+                ProductsReturnConsorsDonation = new CostsAndChargesValue(productsReturnConsorsDonation,
+                    productsReturnConsorsDonation * percentCoef),
+                ProductsReturnForeignCurrencyCosts = new CostsAndChargesValue(0, 0),
+                TotalCosts = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
+                OneTag = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
+            };
+            calculation.RoundValues(2);
+
+            await _sharedRepository.SaveAsync(calculation);
+
+            return calculation;
+        }
+
         public async Task<List<CostsAndChargesCalculation>> GenerateForAccount(string accountId, bool withOnBehalf)
         {
             var positions = await _positionReceiveService.GetByAccount(accountId);
@@ -202,17 +328,6 @@ namespace MarginTrading.CommissionService.Services
             }
 
             return result;
-        }
-
-        private async Task<decimal> CalculateOvernightSwaps(string accountId, string instrument, 
-            decimal quantity, OrderDirection direction, InstrumentBidAskPair bestPrice, int overnightFeeDays)
-        {
-            var closePrice = direction == OrderDirection.Buy ? bestPrice.Bid : bestPrice.Ask;
-            var positionDirection = direction == OrderDirection.Buy ? PositionDirection.Long : PositionDirection.Short;
-
-            var swap = await _commissionCalcService.GetOvernightSwap(accountId, instrument, quantity, closePrice,positionDirection, overnightFeeDays, 365);
-
-            return swap.Swap;
         }
     }
 }

@@ -16,7 +16,11 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         [Post("/api/costsAndCharges")]
         Task<CostsAndChargesCalculationContract> GenerateSingle(string accountId, string instrument, decimal quantity,
             OrderDirectionContract direction, bool withOnBehalf, decimal? anticipatedExecutionPrice);
-        
+
+        [Post("/api/costsAndCharges/shared")]
+        Task<SharedCostsAndChargesCalculationContract> PrepareShared(string instrument, OrderDirectionContract direction, string baseAssetId,
+            string tradingConditionId);
+
         [Post("/api/costsAndCharges/for-account")]
         Task<CostsAndChargesCalculationContract[]> GenerateForAccount(string accountId, bool withOnBehalf);
 
