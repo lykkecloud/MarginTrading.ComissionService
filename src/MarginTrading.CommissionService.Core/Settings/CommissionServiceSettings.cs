@@ -50,7 +50,9 @@ namespace MarginTrading.CommissionService.Core.Settings
         public SignatureSettings SignatureSettings { get; set; }
 
         public RequestLoggerSettings RequestLoggerSettings { get; set; }
-        
-        public string LegalEntity { get; set; }
+
+        [Optional]
+        public CostsAndChargesDefaultSettings CostsAndChargesDefaults { get; set; } =
+            new CostsAndChargesDefaultSettings();
     }
 }

@@ -38,6 +38,7 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterInstance(_settings.CurrentValue.CommissionService).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.RequestLoggerSettings).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.DefaultRateSettings).SingleInstance();
+            builder.RegisterInstance(_settings.CurrentValue.CommissionService.CostsAndChargesDefaults).SingleInstance();
             builder.RegisterInstance(_log).As<ILog>().SingleInstance();
             builder.RegisterType<SystemClock>().As<ISystemClock>().SingleInstance();
             
@@ -153,7 +154,6 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<CostsAndChargesGenerationService>()
                 .As<ICostsAndChargesGenerationService>()
-                .WithParameter(TypedParameter.From(_settings.CurrentValue.CommissionService.LegalEntity))
                 .SingleInstance();
 
             builder.RegisterType<TradingInstrumentsCache>()

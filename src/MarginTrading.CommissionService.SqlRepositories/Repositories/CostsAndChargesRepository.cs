@@ -39,6 +39,12 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
         private static readonly string GetColumns = string.Join(",", DataType.GetProperties().Select(x => x.Name));
         private static readonly string GetFields = string.Join(",", DataType.GetProperties().Select(x => "@" + x.Name));
         
+        private static readonly string SharedCalculationsColumns = GetColumns.Replace(nameof(CostsAndChargesEntity.AccountId),
+            $"'' as {nameof(CostsAndChargesEntity.AccountId)}");
+        
+        private static readonly string GetUnion = $"(SELECT {GetColumns} FROM {TableName} UNION " +
+        $"SELECT {SharedCalculationsColumns} FROM {SharedCostsAndChargesRepository.TableName}) as tmp";
+        
         private ILog _log;
         private CommissionServiceSettings _settings;
 
@@ -79,9 +85,9 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
             int? take, bool isAscendingOrder = true)
         {
             take = PaginationHelper.GetTake(take);
-            
+
             var whereClause = "WHERE 1=1 "
-                              + (string.IsNullOrWhiteSpace(accountId) ? "" : " AND AccountId = @accountId")
+                              + (string.IsNullOrWhiteSpace(accountId) ? "" : " AND (AccountId = @accountId OR AccountId = '')")
                               + (string.IsNullOrWhiteSpace(instrument) ? "" : " AND Instrument = @instrument")
                               + (!quantity.HasValue ? "" : " AND Volume = @quantity")
                               + (!direction.HasValue ? "" : " AND Direction = @direction")
@@ -93,14 +99,16 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
             
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
-                var gridReader = await conn.QueryMultipleAsync(
-                    $"SELECT * FROM {TableName} {whereClause} {paginationClause}; SELECT COUNT(*) FROM {TableName} {whereClause}", new
+                var sql =
+                    $"SELECT * FROM {GetUnion} {whereClause} {paginationClause}; SELECT COUNT(*) FROM {GetUnion} {whereClause}";
+                var gridReader = await conn.QueryMultipleAsync(sql,
+                    new
                     {
-                        accountId, 
+                        accountId,
                         instrument,
                         quantity,
                         direction = direction.ToString(),
-                        from, 
+                        from,
                         to
                     });
 
@@ -120,14 +128,22 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
         {
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
-                var whereClause = "WHERE [AccountId] = @accountId " +
-                                  (ids != null && ids.Any() ? " AND Id IN @ids" : "");
-                
                 var entities = await conn.QueryAsync<CostsAndChargesEntity>(
-                    $"SELECT * FROM {TableName} {whereClause}", 
+                    $"SELECT * FROM {TableName} WHERE [AccountId] = @accountId AND Id IN @ids", 
                     new { accountId, ids });
                 
-                return entities.Select(Map).ToArray();
+                var result = entities.Select(Map).ToList();
+
+                if (result.Count < ids?.Length)
+                {
+                    var sharedEntities = await conn.QueryAsync<CostsAndChargesEntity>(
+                        $"SELECT * FROM {SharedCostsAndChargesRepository.TableName} WHERE Id IN @ids", 
+                        new { ids });
+
+                    result.AddRange(sharedEntities.Select(Map));
+                }
+
+                return result.ToArray();
             }
         }
 
@@ -139,7 +155,7 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
                 var paginationClause = $"ORDER BY [TimeStamp] OFFSET {skip ?? 0} ROWS FETCH NEXT {take ?? BulkPageSize} ROWS ONLY";
 
                 var reader = await conn.QueryMultipleAsync(
-                    $"SELECT * FROM {TableName} {whereClause} {paginationClause}; SELECT COUNT(*) FROM {TableName} {whereClause}",
+                    $"SELECT * FROM {GetUnion} {whereClause} {paginationClause}; SELECT COUNT(*) FROM {GetUnion} {whereClause}",
                     new
                     {
                         day = date.Date,

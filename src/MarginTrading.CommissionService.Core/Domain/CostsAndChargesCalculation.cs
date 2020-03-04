@@ -14,6 +14,12 @@ namespace MarginTrading.CommissionService.Core.Domain
         
         public string Instrument { get; set; }
         
+        public string BaseAssetId { get; set; }
+        
+        public string TradingConditionId { get; set; }
+        
+        public string LegalEntity { get; set; }
+        
         public decimal Volume { get; set; }
         
         public OrderDirection Direction { get; set; }

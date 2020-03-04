@@ -8,6 +8,6 @@ namespace MarginTrading.CommissionService.Core.Repositories
 {
     public interface ISharedCostsAndChargesRepository
     {
-        Task SaveAsync(SharedCostsAndChargesCalculation calculation);
+        Task SaveAsync(CostsAndChargesCalculation calculation);
     }
 }

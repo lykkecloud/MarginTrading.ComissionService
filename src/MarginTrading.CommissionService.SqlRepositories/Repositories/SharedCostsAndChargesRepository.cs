@@ -18,17 +18,19 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
 {
     public class SharedCostsAndChargesRepository : ISharedCostsAndChargesRepository
     {
-        private const string TableName = "SharedCostsAndChangesCalculations";
+        public const string TableName = "SharedCostsAndChangesCalculations";
 
         private const string CreateTableScript = @"CREATE TABLE [{0}](
   [Id] [nvarchar] (128) NOT NULL PRIMARY KEY,
 [Instrument] [nvarchar] (64) NOT NULL,
-[TradingConditionsHash] [nvarchar] (64) NOT NULL,
+[BaseAssetId] [nvarchar] (64) NOT NULL,
+[TradingConditionId] [nvarchar] (64) NOT NULL,
+[LegalEntity] [nvarchar] (64) NOT NULL,
 [TimeStamp] [DateTime] NOT NULL,
 [Volume] float NOT NULL,
 [Direction] [nvarchar] (64) NOT NULL,
 [Data] [nvarchar] (MAX) NULL
-INDEX IX_SharedCostsAndChanges NONCLUSTERED (Instrument, TimeStamp, Volume, Direction)
+INDEX IX_SharedCostsAndChanges NONCLUSTERED (Instrument, TimeStamp, BaseAssetId, TradingConditionId, LegalEntity)
 );";
         
         private readonly ILog _log;
@@ -62,7 +64,7 @@ INDEX IX_SharedCostsAndChanges NONCLUSTERED (Instrument, TimeStamp, Volume, Dire
             }
         }
         
-        public async Task SaveAsync(SharedCostsAndChargesCalculation calculation)
+        public async Task SaveAsync(CostsAndChargesCalculation calculation)
         {
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
@@ -72,10 +74,10 @@ INDEX IX_SharedCostsAndChanges NONCLUSTERED (Instrument, TimeStamp, Volume, Dire
             }
         }
         
-        private SharedCostsAndChargesEntity Map(SharedCostsAndChargesCalculation calculation)
+        private SharedCostsAndChargesEntity Map(CostsAndChargesCalculation calculation)
         {
             string data;
-            var serializer = new XmlSerializer(typeof(SharedCostsAndChargesCalculation));
+            var serializer = new XmlSerializer(typeof(CostsAndChargesCalculation));
 
             using (var writer = new StringWriter())
             {

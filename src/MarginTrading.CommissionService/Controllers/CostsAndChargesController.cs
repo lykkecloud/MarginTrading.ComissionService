@@ -58,28 +58,24 @@ namespace MarginTrading.CommissionService.Controllers
         }
 
         [Route("shared")]
-        [ProducesResponseType(typeof(SharedCostsAndChargesCalculationContract), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(SharedCostsAndChargesCalculationResult), (int) HttpStatusCode.OK)]
         [ProducesResponseType(400)]
         [HttpPost]
-        public async Task<SharedCostsAndChargesCalculationContract> PrepareShared(string instrument,
-            OrderDirectionContract direction, string baseAssetId, string tradingConditionId)
+        public async Task<SharedCostsAndChargesCalculationResult> PrepareShared(string instrument, string tradingConditionId)
         {
             try
             {
-                await _costsAndChargesGenerationService.GenerateSharedAsync(instrument,
-                    direction.ToType<OrderDirection>(),
-                    baseAssetId, 
-                    tradingConditionId);
+                await _costsAndChargesGenerationService.GenerateSharedAsync(instrument, tradingConditionId);
             }
             catch (ArgumentNullException e)
             {
                 _log.Error(e, "Invalid input parameters");
 
-                return new SharedCostsAndChargesCalculationContract
+                return new SharedCostsAndChargesCalculationResult
                     {Error = SharedCostsAndChargesCalculationError.InvalidInput};
             }
 
-            return new SharedCostsAndChargesCalculationContract {Error = SharedCostsAndChargesCalculationError.None};
+            return new SharedCostsAndChargesCalculationResult {Error = SharedCostsAndChargesCalculationError.None};
         }
 
         [Route("for-account")]
@@ -110,7 +106,7 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpGet]
         public async Task<PaginatedResponseContract<CostsAndChargesCalculationContract>> Search(string accountId, string
          instrument, decimal? quantity, OrderDirectionContract? direction, DateTime? @from,
-            DateTime? to, int? skip, int? take, bool isAscendingOrder = true)
+            DateTime? to, int? skip, int? take, bool isAscendingOrder = false)
         {
             var calculations = await _costsAndChargesRepository.Get(accountId, instrument, quantity, direction?.ToType<OrderDirection>(), from, to, skip, take, isAscendingOrder);
 
@@ -157,7 +153,7 @@ namespace MarginTrading.CommissionService.Controllers
         {
             return new FileContract
             {
-                Name = $"{calculation.AccountId}_{calculation.Instrument}_{calculation.Timestamp:yyyyMMddHHmmssff}",
+                Name = $"{calculation.AccountId ?? "Common"}_{calculation.Instrument}_{calculation.Timestamp:yyyyMMddHHmmssff}",
                 Extension = ".pdf",
                 Content = _reportGenService.GenerateBafinCncReport(new[] { calculation })
             };
