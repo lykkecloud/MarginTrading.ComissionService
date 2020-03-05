@@ -5,16 +5,14 @@ using System;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Xml;
 using System.Threading.Tasks;
-using System.Xml;
 using System.Xml.Serialization;
 using Common.Log;
 using Dapper;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Repositories;
+using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.SqlRepositories.Entities;
 
@@ -42,18 +40,18 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
         private static readonly string SharedCalculationsColumns = GetColumns.Replace(nameof(CostsAndChargesEntity.AccountId),
             $"'' as {nameof(CostsAndChargesEntity.AccountId)}");
         
-        private static readonly string GetUnion = $"(SELECT {GetColumns} FROM {TableName} UNION " +
-        $"SELECT {SharedCalculationsColumns} FROM {SharedCostsAndChargesRepository.TableName}) as tmp";
-        
         private ILog _log;
         private CommissionServiceSettings _settings;
+        private readonly IAccountRedisCache _accountRedisCache;
 
         public CostsAndChargesRepository(
             CommissionServiceSettings settings,
+            IAccountRedisCache accountRedisCache,
             ILog log)
         {
             _log = log;
             _settings = settings;
+            _accountRedisCache = accountRedisCache;
 
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
@@ -86,6 +84,24 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
         {
             take = PaginationHelper.GetTake(take);
 
+            string sharedFilter = "", baseAssetId = "", tradingConditionId = "", legalEntity = "";
+
+            if (!string.IsNullOrEmpty(accountId))
+            {
+                var account = await _accountRedisCache.GetAccount(accountId);
+
+                sharedFilter = "WHERE BaseAssetId = @baseAssetId " +
+                               "AND TradingConditionId = @tradingConditionId " +
+                               "AND LegalEntity = @legalEntity";
+
+                baseAssetId = account.BaseAssetId;
+                tradingConditionId = account.TradingConditionId;
+                legalEntity = account.LegalEntity;
+            }
+            
+            var union = $"(SELECT {GetColumns} FROM {TableName} UNION " +
+                        $"SELECT {SharedCalculationsColumns} FROM {SharedCostsAndChargesRepository.TableName} {sharedFilter}) as tmp";
+
             var whereClause = "WHERE 1=1 "
                               + (string.IsNullOrWhiteSpace(accountId) ? "" : " AND (AccountId = @accountId OR AccountId = '')")
                               + (string.IsNullOrWhiteSpace(instrument) ? "" : " AND Instrument = @instrument")
@@ -100,12 +116,15 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
                 var sql =
-                    $"SELECT * FROM {GetUnion} {whereClause} {paginationClause}; SELECT COUNT(*) FROM {GetUnion} {whereClause}";
+                    $"SELECT * FROM {union} {whereClause} {paginationClause}; SELECT COUNT(*) FROM {union} {whereClause}";
                 var gridReader = await conn.QueryMultipleAsync(sql,
                     new
                     {
                         accountId,
                         instrument,
+                        baseAssetId,
+                        tradingConditionId,
+                        legalEntity,
                         quantity,
                         direction = direction.ToString(),
                         from,
@@ -151,11 +170,13 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
         {
             using (var conn = new SqlConnection(_settings.Db.StateConnString))
             {
+                var union = $"(SELECT {GetColumns} FROM {TableName} UNION " +
+                            $"SELECT {SharedCalculationsColumns} FROM {SharedCostsAndChargesRepository.TableName}) as tmp";
                 var whereClause = "WHERE TimeStamp >= @day AND TimeStamp < @nextDay";
                 var paginationClause = $"ORDER BY [TimeStamp] OFFSET {skip ?? 0} ROWS FETCH NEXT {take ?? BulkPageSize} ROWS ONLY";
 
                 var reader = await conn.QueryMultipleAsync(
-                    $"SELECT * FROM {GetUnion} {whereClause} {paginationClause}; SELECT COUNT(*) FROM {GetUnion} {whereClause}",
+                    $"SELECT * FROM {union} {whereClause} {paginationClause}; SELECT COUNT(*) FROM {union} {whereClause}",
                     new
                     {
                         day = date.Date,
