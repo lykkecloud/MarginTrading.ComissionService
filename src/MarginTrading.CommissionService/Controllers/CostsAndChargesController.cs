@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Middleware;
+using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Controllers
 {
@@ -32,16 +33,20 @@ namespace MarginTrading.CommissionService.Controllers
         private readonly ICostsAndChargesGenerationService _costsAndChargesGenerationService;
         private readonly ICostsAndChargesRepository _costsAndChargesRepository;
         private readonly IReportGenService _reportGenService;
+        private readonly ISystemClock _systemClock;
         private readonly ILog _log;
 
         public CostsAndChargesController(
             ICostsAndChargesGenerationService costsAndChargesGenerationService,
             ICostsAndChargesRepository costsAndChargesRepository,
-            IReportGenService reportGenService, ILog log)
+            IReportGenService reportGenService,
+            ISystemClock systemClock, 
+            ILog log)
         {
             _costsAndChargesGenerationService = costsAndChargesGenerationService;
             _costsAndChargesRepository = costsAndChargesRepository;
             _reportGenService = reportGenService;
+            _systemClock = systemClock;
             _log = log;
         }
 
@@ -143,7 +148,7 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpPost]
         public async Task<PaginatedResponseContract<FileContract>> GetByDay(DateTime? date, int? skip, int? take)
         {
-            var response = await _costsAndChargesRepository.GetAllByDay(date ?? DateTime.Today, skip, take);
+            var response = await _costsAndChargesRepository.GetAllByDay(date ?? _systemClock.UtcNow.Date, skip, take);
             var pdfs = response.Contents.Select(ConvertToFileContract).ToArray();
 
             return new PaginatedResponseContract<FileContract>(pdfs, response.Start, response.Size, response.TotalSize);

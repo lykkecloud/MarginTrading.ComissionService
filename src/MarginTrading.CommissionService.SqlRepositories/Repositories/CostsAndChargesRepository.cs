@@ -90,6 +90,11 @@ INDEX IX_CostsAndChanges NONCLUSTERED (AccountId, Instrument, TimeStamp, Volume,
             {
                 var account = await _accountRedisCache.GetAccount(accountId);
 
+                if (account == null)
+                {
+                    throw new Exception($"Account with ID {accountId} does not exist");
+                }
+
                 sharedFilter = "WHERE BaseAssetId = @baseAssetId " +
                                "AND TradingConditionId = @tradingConditionId " +
                                "AND LegalEntity = @legalEntity";
