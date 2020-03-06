@@ -151,9 +151,11 @@ namespace MarginTrading.CommissionService.Controllers
 
         private FileContract ConvertToFileContract(CostsAndChargesCalculation calculation)
         {
+            var accountPrefix = !string.IsNullOrEmpty(calculation.AccountId) ? calculation.AccountId + "_" : "";
+            
             return new FileContract
             {
-                Name = $"{calculation.AccountId ?? "Common"}_{calculation.Instrument}_{calculation.Timestamp:yyyyMMddHHmmssff}",
+                Name = $"{accountPrefix}{calculation.Instrument}_{calculation.Timestamp:yyyyMMddHHmmssff}",
                 Extension = ".pdf",
                 Content = _reportGenService.GenerateBafinCncReport(new[] { calculation })
             };
