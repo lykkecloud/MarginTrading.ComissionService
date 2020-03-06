@@ -4,7 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
+using Common.Log;
+using Lykke.Common.Log;
 using Lykke.MarginTrading.CommissionService.Contracts;
 using Lykke.MarginTrading.CommissionService.Contracts.Models;
 using MarginTrading.CommissionService.Core;
@@ -16,6 +19,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Middleware;
+using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Controllers
 {
@@ -29,15 +33,21 @@ namespace MarginTrading.CommissionService.Controllers
         private readonly ICostsAndChargesGenerationService _costsAndChargesGenerationService;
         private readonly ICostsAndChargesRepository _costsAndChargesRepository;
         private readonly IReportGenService _reportGenService;
+        private readonly ISystemClock _systemClock;
+        private readonly ILog _log;
 
         public CostsAndChargesController(
             ICostsAndChargesGenerationService costsAndChargesGenerationService,
             ICostsAndChargesRepository costsAndChargesRepository,
-            IReportGenService reportGenService)
+            IReportGenService reportGenService,
+            ISystemClock systemClock, 
+            ILog log)
         {
             _costsAndChargesGenerationService = costsAndChargesGenerationService;
             _costsAndChargesRepository = costsAndChargesRepository;
             _reportGenService = reportGenService;
+            _systemClock = systemClock;
+            _log = log;
         }
 
         [ProducesResponseType(typeof(CostsAndChargesCalculationContract), 200)]
@@ -50,6 +60,27 @@ namespace MarginTrading.CommissionService.Controllers
                 direction.ToType<OrderDirection>(), withOnBehalf, anticipatedExecutionPrice);
 
             return Map(calculation);
+        }
+
+        [Route("shared")]
+        [ProducesResponseType(typeof(SharedCostsAndChargesCalculationResult), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(400)]
+        [HttpPost]
+        public async Task<SharedCostsAndChargesCalculationResult> PrepareShared(string instrument, string tradingConditionId)
+        {
+            try
+            {
+                await _costsAndChargesGenerationService.GenerateSharedAsync(instrument, tradingConditionId);
+            }
+            catch (ArgumentNullException e)
+            {
+                _log.Error(e, "Invalid input parameters");
+
+                return new SharedCostsAndChargesCalculationResult
+                    {Error = SharedCostsAndChargesCalculationError.InvalidInput};
+            }
+
+            return new SharedCostsAndChargesCalculationResult {Error = SharedCostsAndChargesCalculationError.None};
         }
 
         [Route("for-account")]
@@ -80,7 +111,7 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpGet]
         public async Task<PaginatedResponseContract<CostsAndChargesCalculationContract>> Search(string accountId, string
          instrument, decimal? quantity, OrderDirectionContract? direction, DateTime? @from,
-            DateTime? to, int? skip, int? take, bool isAscendingOrder = true)
+            DateTime? to, int? skip, int? take, bool isAscendingOrder = false)
         {
             var calculations = await _costsAndChargesRepository.Get(accountId, instrument, quantity, direction?.ToType<OrderDirection>(), from, to, skip, take, isAscendingOrder);
 
@@ -117,7 +148,7 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpPost]
         public async Task<PaginatedResponseContract<FileContract>> GetByDay(DateTime? date, int? skip, int? take)
         {
-            var response = await _costsAndChargesRepository.GetAllByDay(date ?? DateTime.Today, skip, take);
+            var response = await _costsAndChargesRepository.GetAllByDay(date ?? _systemClock.UtcNow.Date, skip, take);
             var pdfs = response.Contents.Select(ConvertToFileContract).ToArray();
 
             return new PaginatedResponseContract<FileContract>(pdfs, response.Start, response.Size, response.TotalSize);
@@ -125,9 +156,11 @@ namespace MarginTrading.CommissionService.Controllers
 
         private FileContract ConvertToFileContract(CostsAndChargesCalculation calculation)
         {
+            var accountPrefix = !string.IsNullOrEmpty(calculation.AccountId) ? calculation.AccountId + "_" : "";
+            
             return new FileContract
             {
-                Name = $"{calculation.AccountId}_{calculation.Instrument}_{calculation.Timestamp:yyyyMMddHHmmssff}",
+                Name = $"{accountPrefix}{calculation.Instrument}_{calculation.Timestamp:yyyyMMddHHmmssff}",
                 Extension = ".pdf",
                 Content = _reportGenService.GenerateBafinCncReport(new[] { calculation })
             };

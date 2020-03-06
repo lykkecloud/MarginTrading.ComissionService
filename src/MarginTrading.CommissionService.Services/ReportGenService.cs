@@ -43,6 +43,7 @@ namespace MarginTrading.CommissionService.Services
         {
             var assetName = _assetsCache.GetName(calculation.Instrument);
             var time = GetBerlinTime(calculation.Timestamp);
+            var accountPrefix = !string.IsNullOrEmpty(calculation.AccountId) ? calculation.AccountId + " - " : "";
 
             return GenerateOnePart(new[]
                 {
@@ -92,7 +93,7 @@ namespace MarginTrading.CommissionService.Services
                     new BafinCncReportData($"Die Renditeauswirkungen der Kosten für die Anlagesumme von 5000 EUR werden im Folgenden für einen Tag dargestellt. Die einzelnen Kosten reduzieren die individuelle Wertentwicklung einer Anlage. Bei der angenommenen Haltedauer von einem Tag, machen sich vor allem Ein- und Ausstiegskosten bemerkbar. Diese fallen bei jeder Transaktion in gleicher Höhe an. Damit führt eine hohe Handelsaktivität zu höheren Ein- und Ausstiegskosten. Eine längere Haltedauer der Position erhöht die laufenden Kosten für jeden Tag in gleicher Höhe.", "", ""),
                     new BafinCncReportData("", "", ""),
                     new BafinCncReportData("1 Tag", calculation.OneTag),
-                }, $"{calculation.AccountId} - {assetName} - {calculation.Direction.ToString()} - {time:F}");
+                }, $"{accountPrefix}{assetName} - {calculation.Direction.ToString()} - {time:F}");
         }
 
         private byte[] GenerateOnePart<T>(IReadOnlyCollection<T> data, string header)
