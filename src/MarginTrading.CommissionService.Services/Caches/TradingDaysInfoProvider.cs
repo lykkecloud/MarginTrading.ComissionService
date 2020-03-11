@@ -3,18 +3,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
+using Common;
 using Common.Log;
-using Lykke.Common.Log;
-using MarginTrading.Backend.Contracts;
-using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.SettingsService.Contracts;
-using MongoDB.Bson;
 
 namespace MarginTrading.CommissionService.Services.Caches
 {
