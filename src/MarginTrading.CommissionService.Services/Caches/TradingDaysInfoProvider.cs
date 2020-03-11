@@ -8,11 +8,13 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Common.Log;
+using Lykke.Common.Log;
 using MarginTrading.Backend.Contracts;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.SettingsService.Contracts;
+using MongoDB.Bson;
 
 namespace MarginTrading.CommissionService.Services.Caches
 {
@@ -60,7 +62,7 @@ namespace MarginTrading.CommissionService.Services.Caches
 
             try
             {
-                var infos = _scheduleApi.GetMarketsInfo(new[] {marketId}, marketInfo?.NextTradingDayStart)
+                var infos = _scheduleApi.GetMarketsInfo(new[] {marketId}, marketInfo?.NextTradingDayStart.AddMilliseconds(1))
                     .GetAwaiter().GetResult();
 
                 if (!infos.TryGetValue(marketId, out var info))
@@ -104,6 +106,9 @@ namespace MarginTrading.CommissionService.Services.Caches
 
         private int CalculateNumberOfDays(TradingDayInfo info)
         {
+            _log.WriteInfoAsync(nameof(TradingDaysInfoProvider), nameof(CalculateNumberOfDays), 
+                $"Calculating number of days using the following data: {info.ToJson()}");
+            
             var days = info.NextTradingDayStart.Subtract(info.LastTradingDay).Days;
 
             if (days > 0)
