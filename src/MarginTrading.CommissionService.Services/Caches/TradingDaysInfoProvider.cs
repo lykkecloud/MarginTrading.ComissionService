@@ -3,13 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
+using Common;
 using Common.Log;
-using MarginTrading.Backend.Contracts;
-using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.SettingsService.Contracts;
@@ -60,32 +56,48 @@ namespace MarginTrading.CommissionService.Services.Caches
 
             try
             {
-                var infos = _scheduleApi.GetMarketsInfo(new[] {marketId}, marketInfo?.NextTradingDayStart)
-                    .GetAwaiter().GetResult();
+                var calculateFor = marketInfo?.NextTradingDayStart ?? currentDateTime;
 
-                if (!infos.TryGetValue(marketId, out var info))
+                var nextTradingDayInfo =
+                    GetNextTradingDayInfo(marketId, currentDateTime, calculateFor, true);
+
+                if (nextTradingDayInfo == null)
                 {
-                    _log.WriteWarningAsync(nameof(TradingDaysInfoProvider), nameof(GetNumberOfNightsUntilNextTradingDay),
-                        $"Trading day for market {marketId} on date {currentDateTime} was not found. Returning default value.");
-
+                    _log.WriteWarningAsync(nameof(TradingDaysInfoProvider), nameof(GetNextTradingDayInfo),
+                        $"Trading day for market {marketId} on date {calculateFor} was not found. 1 day will be used for calculation");
                     return 1;
                 }
 
-                var days = new TradingDayInfo
-                {
-                    LastTradingDay = info.LastTradingDay,
-                    NextTradingDayStart = info.NextTradingDayStart
-                };
+                _cache[marketId] = nextTradingDayInfo;
 
-                _cache[marketId] = days;
-
-                return CalculateNumberOfDays(days);
-
+                return CalculateNumberOfDays(nextTradingDayInfo);
             }
             finally
             {
                 _lock.ExitWriteLock();
             }
+        }
+
+        private TradingDayInfo GetNextTradingDayInfo(string marketId, DateTime currentDateTime, DateTime? calculateFor, bool tryGetNext)
+        {
+            var infos = _scheduleApi.GetMarketsInfo(new[] {marketId}, calculateFor)
+                .GetAwaiter().GetResult();
+
+            if (!infos.TryGetValue(marketId, out var info))
+            {
+                return null;
+            }
+
+            if (info.LastTradingDay.Date != currentDateTime.Date && tryGetNext)
+            {
+                return GetNextTradingDayInfo(marketId, currentDateTime, info.NextTradingDayStart, false);
+            }
+
+            return new TradingDayInfo
+            {
+                LastTradingDay = info.LastTradingDay,
+                NextTradingDayStart = info.NextTradingDayStart
+            };
         }
 
         public void Initialize(Dictionary<string, TradingDayInfo> infos)
@@ -104,6 +116,9 @@ namespace MarginTrading.CommissionService.Services.Caches
 
         private int CalculateNumberOfDays(TradingDayInfo info)
         {
+            _log.WriteInfoAsync(nameof(TradingDaysInfoProvider), nameof(CalculateNumberOfDays), 
+                $"Calculating number of days using the following data: {info.ToJson()}");
+            
             var days = info.NextTradingDayStart.Subtract(info.LastTradingDay).Days;
 
             if (days > 0)
