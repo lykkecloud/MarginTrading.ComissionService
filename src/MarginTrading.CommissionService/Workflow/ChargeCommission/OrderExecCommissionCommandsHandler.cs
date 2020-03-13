@@ -59,7 +59,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             {
                 var commissionAmount = await _commissionCalcService.CalculateOrderExecutionCommission(
                   command.AccountId, command.Instrument,command.Volume, 
-                  command.OrderExecutionPrice);
+                  command.OrderExecutionPrice, command.OrderExecutionFxRate);
 
                 //no failure handling.. so operation will be retried on fail
 

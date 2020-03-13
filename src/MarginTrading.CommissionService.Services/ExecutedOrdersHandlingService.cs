@@ -63,7 +63,8 @@ namespace MarginTrading.CommissionService.Services
                     legalEntity: order.LegalEntity.RequiredNotNullOrWhiteSpace(nameof(order.LegalEntity)),
                     volume: order.Volume.RequiredNotNull(nameof(order.Volume)),
                     tradingDay: order.ModifiedTimestamp,
-                    orderExecutionPrice: order.ExecutionPrice.RequiredNotNull(nameof(order.ExecutionPrice)))
+                    orderExecutionPrice: order.ExecutionPrice.RequiredNotNull(nameof(order.ExecutionPrice)),
+                    orderExecutionFxRate: order.FxRate.RequiredNotEqualsTo(default, nameof(order.FxRate)))
                 )
             };
             
