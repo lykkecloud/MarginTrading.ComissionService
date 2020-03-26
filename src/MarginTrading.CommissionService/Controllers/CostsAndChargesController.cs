@@ -32,6 +32,7 @@ namespace MarginTrading.CommissionService.Controllers
     {
         private readonly ICostsAndChargesGenerationService _costsAndChargesGenerationService;
         private readonly ICostsAndChargesRepository _costsAndChargesRepository;
+        private readonly ISharedCostsAndChargesRepository _sharedCostsAndChargesRepository;
         private readonly IReportGenService _reportGenService;
         private readonly ISystemClock _systemClock;
         private readonly ILog _log;
@@ -39,12 +40,14 @@ namespace MarginTrading.CommissionService.Controllers
         public CostsAndChargesController(
             ICostsAndChargesGenerationService costsAndChargesGenerationService,
             ICostsAndChargesRepository costsAndChargesRepository,
+            ISharedCostsAndChargesRepository sharedCostsAndChargesRepository,
             IReportGenService reportGenService,
             ISystemClock systemClock, 
             ILog log)
         {
             _costsAndChargesGenerationService = costsAndChargesGenerationService;
             _costsAndChargesRepository = costsAndChargesRepository;
+            _sharedCostsAndChargesRepository = sharedCostsAndChargesRepository;
             _reportGenService = reportGenService;
             _systemClock = systemClock;
             _log = log;
@@ -81,6 +84,19 @@ namespace MarginTrading.CommissionService.Controllers
             }
 
             return new SharedCostsAndChargesCalculationResult {Error = SharedCostsAndChargesCalculationError.None};
+        }
+
+        [Route("instruments-with-shared")]
+        [ProducesResponseType(typeof(InstrumentsWithSharedCalculationResult), (int) HttpStatusCode.OK)]
+        [ProducesResponseType(400)]
+        [HttpGet]
+        public async Task<InstrumentsWithSharedCalculationResult> GetInstrumentsIdsWithExistingSharedFiles(DateTime? 
+        date)
+        {
+            var ids =
+                await _sharedCostsAndChargesRepository.GetAssetPairIdsWithFilesAsync(date ?? _systemClock.UtcNow.Date);
+
+            return new InstrumentsWithSharedCalculationResult {InstrumentIds = ids};
         }
 
         [Route("for-account")]

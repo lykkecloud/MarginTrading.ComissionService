@@ -39,5 +39,8 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
 
         [Post("/api/costsAndCharges/pdf-by-ids")]
         Task<FileContract[]> GenerateBafinCncReport(string accountId, [Body, CanBeNull] string[] ids);
+
+        [Get("/api/costsAndCharges/instruments-with-shared")]
+        Task<InstrumentsWithSharedCalculationResult> GetInstrumentsIdsWithExistingSharedFiles(DateTime? date);
     }
 }
