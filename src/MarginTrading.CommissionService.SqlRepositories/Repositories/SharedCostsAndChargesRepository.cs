@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
@@ -71,6 +72,19 @@ INDEX IX_SharedCostsAndChanges NONCLUSTERED (Instrument, TimeStamp, BaseAssetId,
                 await conn.ExecuteAsync(
                     $"insert into {TableName} ({GetColumns}) values ({GetFields})",
                     Map(calculation));
+            }
+        }
+
+        public async Task<List<string>> GetAssetPairIdsWithFilesAsync(DateTime date)
+        {
+            using (var conn = new SqlConnection(_settings.Db.StateConnString))
+            {
+                var result = await conn.QueryAsync<string>(
+                    $"SELECT DISTINCT {nameof(CostsAndChargesCalculation.Instrument)} FROM {TableName} " +
+                    $"WHERE DATEDIFF(DAY, {nameof(CostsAndChargesCalculation.Timestamp)}, @date) = 0",
+                    new {date.Date});
+                
+                return result.ToList();
             }
         }
         
