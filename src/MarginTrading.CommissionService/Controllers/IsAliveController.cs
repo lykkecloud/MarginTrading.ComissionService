@@ -19,7 +19,6 @@ namespace MarginTrading.CommissionService.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        [SwaggerOperation("IsAlive")]
         [ProducesResponseType(typeof(IsAliveResponse), (int) HttpStatusCode.OK)]
         public IActionResult Get()
         {
