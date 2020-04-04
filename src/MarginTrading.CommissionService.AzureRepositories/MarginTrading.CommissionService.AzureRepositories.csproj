@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Lykke.SettingsReader" Version="5.2.0" />
-    <PackageReference Include="Lykke.Common" Version="7.3.1" />
+    <PackageReference Include="Lykke.Common" Version="7.5.0" />
     <PackageReference Include="Lykke.AzureStorage" Version="8.5.0" />
   </ItemGroup>
   <ItemGroup>
