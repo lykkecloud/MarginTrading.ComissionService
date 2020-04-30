@@ -18,6 +18,7 @@ using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
 using Microsoft.Extensions.Internal;
+using MoreLinq;
 using StackExchange.Redis;
 
 namespace MarginTrading.CommissionService.Services

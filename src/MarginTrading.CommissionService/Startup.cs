@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
@@ -24,6 +26,7 @@ using Lykke.SlackNotification.AzureQueue;
 using Lykke.SlackNotifications;
 using Lykke.Snow.Common.Startup;
 using Lykke.Snow.Common.Startup.ApiKey;
+using Lykke.Snow.Common.Startup.ApiKey.Validator;
 using Lykke.Snow.Common.Startup.Hosting;
 using Lykke.Snow.Common.Startup.Log;
 using MarginTrading.Backend.Contracts.Events;
@@ -40,26 +43,35 @@ using MarginTrading.CommissionService.SqlRepositories.Repositories;
 using MarginTrading.CommissionService.Workflow;
 using MarginTrading.OrderbookAggregator.Contracts.Messages;
 using MarginTrading.SettingsService.Contracts.Messages;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace MarginTrading.CommissionService
 {
     public class Startup
     {
         public static string ServiceName { get; } = PlatformServices.Default.Application.ApplicationName;
-
+        private IReloadingManager<AppSettings> _mtSettingsManager;
         private IHostingEnvironment Environment { get; }
-        private IContainer ApplicationContainer { get; set; }
+        private ILifetimeScope ApplicationContainer { get; set; }
         private IConfigurationRoot Configuration { get; }
         [CanBeNull] private ILog Log { get; set; }
-        
+
         public Startup(IHostingEnvironment env)
         {
             Configuration = new ConfigurationBuilder()
@@ -70,18 +82,18 @@ namespace MarginTrading.CommissionService
             Environment = env;
         }
 
-        public IServiceProvider ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IServiceCollection services)
         {
             try
             {
-                services.AddMvc()
-                    .AddJsonOptions(options =>
+                services.AddControllers()
+                    .AddNewtonsoftJson(options =>
                     {
                         options.SerializerSettings.ContractResolver = new DefaultContractResolver();
                         options.SerializerSettings.Converters.Add(new StringEnumConverter());
                     });
-                
-                var appSettings = Configuration.LoadSettings<AppSettings>(
+
+                _mtSettingsManager = Configuration.LoadSettings<AppSettings>(
                         throwExceptionOnCheckError: !Configuration.NotThrowExceptionsOnServiceValidation())
                     .Nested(s =>
                     {
@@ -90,32 +102,21 @@ namespace MarginTrading.CommissionService
                         return s;
                     });
                 
-                services.AddApiKeyAuth(appSettings.CurrentValue.CommissionServiceClient);
-
+                services.AddApiKeyAuth(_mtSettingsManager.CurrentValue.CommissionServiceClient);
+                
                 services.AddSwaggerGen(options =>
                 {
                     options.DefaultLykkeConfiguration("v1", ServiceName + " API");
-                    options.OperationFilter<CustomOperationIdOperationFilter>();
-                    if (!string.IsNullOrWhiteSpace(appSettings.CurrentValue.CommissionServiceClient?.ApiKey))
+
+                    if (!string.IsNullOrWhiteSpace(_mtSettingsManager.CurrentValue.CommissionServiceClient?.ApiKey))
                     {
-                        options.OperationFilter<ApiKeyHeaderOperationFilter>();
+                        options.AddApiKeyAwareness();
                     }
                 });
 
-                var builder = new ContainerBuilder();
-
-                Log = CreateLog(Configuration, services, appSettings);
+                Log = CreateLog(Configuration, services, _mtSettingsManager);
 
                 services.AddSingleton<ILoggerFactory>(x => new WebHostLoggerFactory(Log));
-
-                builder.RegisterModule(new CommissionServiceModule(appSettings, Log));
-                builder.RegisterModule(new CommissionServiceExternalModule(appSettings));
-                builder.RegisterModule(new CqrsModule(appSettings.CurrentValue.CommissionService.Cqrs, Log));
-
-                builder.Populate(services);
-
-                ApplicationContainer = builder.Build();
-                return new AutofacServiceProvider(ApplicationContainer);
             }
             catch (Exception ex)
             {
@@ -124,11 +125,20 @@ namespace MarginTrading.CommissionService
             }
         }
 
+        public void ConfigureContainer(ContainerBuilder builder)
+        {
+            builder.RegisterModule(new CommissionServiceModule(_mtSettingsManager, Log));
+            builder.RegisterModule(new CommissionServiceExternalModule(_mtSettingsManager));
+            builder.RegisterModule(new CqrsModule(_mtSettingsManager.CurrentValue.CommissionService.Cqrs, Log));
+        }
+
         [UsedImplicitly]
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
         {
             try
             {
+                ApplicationContainer = app.ApplicationServices.GetAutofacRoot();
+
                 if (env.IsDevelopment())
                 {
                     app.UseDeveloperExceptionPage();
@@ -141,11 +151,14 @@ namespace MarginTrading.CommissionService
 #if DEBUG
                 app.UseLykkeMiddleware(ServiceName, ex => ex.ToString());
 #else
-                app.UseLykkeMiddleware(ServiceName, ex => new ErrorResponse {ErrorMessage = "Technical problem", Details = ex.Message});
+                app.UseLykkeMiddleware(ServiceName, ex => new ErrorResponse {ErrorMessage = "Technical problem", Details
+ = ex.Message});
 #endif
-                
+
+                app.UseRouting();
                 app.UseAuthentication();
-                app.UseMvc();
+                app.UseAuthorization();
+                app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
                 app.UseSwagger();
                 app.UseSwaggerUI(a => a.SwaggerEndpoint("/swagger/v1/swagger.json", "Main Swagger"));
 
@@ -179,7 +192,7 @@ namespace MarginTrading.CommissionService
                 rabbitMqService.Subscribe(settings.RabbitMq.Consumers.FxRateRabbitMqSettings, false,
                     fxRateCacheService.SetQuote,
                     rabbitMqService.GetMsgPackDeserializer<ExternalExchangeOrderbookMessage>(), settings.InstanceId);
-                
+
                 rabbitMqService.Subscribe(settings.RabbitMq.Consumers.QuotesRabbitMqSettings, false,
                     quote => quotesCacheService.SetQuote(quote),
                     rabbitMqService.GetJsonDeserializer<InstrumentBidAskPair>(), settings.InstanceId);
@@ -194,11 +207,11 @@ namespace MarginTrading.CommissionService
                 rabbitMqService.Subscribe(settings.RabbitMq.Consumers.AccountMarginEvents, true,
                     arg => accountMarginEventsProjection.Handle(arg),
                     rabbitMqService.GetJsonDeserializer<MarginEventMessage>(), settings.InstanceId);
-                
+
                 cqrsEngine.StartSubscribers();
                 cqrsEngine.StartProcesses();
 
-                Program.Host.WriteLogsAsync(Environment, LogLocator.CommonLog).Wait();
+                Program.AppHost.WriteLogs(Environment, LogLocator.CommonLog);
 
                 Log?.WriteMonitorAsync("", "", "Started").Wait();
             }
@@ -253,7 +266,7 @@ namespace MarginTrading.CommissionService
             }
         }
 
-        private static ILog CreateLog(IConfiguration configuration, IServiceCollection services, 
+        private static ILog CreateLog(IConfiguration configuration, IServiceCollection services,
             IReloadingManager<AppSettings> settings)
         {
             const string requestsLogName = "CommissionServiceRequestsLog";

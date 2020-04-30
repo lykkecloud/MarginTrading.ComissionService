@@ -19,11 +19,13 @@ namespace MarginTrading.CommissionService.Services
     {
         private readonly IAssetsCache _assetsCache;
         private readonly string _fontPath;
+        private readonly string _timeZonePartOfTheName;
 
-        public ReportGenService(IAssetsCache assetsCache, string fontPath)
+        public ReportGenService(IAssetsCache assetsCache, string fontPath, string timeZonePartOfTheName)
         {
             _assetsCache = assetsCache;
             _fontPath = fontPath;
+            _timeZonePartOfTheName = timeZonePartOfTheName;
         }
 
         public byte[] GenerateBafinCncReport(IEnumerable<CostsAndChargesCalculation> calculations)
@@ -42,7 +44,7 @@ namespace MarginTrading.CommissionService.Services
         public byte[] GenerateBafinCncForOneCalc(CostsAndChargesCalculation calculation)
         {
             var assetName = _assetsCache.GetName(calculation.Instrument);
-            var time = GetBerlinTime(calculation.Timestamp);
+            var time = ConvertToReportTimeZone(calculation.Timestamp);
             var accountPrefix = !string.IsNullOrEmpty(calculation.AccountId) ? calculation.AccountId + " - " : "";
 
             return GenerateOnePart(new[]
@@ -164,10 +166,23 @@ namespace MarginTrading.CommissionService.Services
                 .GenerateAsByteArray();
         }
 
-        public static DateTime GetBerlinTime(DateTime time)
+        private DateTime ConvertToReportTimeZone(DateTime sourceDt)
         {
-            var tz = TimeZoneInfo.GetSystemTimeZones().First(x => x.Id.Contains("Berlin"));
-            return TimeZoneInfo.ConvertTimeFromUtc(time, tz);
+            var timeZoneFromSettings = string.IsNullOrWhiteSpace(_timeZonePartOfTheName)
+                ? null
+                : TimeZoneInfo.GetSystemTimeZones().FirstOrDefault(x => x.Id.Contains(_timeZonePartOfTheName));
+
+            if (timeZoneFromSettings == null)
+            {
+                if (sourceDt.Kind == DateTimeKind.Utc)
+                {
+                    return sourceDt;
+                }
+
+                return TimeZoneInfo.ConvertTime(sourceDt, TimeZoneInfo.Utc);
+            }
+
+            return TimeZoneInfo.ConvertTime(sourceDt, timeZoneFromSettings);
         }
 
         private byte[] MergeTwoPdfs(byte[] pdf1, byte[] pdf2)

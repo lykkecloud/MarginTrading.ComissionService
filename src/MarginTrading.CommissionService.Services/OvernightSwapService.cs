@@ -25,6 +25,7 @@ using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.SettingsService.Contracts;
 using MarginTrading.SettingsService.Contracts.AssetPair;
 using Microsoft.Extensions.Internal;
+using MoreLinq;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 

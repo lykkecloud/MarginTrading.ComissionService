@@ -165,7 +165,11 @@ namespace MarginTrading.CommissionService.Modules
                 .SingleInstance();
 
             builder.Register<IReportGenService>(ctx =>
-                new ReportGenService(ctx.Resolve<IAssetsCache>(), "./Fonts/")).SingleInstance();
+                new ReportGenService(
+                    ctx.Resolve<IAssetsCache>(), 
+                    "./Fonts/",
+                    _settings.CurrentValue.CommissionService.ReportSettings.TimeZonePartOfTheName))
+                .SingleInstance();
         }
 
         private void RegisterRepositories(ContainerBuilder builder)
