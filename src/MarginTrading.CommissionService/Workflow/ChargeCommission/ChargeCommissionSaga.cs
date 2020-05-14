@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Common;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
@@ -11,6 +12,7 @@ using Lykke.MarginTrading.CommissionService.Contracts.Commands;
 using Lykke.MarginTrading.CommissionService.Contracts.Events;
 using MarginTrading.AccountsManagement.Contracts.Commands;
 using MarginTrading.AccountsManagement.Contracts.Models;
+using MarginTrading.Backend.Contracts.Positions;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Repositories;
@@ -278,6 +280,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
             if (executionInfo.Data.SwitchState(CommissionOperationState.Initiated,
                 CommissionOperationState.Calculated))
             {
+                var metadata = new UnrealizedPnlMetadataContract {RawTotalPnl = evt.RawTotalPnL};
+                
                 sender.SendCommand(new ChangeBalanceCommand(
                         operationId: evt.OperationId,
                         clientId: null,
@@ -285,7 +289,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                         amount: evt.Pnl,
                         reasonType: AccountBalanceChangeReasonTypeContract.UnrealizedDailyPnL,
                         reason: $"Daily Pnl for account {evt.AccountId}",
-                        auditLog: null,
+                        auditLog: metadata.ToJson(),
                         eventSourceId: evt.PositionId,
                         assetPairId: evt.AssetPairId,
                         tradingDay: evt.TradingDay),

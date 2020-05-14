@@ -46,9 +46,12 @@ namespace MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events
         
         [Key(8)]
         public decimal FxRate { get; }
+        
+        [Key(9)]
+        public decimal RawTotalPnL { get; }
 
         public DailyPnlCalculatedInternalEvent([NotNull] string operationId, DateTime creationTimestamp,
-            [NotNull] string accountId, [NotNull] string positionId, [NotNull] string assetPairId, decimal pnl, DateTime tradingDay, decimal volume, decimal fxRate)
+            [NotNull] string accountId, [NotNull] string positionId, [NotNull] string assetPairId, decimal pnl, DateTime tradingDay, decimal volume, decimal fxRate, decimal rawTotalPnL)
         {
             OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
             CreationTimestamp = creationTimestamp;
@@ -59,6 +62,7 @@ namespace MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events
             TradingDay = tradingDay;
             Volume = volume;
             FxRate = fxRate;
+            RawTotalPnL = rawTotalPnL;
         }
     }
 }

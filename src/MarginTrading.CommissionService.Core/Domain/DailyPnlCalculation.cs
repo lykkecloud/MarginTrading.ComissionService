@@ -23,14 +23,14 @@ namespace MarginTrading.CommissionService.Core.Domain
         public decimal FxRate { get; }
         public string PositionId { get; }
         public decimal Pnl { get; }
-        
+        public decimal RawTotalPnl { get; }
         public bool IsSuccess { get; }
         public Exception Exception { get; }
         public bool? WasCharged { get; }
 
         public DailyPnlCalculation([NotNull] string operationId, [NotNull] string accountId,
             [NotNull] string instrument, DateTime time, DateTime tradingDay, decimal volume, decimal fxRate,
-            [NotNull] string positionId, decimal pnl, 
+            [NotNull] string positionId, decimal pnl, decimal rawTotalPnl, 
             bool isSuccess, [CanBeNull] Exception exception = null, bool? wasCharged = null)
         {
             OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
@@ -42,6 +42,7 @@ namespace MarginTrading.CommissionService.Core.Domain
             FxRate = fxRate;
             PositionId = positionId ?? throw new ArgumentNullException(nameof(operationId));
             Pnl = pnl;
+            RawTotalPnl = rawTotalPnl;
             IsSuccess = isSuccess;
             Exception = exception;
             WasCharged = wasCharged;

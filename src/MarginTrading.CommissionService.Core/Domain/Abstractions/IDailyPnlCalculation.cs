@@ -23,5 +23,6 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
         Exception Exception { get; }
         
         bool? WasCharged { get; }
+        decimal RawTotalPnl { get; }
     }
 }
