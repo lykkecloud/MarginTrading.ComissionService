@@ -51,15 +51,13 @@ namespace MarginTrading.CommissionService.Services
         /// Value must be charged as it is, without negation
         /// </summary>
         public async Task<(decimal Swap, string Details)> GetOvernightSwap(string accountId, string instrument,
-            decimal volume, decimal closePrice, PositionDirection direction, int numberOfFinancingDays,
-            int financingDaysPerYear)
+            decimal volume, decimal closePrice, decimal fxRate, PositionDirection direction,
+            int numberOfFinancingDays, int financingDaysPerYear)
         {
             var rateSettings = await _rateSettingsService.GetOvernightSwapRate(instrument);
             var account = await _accountRedisCache.GetAccount(accountId);
 
-            var calculationBasis = _cfdCalculatorService.GetFxRateForAssetPair(account.BaseAssetId,
-                                       instrument, account.LegalEntity)
-                                   * Math.Abs(volume) * closePrice;
+            var calculationBasis = fxRate * Math.Abs(volume) * closePrice;
 
             var variableRateBase = _interestRatesCacheService.GetRate(rateSettings.VariableRateBase);
             var variableRateQuote = _interestRatesCacheService.GetRate(rateSettings.VariableRateQuote);

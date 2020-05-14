@@ -9,7 +9,7 @@ namespace MarginTrading.CommissionService.Core.Services
     public interface ICommissionCalcService
     {
         Task<(decimal Swap, string Details)> GetOvernightSwap(string accountId, string instrument,
-            decimal volume, decimal closePrice, PositionDirection direction,
+            decimal volume, decimal closePrice, decimal fxRate, PositionDirection direction,
             int numberOfFinancingDays, int financingDaysPerYear);
         Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument,
             decimal volume, decimal commandOrderExecutionPrice, decimal orderExecutionFxRate);
