@@ -80,8 +80,8 @@ namespace MarginTrading.CommissionService.Services
 					$"The positions are not available from snapshot data for {tradingDay.ToString(CultureInfo.InvariantCulture)}");
 			}
 			
-			//prepare the list of orders. Explicit end of the day is ok for DateTime From by requirements.
-			var allLast = await _dailyPnlHistoryRepository.GetAsync(tradingDay, null);
+			//prepare the list of positions
+			var allLast = await _dailyPnlHistoryRepository.GetAsync(tradingDay, tradingDay.AddDays(1));
 
 			var calculatedIds = allLast.Where(x => x.IsSuccess).Select(x => x.PositionId).ToHashSet();
 			//select only non-calculated positions, changed before current invocation time
