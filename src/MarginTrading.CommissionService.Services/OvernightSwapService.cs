@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -81,6 +82,12 @@ namespace MarginTrading.CommissionService.Services
 		private async Task<IReadOnlyList<IOpenPosition>> GetOrdersForCalculationAsync(DateTime tradingDay)
 		{
 			var openPositions = await _snapshotRepository.GetPositionsAsync(tradingDay);
+
+			if (openPositions == null)
+			{
+				throw new InvalidOperationException(
+					$"The positions are not available from snapshot data for {tradingDay.ToString(CultureInfo.InvariantCulture)}");
+			}
 			
 			//prepare the list of orders. Explicit end of the day is ok for DateTime From by requirements.
 			var allLast = await _overnightSwapHistoryRepository.GetAsync(tradingDay, null);

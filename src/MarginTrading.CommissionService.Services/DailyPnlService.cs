@@ -72,18 +72,6 @@ namespace MarginTrading.CommissionService.Services
 		/// <returns></returns>
 		private async Task<IReadOnlyList<IOpenPosition>> GetOrdersForCalculationAsync(DateTime tradingDay)
 		{
-			var now = _systemClock.UtcNow.UtcDateTime;
-			if (tradingDay < now.Date.AddDays(-1))
-			{
-				await _log.WriteWarningAsync(
-					nameof(OvernightSwapService),
-					nameof(GetOrdersForCalculationAsync),
-					$"Daily Pnl Calculation for tradingDay: {tradingDay:d} has been done already, therefore skipping recalculations.",
-					DateTime.UtcNow);
-
-				return new List<OpenPosition>();
-			}
-
 			var openPositions = await _snapshotRepository.GetPositionsAsync(tradingDay);
 
 			if (openPositions == null)
