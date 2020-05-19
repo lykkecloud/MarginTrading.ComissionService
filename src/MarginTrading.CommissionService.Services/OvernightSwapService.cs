@@ -180,9 +180,10 @@ namespace MarginTrading.CommissionService.Services
 					isSuccess: false,
 					exception: exception);
 			}
-			
-			var (swap, details) = await _commissionCalcService.GetOvernightSwap(position.AccountId, position
-					.AssetPairId, position.CurrentVolume, position.ClosePrice, position.Direction, numberOfFinancingDays, financingDaysPerYear);
+
+			var (swap, details) = await _commissionCalcService.GetOvernightSwap(position.AccountId,
+				position.AssetPairId, position.CurrentVolume, position.ClosePrice, position.FxRate, position.Direction,
+				numberOfFinancingDays, financingDaysPerYear);
 
 			return new OvernightSwapCalculation(
 				operationId: operationId,

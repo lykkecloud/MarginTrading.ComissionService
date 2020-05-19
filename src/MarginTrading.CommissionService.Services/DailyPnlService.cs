@@ -189,7 +189,7 @@ namespace MarginTrading.CommissionService.Services
 		/// Calculate daily pnl for position.
 		/// </summary>
 		private static DailyPnlCalculation ProcessPosition(IOpenPosition position, string operationId, DateTime now, 
-			DateTime tradingDay, int? accuracy, Exception exception = null)
+			DateTime tradingDay, int accuracy, Exception exception = null)
 		{
 			if (exception != null)
 			{
@@ -203,11 +203,15 @@ namespace MarginTrading.CommissionService.Services
 					fxRate: position.FxRate,
 					positionId: position.Id,
 					pnl: 0,
+					rawTotalPnl: 0,
 					isSuccess: false,
 					exception: exception
 				);
 			}
 
+			var rawTotalPnl = (position.ClosePrice - position.OpenPrice) * position.CurrentVolume * position.FxRate;
+			var unrealizedPnl = Math.Round(rawTotalPnl, accuracy) - Math.Round(position.ChargedPnl, accuracy);
+			
 			return new DailyPnlCalculation(
 				operationId: operationId,
 				accountId: position.AccountId,
@@ -217,9 +221,8 @@ namespace MarginTrading.CommissionService.Services
 				volume: position.CurrentVolume,
 				fxRate: position.FxRate,
 				positionId: position.Id,
-				pnl: accuracy.HasValue
-					? Math.Round(position.UnrealizedPnl, accuracy.Value)
-					: position.UnrealizedPnl,
+				pnl: unrealizedPnl,
+				rawTotalPnl: rawTotalPnl,
 				isSuccess: true
 			);
 		}

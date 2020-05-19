@@ -28,6 +28,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Entities
         Exception IDailyPnlCalculation.Exception => JsonConvert.DeserializeObject<Exception>(Exception);
         
         public bool? WasCharged { get; private set; }
+        public decimal RawTotalPnl { get; private set; }
 
         public static DailyPnlEntity Create(IDailyPnlCalculation obj)
         {
@@ -48,6 +49,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Entities
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                 }),
                 WasCharged = obj.WasCharged,
+                RawTotalPnl = obj.RawTotalPnl
             };
         }
     }

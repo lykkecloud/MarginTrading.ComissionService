@@ -124,7 +124,8 @@ namespace MarginTrading.CommissionService.Workflow.DailyPnl
                         pnl: pnl.Pnl,
                         tradingDay: pnl.TradingDay,
                         volume: pnl.Volume,
-                        fxRate: pnl.FxRate
+                        fxRate: pnl.FxRate,
+                        rawTotalPnL: pnl.RawTotalPnl
                     ));
                 }
             }
