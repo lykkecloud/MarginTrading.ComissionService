@@ -39,6 +39,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.PlatformAbstractions;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
+using ClientSettings = Lykke.Snow.Common.Startup.ApiKey.ClientSettings;
 
 namespace MarginTrading.CommissionService
 {
@@ -80,8 +81,8 @@ namespace MarginTrading.CommissionService
 
                         return s;
                     });
-                
-                services.AddApiKeyAuth(_mtSettingsManager.CurrentValue.CommissionServiceClient);
+
+                services.AddApiKeyAuth(_mtSettingsManager.CurrentValue.CommissionServiceClient.ToGeneric());
                 
                 services.AddSwaggerGen(options =>
                 {
