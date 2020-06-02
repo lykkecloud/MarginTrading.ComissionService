@@ -2,17 +2,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security.Claims;
-using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Common.Log;
 using JetBrains.Annotations;
-using Lykke.AzureQueueIntegration;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Common.ApiLibrary.Swagger;
 using Lykke.Cqrs;
@@ -22,44 +16,30 @@ using Lykke.Logs.MsSql.Repositories;
 using Lykke.Logs.Serilog;
 using Lykke.MarginTrading.CommissionService.Contracts.Api;
 using Lykke.SettingsReader;
-using Lykke.SlackNotification.AzureQueue;
-using Lykke.SlackNotifications;
 using Lykke.Snow.Common.Startup;
 using Lykke.Snow.Common.Startup.ApiKey;
-using Lykke.Snow.Common.Startup.ApiKey.Validator;
 using Lykke.Snow.Common.Startup.Hosting;
 using Lykke.Snow.Common.Startup.Log;
 using MarginTrading.Backend.Contracts.Events;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
-using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Infrastructure;
 using MarginTrading.CommissionService.Modules;
 using MarginTrading.CommissionService.Services;
-using MarginTrading.CommissionService.Services.Caches;
-using MarginTrading.CommissionService.SqlRepositories.Repositories;
 using MarginTrading.CommissionService.Workflow;
 using MarginTrading.OrderbookAggregator.Contracts.Messages;
 using MarginTrading.SettingsService.Contracts.Messages;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.Authorization;
-using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.PlatformAbstractions;
-using Microsoft.OpenApi.Models;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
-using Swashbuckle.AspNetCore.SwaggerGen;
+using ClientSettings = Lykke.Snow.Common.Startup.ApiKey.ClientSettings;
 
 namespace MarginTrading.CommissionService
 {
@@ -67,12 +47,12 @@ namespace MarginTrading.CommissionService
     {
         public static string ServiceName { get; } = PlatformServices.Default.Application.ApplicationName;
         private IReloadingManager<AppSettings> _mtSettingsManager;
-        private IHostingEnvironment Environment { get; }
+        private IHostEnvironment Environment { get; }
         private ILifetimeScope ApplicationContainer { get; set; }
         private IConfigurationRoot Configuration { get; }
         [CanBeNull] private ILog Log { get; set; }
 
-        public Startup(IHostingEnvironment env)
+        public Startup(IHostEnvironment env)
         {
             Configuration = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
@@ -101,8 +81,8 @@ namespace MarginTrading.CommissionService
 
                         return s;
                     });
-                
-                services.AddApiKeyAuth(_mtSettingsManager.CurrentValue.CommissionServiceClient);
+
+                services.AddApiKeyAuth(_mtSettingsManager.CurrentValue.CommissionServiceClient.ToGeneric());
                 
                 services.AddSwaggerGen(options =>
                 {
@@ -125,6 +105,7 @@ namespace MarginTrading.CommissionService
             }
         }
 
+        [UsedImplicitly]
         public void ConfigureContainer(ContainerBuilder builder)
         {
             builder.RegisterModule(new CommissionServiceModule(_mtSettingsManager, Log));
@@ -133,7 +114,7 @@ namespace MarginTrading.CommissionService
         }
 
         [UsedImplicitly]
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
+        public void Configure(IApplicationBuilder app, IHostEnvironment env, IHostApplicationLifetime appLifetime)
         {
             try
             {

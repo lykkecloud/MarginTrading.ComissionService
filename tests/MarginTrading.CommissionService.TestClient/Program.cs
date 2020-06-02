@@ -2,14 +2,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using AsyncFriendlyStackTrace;
 using Common;
 using JetBrains.Annotations;
 using Lykke.HttpClientGenerator;
 using Lykke.MarginTrading.CommissionService.Contracts;
-using Lykke.Snow.Common.Startup;
 using Newtonsoft.Json;
 using Refit;
 

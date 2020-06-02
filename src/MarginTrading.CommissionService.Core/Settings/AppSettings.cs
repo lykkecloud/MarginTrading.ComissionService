@@ -3,15 +3,15 @@
 
 using JetBrains.Annotations;
 using Lykke.SettingsReader.Attributes;
-using Lykke.Snow.Common.Startup.ApiKey;
 
 namespace MarginTrading.CommissionService.Core.Settings
 {
+    [UsedImplicitly]
     public class AppSettings
     {
         public CommissionServiceSettings CommissionService { get; set; }
         
-        [Optional, CanBeNull]
+        [Optional]
         public ClientSettings CommissionServiceClient { get; set; } = new ClientSettings();
     }
 }
