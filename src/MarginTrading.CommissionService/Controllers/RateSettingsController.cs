@@ -36,7 +36,7 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpGet("get-order-exec")]
         public async Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates()
         {
-            return (await _rateSettingsService.GetOrderExecutionRatesForApi())
+            return (await _rateSettingsService.GetOrderExecutionRates())
                 ?.Select(x => _convertService.Convert<OrderExecutionRate, OrderExecutionRateContract>(x)).ToList()
                    ?? new List<OrderExecutionRateContract>();
         }
@@ -46,12 +46,24 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpGet("get-order-exec/{assetPairId}")]
         public async Task<OrderExecutionRateContract> GetOrderExecutionRate(string assetPairId)
         {
-            var executionRate = await _rateSettingsService.GetOrderExecutionRate(assetPairId);
+            var executionRate = (await _rateSettingsService.GetOrderExecutionRates(new[] {assetPairId})).Single();
 
             if (executionRate == null)
                 return null;
 
             return _convertService.Convert<OrderExecutionRate, OrderExecutionRateContract>(executionRate);
+        }
+
+        [ProducesResponseType(typeof(IReadOnlyList<OrderExecutionRateContract>), 200)]
+        [ProducesResponseType(400)]
+        [HttpGet("get-order-exec/list")]
+        public async Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates(string[] assetPairIds)
+        {
+            var executionRates = await _rateSettingsService.GetOrderExecutionRates(assetPairIds);
+
+            return executionRates
+                .Select(_convertService.Convert<OrderExecutionRate, OrderExecutionRateContract>)
+                .ToList();
         }
 
         /// <summary>
