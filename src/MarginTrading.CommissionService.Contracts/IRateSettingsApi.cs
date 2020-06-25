@@ -21,6 +21,12 @@ namespace Lykke.MarginTrading.CommissionService.Contracts
         /// </summary>
         [Get("/api/rates/get-order-exec")]
         Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates();
+        
+        /// <summary>
+        /// Get order execution rates for asset pair id
+        /// </summary>
+        [Get("/api/rates/get-order-exec/{assetPairId}")]
+        Task<OrderExecutionRateContract> GetOrderExecutionRate(string assetPairId);
 
         /// <summary>
         /// Insert or update existing order execution rates

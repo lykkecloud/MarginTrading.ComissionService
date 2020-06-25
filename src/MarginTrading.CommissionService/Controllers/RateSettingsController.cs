@@ -7,10 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Lykke.MarginTrading.CommissionService.Contracts;
 using Lykke.MarginTrading.CommissionService.Contracts.Models;
-using MarginTrading.CommissionService.Core;
-using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Rates;
-using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Middleware;
 using Microsoft.AspNetCore.Authorization;
@@ -42,6 +39,19 @@ namespace MarginTrading.CommissionService.Controllers
             return (await _rateSettingsService.GetOrderExecutionRatesForApi())
                 ?.Select(x => _convertService.Convert<OrderExecutionRate, OrderExecutionRateContract>(x)).ToList()
                    ?? new List<OrderExecutionRateContract>();
+        }
+
+        [ProducesResponseType(typeof(OrderExecutionRateContract), 200)]
+        [ProducesResponseType(400)]
+        [HttpGet("get-order-exec/{assetPairId}")]
+        public async Task<OrderExecutionRateContract> GetOrderExecutionRate(string assetPairId)
+        {
+            var executionRate = await _rateSettingsService.GetOrderExecutionRate(assetPairId);
+
+            if (executionRate == null)
+                return null;
+
+            return _convertService.Convert<OrderExecutionRate, OrderExecutionRateContract>(executionRate);
         }
 
         /// <summary>
@@ -111,7 +121,7 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpPost("replace-on-behalf")]
         public async Task ReplaceOnBehalfRate([FromBody] OnBehalfRateContract rate)
         {
-            if (string.IsNullOrWhiteSpace(rate?.CommissionAsset))
+            if (string.IsNullOrWhiteSpace(rate.CommissionAsset))
             {
                 throw new ArgumentNullException(nameof(rate.CommissionAsset));
             }
