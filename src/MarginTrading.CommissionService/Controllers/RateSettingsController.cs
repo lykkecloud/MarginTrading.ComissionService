@@ -57,7 +57,7 @@ namespace MarginTrading.CommissionService.Controllers
         [ProducesResponseType(typeof(IReadOnlyList<OrderExecutionRateContract>), 200)]
         [ProducesResponseType(400)]
         [HttpGet("get-order-exec/list")]
-        public async Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates(string[] assetPairIds)
+        public async Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates([FromQuery] string[] assetPairIds)
         {
             var executionRates = await _rateSettingsService.GetOrderExecutionRates(assetPairIds);
 
