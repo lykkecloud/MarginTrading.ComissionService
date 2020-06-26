@@ -46,7 +46,7 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpGet("get-order-exec/{assetPairId}")]
         public async Task<OrderExecutionRateContract> GetOrderExecutionRate(string assetPairId)
         {
-            var executionRate = (await _rateSettingsService.GetOrderExecutionRates(new[] {assetPairId})).Single();
+            var executionRate = (await _rateSettingsService.GetOrderExecutionRates(new[] {assetPairId})).SingleOrDefault();
 
             if (executionRate == null)
                 return null;
