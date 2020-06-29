@@ -1,15 +1,17 @@
 // Copyright (c) 2019 Lykke Corp.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
-using Lykke.RabbitMqBroker.Publisher;
-using Lykke.RabbitMqBroker.Subscriber;
+using Lykke.Common.Log;
 using MarginTrading.CommissionService.Core;
+using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Rates;
+using MarginTrading.CommissionService.Core.Exceptions;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings.Rates;
@@ -25,24 +27,52 @@ namespace MarginTrading.CommissionService.Services
         private readonly IEventSender _eventSender;
         private readonly ILog _log;
         private readonly DefaultRateSettings _defaultRateSettings;
+        private readonly IAssetPairsCache _assetPairsCache;
 
         public RateSettingsService(
             IMarginTradingBlobRepository blobRepository,
             IDatabase redisDatabase,
             IEventSender eventSender,
             ILog log,
-            DefaultRateSettings defaultRateSettings)
+            DefaultRateSettings defaultRateSettings, 
+            IAssetPairsCache assetPairsCache)
         {
             _blobRepository = blobRepository;
             _redisDatabase = redisDatabase;
             _eventSender = eventSender;
             _log = log;
             _defaultRateSettings = defaultRateSettings;
+            _assetPairsCache = assetPairsCache;
         }
 
         #region Order Execution
 
-        public async Task<OrderExecutionRate> GetOrderExecutionRate(string assetPairId)
+        public async Task<IReadOnlyList<OrderExecutionRate>> GetOrderExecutionRates(IList<string> assetPairIds = null)
+        {
+            if (assetPairIds == null || !assetPairIds.Any())
+                return await GetOrderExecutionAllRates();
+
+            var result = new List<OrderExecutionRate>();
+            foreach (var assetPair in assetPairIds)
+            {
+                try
+                {
+                    _assetPairsCache.GetAssetPairById(assetPair);
+                }
+                catch (AssetPairNotFoundException)
+                {
+                    _log.Warning($"Requested asset pair [{assetPair}] not found. Can't get an order execution rate.");
+                    continue;
+                }
+
+                var rate = await GetOrderExecutionSingleRate(assetPair);
+                result.Add(rate);
+            }
+
+            return result;
+        }
+
+        private async Task<OrderExecutionRate> GetOrderExecutionSingleRate(string assetPairId)
         {
             //first we try to grab from Redis
             var serializedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OrderExecutionKey))
@@ -57,7 +87,7 @@ namespace MarginTrading.CommissionService.Services
                 cachedData = repoData?.FirstOrDefault(x => x.AssetPairId == assetPairId);
                 if (cachedData == null)
                 {
-                    await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOrderExecutionRate),
+                    await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOrderExecutionSingleRate),
                         $"No order execution rate for {assetPairId}. Using the default one.");
 
                     var rateFromDefault =
@@ -73,7 +103,7 @@ namespace MarginTrading.CommissionService.Services
             return cachedData;
         }
         
-        public async Task<IReadOnlyList<OrderExecutionRate>> GetOrderExecutionRatesForApi()
+        private async Task<IReadOnlyList<OrderExecutionRate>> GetOrderExecutionAllRates()
         {
             var cachedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OrderExecutionKey))
                 ? (await _redisDatabase.HashGetAllAsync(GetKey(LykkeConstants.OrderExecutionKey)))

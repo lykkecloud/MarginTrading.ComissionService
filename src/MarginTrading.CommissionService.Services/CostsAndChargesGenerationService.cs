@@ -118,7 +118,7 @@ namespace MarginTrading.CommissionService.Services
             
             var tradingInstrument = _tradingInstrumentsCache.Get(tradingConditionId, instrument);
             var fxRate = 1 / _cfdCalculatorService.GetFxRateForAssetPair(baseAssetId, instrument, legalEntity);
-            var commissionRate = await _rateSettingsService.GetOrderExecutionRate(instrument);
+            var commissionRate = (await _rateSettingsService.GetOrderExecutionRates(new[] {instrument})).Single();
             var overnightSwapRate = await _rateSettingsService.GetOvernightSwapRate(instrument);
             var variableRateBase = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateBase);
             var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);

@@ -11,7 +11,6 @@ using Common.Log;
 using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
-using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.TradingHistory.Client;
 using MarginTrading.TradingHistory.Client.Models;
@@ -86,7 +85,7 @@ namespace MarginTrading.CommissionService.Services
         public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument,
             decimal volume, decimal orderExecutionPrice, decimal orderExecutionFxRate)
         {
-            var rateSettings = await _rateSettingsService.GetOrderExecutionRate(instrument);
+            var rateSettings = (await _rateSettingsService.GetOrderExecutionRates(new[] {instrument})).Single();
             var account = await _accountRedisCache.GetAccount(accountId);
 
             var fxRate = account.BaseAssetId != rateSettings.CommissionAsset
