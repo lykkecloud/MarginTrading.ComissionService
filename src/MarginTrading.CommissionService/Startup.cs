@@ -81,6 +81,8 @@ namespace MarginTrading.CommissionService
 
                         return s;
                     });
+                
+                services.AddApplicationInsightsTelemetry(_mtSettingsManager.CurrentValue.CommissionService.AppInsightsInstrumentationKey);
 
                 services.AddApiKeyAuth(_mtSettingsManager.CurrentValue.CommissionServiceClient.ToGeneric());
                 

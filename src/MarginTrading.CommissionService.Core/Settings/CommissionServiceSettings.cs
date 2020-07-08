@@ -56,5 +56,8 @@ namespace MarginTrading.CommissionService.Core.Settings
             new CostsAndChargesDefaultSettings();
         
         public ReportSettings ReportSettings { get; set; }
+        
+        [Optional]
+        public string AppInsightsInstrumentationKey { get; set; }
     }
 }
