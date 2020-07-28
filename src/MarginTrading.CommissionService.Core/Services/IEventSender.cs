@@ -10,6 +10,6 @@ namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IEventSender
     {
-        Task SendRateSettingsChanged(CommissionType type);
+        
     }
 }

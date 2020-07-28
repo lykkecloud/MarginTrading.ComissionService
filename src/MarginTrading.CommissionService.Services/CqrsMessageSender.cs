@@ -8,7 +8,6 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
 using Lykke.MarginTrading.CommissionService.Contracts.Events;
-using Lykke.MarginTrading.CommissionService.Contracts.Messages;
 using Lykke.MarginTrading.CommissionService.Contracts.Models;
 using MarginTrading.AccountsManagement.Contracts.Commands;
 using MarginTrading.AccountsManagement.Contracts.Models;

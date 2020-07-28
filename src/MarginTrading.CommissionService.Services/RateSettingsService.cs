@@ -1,7 +1,6 @@
 // Copyright (c) 2019 Lykke Corp.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,7 +8,6 @@ using Common.Log;
 using Lykke.Common.Log;
 using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Caches;
-using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Rates;
 using MarginTrading.CommissionService.Core.Exceptions;
 using MarginTrading.CommissionService.Core.Repositories;
@@ -24,7 +22,6 @@ namespace MarginTrading.CommissionService.Services
     {
         private readonly IMarginTradingBlobRepository _blobRepository;
         private readonly IDatabase _redisDatabase;
-        private readonly IEventSender _eventSender;
         private readonly ILog _log;
         private readonly DefaultRateSettings _defaultRateSettings;
         private readonly IAssetPairsCache _assetPairsCache;
@@ -32,14 +29,12 @@ namespace MarginTrading.CommissionService.Services
         public RateSettingsService(
             IMarginTradingBlobRepository blobRepository,
             IDatabase redisDatabase,
-            IEventSender eventSender,
             ILog log,
             DefaultRateSettings defaultRateSettings, 
             IAssetPairsCache assetPairsCache)
         {
             _blobRepository = blobRepository;
             _redisDatabase = redisDatabase;
-            _eventSender = eventSender;
             _log = log;
             _defaultRateSettings = defaultRateSettings;
             _assetPairsCache = assetPairsCache;
@@ -155,8 +150,6 @@ namespace MarginTrading.CommissionService.Services
             
             await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OrderExecutionKey), 
                 rates.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
-
-            await _eventSender.SendRateSettingsChanged(CommissionType.OrderExecution);
         }
         
         #endregion Order Execution
@@ -237,8 +230,6 @@ namespace MarginTrading.CommissionService.Services
             
             await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OvernightSwapKey), 
                 rates.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
-
-            await _eventSender.SendRateSettingsChanged(CommissionType.OvernightSwap);
         }
         
         #endregion Overnight Swaps
@@ -300,8 +291,6 @@ namespace MarginTrading.CommissionService.Services
                 obj: rate);
             
             await _redisDatabase.StringSetAsync(GetKey(LykkeConstants.OnBehalfKey), Serialize(rate));
-
-            await _eventSender.SendRateSettingsChanged(CommissionType.OnBehalf);
         }
         
         #endregion On Behalf
