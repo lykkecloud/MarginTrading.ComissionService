@@ -172,10 +172,6 @@ namespace MarginTrading.CommissionService.Modules
                 throw new InvalidOperationException("Storage mode other than SqlServer is not supported");
             }
 
-            builder.Register<IMarginTradingBlobRepository>(ctx =>
-                    new SqlBlobRepository(_settings.CurrentValue.CommissionService.Db.StateConnString))
-                .SingleInstance();
-
             builder.RegisterType<OvernightSwapHistoryRepository>()
                 .As<IOvernightSwapHistoryRepository>()
                 .SingleInstance();
