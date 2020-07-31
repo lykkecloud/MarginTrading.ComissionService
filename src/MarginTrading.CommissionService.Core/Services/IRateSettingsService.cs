@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using MarginTrading.AssetService.Contracts.Rates;
-using MarginTrading.CommissionService.Core.Domain.Rates;
 
 namespace MarginTrading.CommissionService.Core.Services
 {

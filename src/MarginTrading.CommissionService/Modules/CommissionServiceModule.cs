@@ -37,19 +37,11 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterInstance(_settings.Nested(s => s.CommissionService)).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.RequestLoggerSettings).SingleInstance();
-            builder.RegisterInstance(_settings.CurrentValue.CommissionService.DefaultRateSettings).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.CostsAndChargesDefaults).SingleInstance();
             builder.RegisterInstance(_log).As<ILog>().SingleInstance();
             builder.RegisterType<SystemClock>().As<ISystemClock>().SingleInstance();
             
             builder.RegisterType<RabbitMqService>().As<IRabbitMqService>().SingleInstance();
-            
-            builder.RegisterType<EventSender>().As<IEventSender>()
-                .WithParameters(new[]
-                {
-                    new TypedParameter(typeof(RabbitMqSettings), _settings.CurrentValue.CommissionService.RabbitMq), 
-                })
-                .SingleInstance();
 
             builder.RegisterType<CqrsMessageSender>()
                 .As<ICqrsMessageSender>()

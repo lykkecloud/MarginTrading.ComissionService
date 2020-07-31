@@ -5,7 +5,6 @@ using System;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.SettingsReader.Attributes;
-using MarginTrading.CommissionService.Core.Settings.Rates;
 
 namespace MarginTrading.CommissionService.Core.Settings
 {
@@ -23,8 +22,6 @@ namespace MarginTrading.CommissionService.Core.Settings
         [Optional, CanBeNull]
         public ChaosSettings ChaosKitty { get; set; }
         
-        public DefaultRateSettings DefaultRateSettings { get; set; }
-
         [UsedImplicitly(ImplicitUseKindFlags.Assign)]
         public RedisSettings RedisSettings { get; set; }
         
