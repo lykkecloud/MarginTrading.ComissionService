@@ -146,6 +146,7 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<RateSettingsService>()
                 .As<IRateSettingsService>()
+                .As<IRateSettingsCache>()
                 .SingleInstance();
 
             builder.RegisterType<AccountRedisCache>()
