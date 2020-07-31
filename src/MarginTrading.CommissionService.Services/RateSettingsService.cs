@@ -6,13 +6,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
 using Lykke.Common.Log;
+using MarginTrading.AssetService.Contracts;
+using MarginTrading.AssetService.Contracts.Rates;
 using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Caches;
-using MarginTrading.CommissionService.Core.Domain.Rates;
 using MarginTrading.CommissionService.Core.Exceptions;
-using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
-using MarginTrading.CommissionService.Core.Settings.Rates;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 
@@ -20,34 +19,32 @@ namespace MarginTrading.CommissionService.Services
 {
     public class RateSettingsService : IRateSettingsService
     {
-        private readonly IMarginTradingBlobRepository _blobRepository;
         private readonly IDatabase _redisDatabase;
         private readonly ILog _log;
-        private readonly DefaultRateSettings _defaultRateSettings;
-        private readonly IAssetPairsCache _assetPairsCache;
 
-        public RateSettingsService(
-            IMarginTradingBlobRepository blobRepository,
-            IDatabase redisDatabase,
+        private readonly IAssetPairsCache _assetPairsCache;
+        private readonly IRateSettingsApi _rateSettingsApi;
+
+        public RateSettingsService(IDatabase redisDatabase,
             ILog log,
-            DefaultRateSettings defaultRateSettings, 
-            IAssetPairsCache assetPairsCache)
+            IAssetPairsCache assetPairsCache,
+            IRateSettingsApi rateSettingsApi)
         {
-            _blobRepository = blobRepository;
             _redisDatabase = redisDatabase;
             _log = log;
-            _defaultRateSettings = defaultRateSettings;
             _assetPairsCache = assetPairsCache;
+            _rateSettingsApi = rateSettingsApi;
         }
 
         #region Order Execution
 
-        public async Task<IReadOnlyList<OrderExecutionRate>> GetOrderExecutionRates(IList<string> assetPairIds = null)
+        public async Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates(
+            IList<string> assetPairIds = null)
         {
             if (assetPairIds == null || !assetPairIds.Any())
                 return await GetOrderExecutionAllRates();
 
-            var result = new List<OrderExecutionRate>();
+            var result = new List<OrderExecutionRateContract>();
             foreach (var assetPair in assetPairIds)
             {
                 try
@@ -67,43 +64,35 @@ namespace MarginTrading.CommissionService.Services
             return result;
         }
 
-        private async Task<OrderExecutionRate> GetOrderExecutionSingleRate(string assetPairId)
+        private async Task<OrderExecutionRateContract> GetOrderExecutionSingleRate(string assetPairId)
         {
             //first we try to grab from Redis
             var serializedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OrderExecutionKey))
                 ? await _redisDatabase.HashGetAsync(GetKey(LykkeConstants.OrderExecutionKey), assetPairId)
-                : (RedisValue)string.Empty;
-            var cachedData = serializedData.HasValue ? Deserialize<OrderExecutionRate>(serializedData) : null;
+                : (RedisValue) string.Empty;
+            var cachedData = serializedData.HasValue ? Deserialize<OrderExecutionRateContract>(serializedData) : null;
 
             //now we try to refresh the cache from repository
             if (cachedData == null)
             {
-                var repoData = await RefreshRedisFromRepo((List<OrderExecutionRate>)null);
+                var repoData = await RefreshRedisFromRepo((List<OrderExecutionRateContract>) null);
                 cachedData = repoData?.FirstOrDefault(x => x.AssetPairId == assetPairId);
                 if (cachedData == null)
                 {
                     await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOrderExecutionSingleRate),
-                        $"No order execution rate for {assetPairId}. Using the default one.");
-
-                    var rateFromDefault =
-                        OrderExecutionRate.FromDefault(_defaultRateSettings.DefaultOrderExecutionSettings, assetPairId);
-                    
-                    await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OrderExecutionKey), 
-                         new [] {new HashEntry(assetPairId, Serialize(rateFromDefault))});
-                    
-                    return rateFromDefault;
+                        $"No order execution rate for {assetPairId}. Should never reach here");
                 }
             }
 
             return cachedData;
         }
-        
-        private async Task<IReadOnlyList<OrderExecutionRate>> GetOrderExecutionAllRates()
+
+        private async Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionAllRates()
         {
             var cachedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OrderExecutionKey))
                 ? (await _redisDatabase.HashGetAllAsync(GetKey(LykkeConstants.OrderExecutionKey)))
-                    .Select(x => Deserialize<OrderExecutionRate>(x.Value)).ToList()
-                : new List<OrderExecutionRate>();
+                .Select(x => Deserialize<OrderExecutionRateContract>(x.Value)).ToList()
+                : new List<OrderExecutionRateContract>();
 
             // Refresh the data from the repo if it is absent in Redis
             if (cachedData.Count == 0)
@@ -114,16 +103,14 @@ namespace MarginTrading.CommissionService.Services
             return cachedData;
         }
 
-        private async Task<List<OrderExecutionRate>> RefreshRedisFromRepo(List<OrderExecutionRate> cachedData = null)
+        private async Task<List<OrderExecutionRateContract>> RefreshRedisFromRepo(
+            List<OrderExecutionRateContract> cachedData = null)
         {
-            var repoData = (await _blobRepository.ReadAsync<IEnumerable<OrderExecutionRate>>(
-                blobContainer: LykkeConstants.RateSettingsBlobContainer,
-                key: LykkeConstants.OrderExecutionKey
-            ))?.ToList();
+            var repoData = (await _rateSettingsApi.GetOrderExecutionRatesAsync())?.ToList();
 
             if (repoData != null && repoData.Count != 0)
             {
-                await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OrderExecutionKey), 
+                await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OrderExecutionKey),
                     repoData.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
                 cachedData = repoData;
             }
@@ -131,68 +118,49 @@ namespace MarginTrading.CommissionService.Services
             return cachedData;
         }
 
-        public async Task ReplaceOrderExecutionRates(List<OrderExecutionRate> rates)
+        public async Task ReplaceOrderExecutionRates(List<OrderExecutionRateContract> rates)
         {
-            rates = rates.Select(x =>
-            {
-                if (string.IsNullOrWhiteSpace(x.LegalEntity))
-                {
-                    x.LegalEntity = _defaultRateSettings.DefaultOrderExecutionSettings.LegalEntity;
-                }
-                return x;
-            }).ToList();
-            
-            await _blobRepository.MergeListAsync(
-                blobContainer: LykkeConstants.RateSettingsBlobContainer,
-                key: LykkeConstants.OrderExecutionKey,
-                objects: rates,
-                selector: x => x.AssetPairId);
-            
-            await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OrderExecutionKey), 
-                rates.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
+            await _rateSettingsApi.ReplaceOrderExecutionRatesAsync(rates.ToArray());
+            var updatedRates =
+                await _rateSettingsApi.GetOrderExecutionRatesAsync(rates.Select(rate => rate.AssetPairId).ToArray());
+
+            await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OrderExecutionKey),
+                updatedRates.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
         }
-        
+
         #endregion Order Execution
 
         #region Overnight Swaps
 
-        public async Task<OvernightSwapRate> GetOvernightSwapRate(string assetPairId)
+        public async Task<OvernightSwapRateContract> GetOvernightSwapRate(string assetPairId)
         {
             //first we try to grab from Redis
             var serializedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OvernightSwapKey))
                 ? await _redisDatabase.HashGetAsync(GetKey(LykkeConstants.OvernightSwapKey), assetPairId)
                 : (RedisValue) string.Empty;
-            var cachedData = serializedData.HasValue ? Deserialize<OvernightSwapRate>(serializedData) : null;
+            var cachedData = serializedData.HasValue ? Deserialize<OvernightSwapRateContract>(serializedData) : null;
 
             //now we try to refresh the cache from repository
             if (cachedData == null)
             {
-                var repoData = await RefreshRedisFromRepo((List<OvernightSwapRate>)null);
+                var repoData = await RefreshRedisFromRepo((List<OvernightSwapRateContract>) null);
                 cachedData = repoData?.FirstOrDefault(x => x.AssetPairId == assetPairId);
                 if (cachedData == null)
                 {
                     await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOvernightSwapRate),
-                        $"No overnight swap rate for {assetPairId}. Using the default one.");
-                    
-                    var rateFromDefault =
-                        OvernightSwapRate.FromDefault(_defaultRateSettings.DefaultOvernightSwapSettings, assetPairId);
-                    
-                    await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OvernightSwapKey), 
-                        new [] {new HashEntry(assetPairId, Serialize(rateFromDefault))});
-                    
-                    return rateFromDefault;
+                        $"No overnight swap rate for {assetPairId}. Should never reach here");
                 }
             }
 
             return cachedData;
         }
-        
-        public async Task<IReadOnlyList<OvernightSwapRate>> GetOvernightSwapRatesForApi()
+
+        public async Task<IReadOnlyList<OvernightSwapRateContract>> GetOvernightSwapRatesForApi()
         {
             var cachedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OvernightSwapKey))
                 ? (await _redisDatabase.HashGetAllAsync(GetKey(LykkeConstants.OvernightSwapKey)))
-                    .Select(x => Deserialize<OvernightSwapRate>(x.Value)).ToList()
-                : new List<OvernightSwapRate>();
+                .Select(x => Deserialize<OvernightSwapRateContract>(x.Value)).ToList()
+                : new List<OvernightSwapRateContract>();
 
             // Refresh the data from the repo if it is absent in Redis
             if (cachedData.Count == 0)
@@ -203,16 +171,14 @@ namespace MarginTrading.CommissionService.Services
             return cachedData;
         }
 
-        private async Task<List<OvernightSwapRate>> RefreshRedisFromRepo(List<OvernightSwapRate> cachedData = null)
+        private async Task<List<OvernightSwapRateContract>> RefreshRedisFromRepo(
+            List<OvernightSwapRateContract> cachedData = null)
         {
-            var repoData = (await _blobRepository.ReadAsync<IEnumerable<OvernightSwapRate>>(
-                blobContainer: LykkeConstants.RateSettingsBlobContainer,
-                key: LykkeConstants.OvernightSwapKey
-            ))?.ToList();
+            var repoData = (await _rateSettingsApi.GetOvernightSwapRatesAsync())?.ToList();
 
             if (repoData != null && repoData.Count != 0)
             {
-                await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OvernightSwapKey), 
+                await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OvernightSwapKey),
                     repoData.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
                 cachedData = repoData;
             }
@@ -220,55 +186,45 @@ namespace MarginTrading.CommissionService.Services
             return cachedData;
         }
 
-        public async Task ReplaceOvernightSwapRates(List<OvernightSwapRate> rates)
+        public async Task ReplaceOvernightSwapRates(List<OvernightSwapRateContract> rates)
         {
-            await _blobRepository.MergeListAsync(
-                blobContainer: LykkeConstants.RateSettingsBlobContainer,
-                key: LykkeConstants.OvernightSwapKey,
-                objects: rates,
-                selector: x => x.AssetPairId);
-            
-            await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OvernightSwapKey), 
-                rates.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
+            await _rateSettingsApi.ReplaceOvernightSwapRatesAsync(rates.ToArray());
+            var updatedRates =
+                await _rateSettingsApi.GetOvernightSwapRatesAsync(rates.Select(rate => rate.AssetPairId).ToArray());
+
+            await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OvernightSwapKey),
+                updatedRates.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
         }
-        
+
         #endregion Overnight Swaps
-        
+
         #region On Behalf
 
-        public async Task<OnBehalfRate> GetOnBehalfRate()
+        public async Task<OnBehalfRateContract> GetOnBehalfRate()
         {
             //first we try to grab from Redis
             var serializedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OnBehalfKey))
                 ? await _redisDatabase.StringGetAsync(GetKey(LykkeConstants.OnBehalfKey))
                 : (RedisValue) string.Empty;
-            var cachedData = serializedData.HasValue ? Deserialize<OnBehalfRate>(serializedData) : null;
+            var cachedData = serializedData.HasValue ? Deserialize<OnBehalfRateContract>(serializedData) : null;
 
             //now we try to refresh the cache from repository
             if (cachedData == null)
             {
-                cachedData = await RefreshRedisFromRepo((OnBehalfRate)null);
+                cachedData = await RefreshRedisFromRepo((OnBehalfRateContract) null);
                 if (cachedData == null)
                 {
                     await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOnBehalfRate),
-                        $"No OnBehalf rate saved, using the default one.");
-                    
-                    cachedData = OnBehalfRate.FromDefault(_defaultRateSettings.DefaultOnBehalfSettings);
-                    
-                    await _redisDatabase.StringSetAsync(GetKey(LykkeConstants.OnBehalfKey), Serialize(cachedData));
+                        $"No OnBehalf rate saved, should never reach here");
                 }
             }
 
             return cachedData;
         }
 
-        private async Task<OnBehalfRate> RefreshRedisFromRepo(OnBehalfRate cachedData = null)
+        private async Task<OnBehalfRateContract> RefreshRedisFromRepo(OnBehalfRateContract cachedData = null)
         {
-            var repoData = await _blobRepository.ReadAsync<OnBehalfRate>(
-                blobContainer: LykkeConstants.RateSettingsBlobContainer,
-                key: LykkeConstants.OnBehalfKey
-            );
-
+            var repoData = await _rateSettingsApi.GetOnBehalfRateAsync();
             if (repoData != null)
             {
                 await _redisDatabase.StringSetAsync(GetKey(LykkeConstants.OnBehalfKey), Serialize(repoData));
@@ -278,21 +234,14 @@ namespace MarginTrading.CommissionService.Services
             return cachedData;
         }
 
-        public async Task ReplaceOnBehalfRate(OnBehalfRate rate)
+        public async Task ReplaceOnBehalfRate(OnBehalfRateContract rate)
         {
-            if (string.IsNullOrWhiteSpace(rate.LegalEntity))
-            {
-                rate.LegalEntity = _defaultRateSettings.DefaultOrderExecutionSettings.LegalEntity;
-            }
+            await _rateSettingsApi.ReplaceOnBehalfRateAsync(rate);
+            var updatedRate = _rateSettingsApi.GetOnBehalfRateAsync();
 
-            await _blobRepository.WriteAsync(
-                blobContainer: LykkeConstants.RateSettingsBlobContainer,
-                key: LykkeConstants.OnBehalfKey,
-                obj: rate);
-            
-            await _redisDatabase.StringSetAsync(GetKey(LykkeConstants.OnBehalfKey), Serialize(rate));
+            await _redisDatabase.StringSetAsync(GetKey(LykkeConstants.OnBehalfKey), Serialize(updatedRate));
         }
-        
+
         #endregion On Behalf
 
         private string Serialize<TMessage>(TMessage obj)
