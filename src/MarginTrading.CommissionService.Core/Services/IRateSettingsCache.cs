@@ -3,16 +3,16 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using MarginTrading.AssetService.Contracts.Rates;
+using MarginTrading.CommissionService.Core.Domain.Rates;
 
 namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IRateSettingsCache
     {
-        Task<List<OrderExecutionRateContract>> RefreshOrderExecutionRates();
+        Task<List<OrderExecutionRate>> RefreshOrderExecutionRates();
 
-        Task<List<OvernightSwapRateContract>> RefreshOvernightSwapRates();
+        Task<List<OvernightSwapRate>> RefreshOvernightSwapRates();
 
-        Task<OnBehalfRateContract> RefreshOnBehalfRate();
+        Task<OnBehalfRate> RefreshOnBehalfRate();
     }
 }

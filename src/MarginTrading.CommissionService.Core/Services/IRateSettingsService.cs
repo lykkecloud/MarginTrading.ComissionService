@@ -4,18 +4,19 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using MarginTrading.AssetService.Contracts.Rates;
+using MarginTrading.CommissionService.Core.Domain.Rates;
+
 
 namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IRateSettingsService
     {
-        Task<IReadOnlyList<OrderExecutionRateContract>> GetOrderExecutionRates(IList<string> assetPairIds = null);
-        Task ReplaceOrderExecutionRates(List<OrderExecutionRateContract> rates);
-        Task<OvernightSwapRateContract> GetOvernightSwapRate([NotNull] string assetPair);
-        Task<IReadOnlyList<OvernightSwapRateContract>> GetOvernightSwapRatesForApi();
-        Task ReplaceOvernightSwapRates(List<OvernightSwapRateContract> rates);
-        Task<OnBehalfRateContract> GetOnBehalfRate();
-        Task ReplaceOnBehalfRate(OnBehalfRateContract rate);
+        Task<IReadOnlyList<OrderExecutionRate>> GetOrderExecutionRates(IList<string> assetPairIds = null);
+        Task ReplaceOrderExecutionRates(List<OrderExecutionRate> rates);
+        Task<OvernightSwapRate> GetOvernightSwapRate([NotNull] string assetPair);
+        Task<IReadOnlyList<OvernightSwapRate>> GetOvernightSwapRatesForApi();
+        Task ReplaceOvernightSwapRates(List<OvernightSwapRate> rates);
+        Task<OnBehalfRate> GetOnBehalfRate();
+        Task ReplaceOnBehalfRate(OnBehalfRate rate);
     }
 }
