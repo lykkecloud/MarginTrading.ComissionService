@@ -63,6 +63,10 @@ namespace MarginTrading.CommissionService.Modules
                 "MT Asset",
                 _settings.CurrentValue.CommissionService.Services.SettingsService);
             
+            RegisterClientWithName<IRateSettingsApi>(builder,
+                "MT Asset",
+                _settings.CurrentValue.CommissionService.Services.SettingsService);
+            
             builder.Populate(_services);
         }
 
