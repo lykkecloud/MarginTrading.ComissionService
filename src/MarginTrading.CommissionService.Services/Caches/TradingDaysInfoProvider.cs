@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.Threading;
 using Common;
 using Common.Log;
+using MarginTrading.AssetService.Contracts;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
-using MarginTrading.SettingsService.Contracts;
 
 namespace MarginTrading.CommissionService.Services.Caches
 {

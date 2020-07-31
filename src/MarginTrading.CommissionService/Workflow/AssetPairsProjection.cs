@@ -2,13 +2,9 @@
 using JetBrains.Annotations;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
-using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Services;
-using MarginTrading.SettingsService.Contracts.AssetPair;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
+using MarginTrading.AssetService.Contracts.AssetPair;
 
 namespace MarginTrading.CommissionService.Workflow
 {

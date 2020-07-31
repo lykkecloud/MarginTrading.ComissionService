@@ -4,20 +4,19 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
-using Castle.MicroKernel;
 using Common.Log;
 using JetBrains.Annotations;
+using MarginTrading.AssetService.Contracts;
+using MarginTrading.AssetService.Contracts.Asset;
+using MarginTrading.AssetService.Contracts.AssetPair;
+using MarginTrading.AssetService.Contracts.Enums;
+using MarginTrading.AssetService.Contracts.Messages;
+using MarginTrading.AssetService.Contracts.Scheduling;
+using MarginTrading.AssetService.Contracts.TradingConditions;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Services;
-using MarginTrading.SettingsService.Contracts;
-using MarginTrading.SettingsService.Contracts.Asset;
-using MarginTrading.SettingsService.Contracts.AssetPair;
-using MarginTrading.SettingsService.Contracts.Enums;
-using MarginTrading.SettingsService.Contracts.Messages;
-using MarginTrading.SettingsService.Contracts.Scheduling;
-using MarginTrading.SettingsService.Contracts.TradingConditions;
 using Newtonsoft.Json;
 
 namespace MarginTrading.CommissionService.Services

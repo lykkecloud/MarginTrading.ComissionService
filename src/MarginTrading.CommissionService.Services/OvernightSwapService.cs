@@ -2,32 +2,21 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
-using Lykke.Common;
-using Lykke.Cqrs;
-using Lykke.SettingsReader;
 using MarginTrading.Backend.Contracts.Positions;
-using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
-using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
-using MarginTrading.SettingsService.Contracts;
-using MarginTrading.SettingsService.Contracts.AssetPair;
 using Microsoft.Extensions.Internal;
 using MoreLinq;
-using Newtonsoft.Json;
 using StackExchange.Redis;
 
 namespace MarginTrading.CommissionService.Services
