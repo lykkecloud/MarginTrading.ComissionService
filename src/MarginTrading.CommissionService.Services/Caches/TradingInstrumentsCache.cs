@@ -11,8 +11,8 @@ using AutoMapper;
 using Common.Log;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
-using MarginTrading.SettingsService.Contracts;
-using MarginTrading.SettingsService.Contracts.TradingConditions;
+using MarginTrading.AssetService.Contracts;
+using MarginTrading.AssetService.Contracts.TradingConditions;
 using Newtonsoft.Json;
 
 namespace MarginTrading.CommissionService.Services.Caches

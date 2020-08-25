@@ -18,8 +18,8 @@ using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands;
-using MarginTrading.SettingsService.Contracts.Enums;
-using MarginTrading.SettingsService.Contracts.Messages;
+using MarginTrading.AssetService.Contracts.Enums;
+using MarginTrading.AssetService.Contracts.Messages;
 using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Services

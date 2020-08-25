@@ -8,7 +8,7 @@ using Common;
 using Common.Log;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
-using MarginTrading.SettingsService.Contracts;
+using MarginTrading.AssetService.Contracts;
 
 namespace MarginTrading.CommissionService.Services.Caches
 {

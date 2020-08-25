@@ -32,7 +32,7 @@ using MarginTrading.CommissionService.Workflow.ChargeCommission;
 using MarginTrading.CommissionService.Workflow.DailyPnl;
 using MarginTrading.CommissionService.Workflow.OnBehalf;
 using MarginTrading.CommissionService.Workflow.OvernightSwap;
-using MarginTrading.SettingsService.Contracts.AssetPair;
+using MarginTrading.AssetService.Contracts.AssetPair;
 
 namespace MarginTrading.CommissionService.Modules
 {
