@@ -30,7 +30,7 @@ using MarginTrading.CommissionService.Modules;
 using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Workflow;
 using MarginTrading.OrderbookAggregator.Contracts.Messages;
-using MarginTrading.SettingsService.Contracts.Messages;
+using MarginTrading.AssetService.Contracts.Messages;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

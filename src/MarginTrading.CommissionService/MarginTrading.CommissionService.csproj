@@ -60,7 +60,6 @@
     <PackageReference Include="Lykke.Logs.Serilog" Version="2.1.0" />
     <PackageReference Include="Lykke.MarginTrading.AccountsManagement.Contracts" Version="1.12.8" />
     <PackageReference Include="Lykke.MarginTrading.BackendSnow.Contracts" Version="1.15.0" />
-    <PackageReference Include="Lykke.MarginTrading.SettingsService.Contracts" Version="1.4.2" />
     <PackageReference Include="Lykke.Snow.Common.Startup" Version="2.3.0" />
     <PackageReference Include="MarginTrading.TradingHistory.Client" Version="3.4.9" />
     <PackageReference Include="Lykke.Messaging" Version="6.3.1" />

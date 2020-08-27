@@ -9,7 +9,7 @@ using Lykke.Snow.Common.Startup;
 using MarginTrading.Backend.Contracts;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Infrastructure;
-using MarginTrading.SettingsService.Contracts;
+using MarginTrading.AssetService.Contracts;
 using MarginTrading.TradingHistory.Client;
 using Microsoft.Extensions.DependencyInjection;
 using IAccountsApi = MarginTrading.AccountsManagement.Contracts.IAccountsApi;
