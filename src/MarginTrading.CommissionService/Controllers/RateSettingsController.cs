@@ -18,7 +18,7 @@ namespace MarginTrading.CommissionService.Controllers
     [Authorize]
     [Route("api/rates")]
     [MiddlewareFilter(typeof(RequestLoggingPipeline))]
-    public class RateSettingsController : Controller, IRateSettingsApi
+    public class RateSettingsController : Controller
     {
         private readonly IRateSettingsService _rateSettingsService;
         private readonly IConvertService _convertService;

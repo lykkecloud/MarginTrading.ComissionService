@@ -8,7 +8,6 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
 using Lykke.MarginTrading.CommissionService.Contracts.Events;
-using Lykke.MarginTrading.CommissionService.Contracts.Messages;
 using Lykke.MarginTrading.CommissionService.Contracts.Models;
 using MarginTrading.AccountsManagement.Contracts.Commands;
 using MarginTrading.AccountsManagement.Contracts.Models;
@@ -29,7 +28,6 @@ namespace MarginTrading.CommissionService.Services
     {
         private readonly ILog _log;
         private readonly ISystemClock _systemClock;
-        private readonly IMessageProducer<RateSettingsChangedEvent> _rateSettingsChangedEventProducer;
 
         public EventSender(
             IRabbitMqService rabbitMqService,
@@ -39,19 +37,6 @@ namespace MarginTrading.CommissionService.Services
         {
             _log = log;
             _systemClock = systemClock;
-            
-            _rateSettingsChangedEventProducer =
-                rabbitMqService.GetProducer(rabbitMqSettings.Publishers.RateSettingsChanged, true,
-                    rabbitMqService.GetJsonSerializer<RateSettingsChangedEvent>());
-        }
-
-        public async Task SendRateSettingsChanged(CommissionType type)
-        {
-            await _rateSettingsChangedEventProducer.ProduceAsync(new RateSettingsChangedEvent
-            {
-                CreatedTimeStamp = _systemClock.UtcNow.UtcDateTime,
-                Type = type.ToType<CommissionTypeContract>()
-            });
         }
     }
 }
