@@ -176,7 +176,7 @@ namespace MarginTrading.CommissionService.Controllers
             
             return new FileContract
             {
-                Name = $"{accountPrefix}{calculation.Instrument}_{calculation.Timestamp:yyyyMMddHHmmssff}",
+                Name = $"{accountPrefix}{calculation.Instrument}_{calculation.Direction.ToString()}_{calculation.Timestamp:yyyyMMddHHmmssfff}",
                 Extension = ".pdf",
                 Content = _reportGenService.GenerateBafinCncReport(new[] { calculation })
             };
