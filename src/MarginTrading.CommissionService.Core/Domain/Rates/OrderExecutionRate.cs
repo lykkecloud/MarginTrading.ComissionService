@@ -1,9 +1,7 @@
 ﻿// Copyright (c) 2019 Lykke Corp.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using JetBrains.Annotations;
-using MarginTrading.CommissionService.Core.Settings.Rates;
 
 namespace MarginTrading.CommissionService.Core.Domain.Rates
 {
@@ -20,19 +18,5 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
         [NotNull] public string CommissionAsset { get; set; }
         
         [CanBeNull] public string LegalEntity { get; set; }
-
-        public static OrderExecutionRate FromDefault(DefaultOrderExecutionSettings defaultOrderExecutionSettings,
-            string assetPairId)
-        {
-            return new OrderExecutionRate
-            {
-                AssetPairId = assetPairId,
-                CommissionCap = defaultOrderExecutionSettings.CommissionCap,
-                CommissionFloor = defaultOrderExecutionSettings.CommissionFloor,
-                CommissionRate = defaultOrderExecutionSettings.CommissionRate,
-                CommissionAsset = defaultOrderExecutionSettings.CommissionAsset,
-                LegalEntity = defaultOrderExecutionSettings.LegalEntity,
-            };
-        }
     }
 }

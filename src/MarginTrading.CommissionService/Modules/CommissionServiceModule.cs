@@ -37,19 +37,11 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterInstance(_settings.Nested(s => s.CommissionService)).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.RequestLoggerSettings).SingleInstance();
-            builder.RegisterInstance(_settings.CurrentValue.CommissionService.DefaultRateSettings).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.CostsAndChargesDefaults).SingleInstance();
             builder.RegisterInstance(_log).As<ILog>().SingleInstance();
             builder.RegisterType<SystemClock>().As<ISystemClock>().SingleInstance();
             
             builder.RegisterType<RabbitMqService>().As<IRabbitMqService>().SingleInstance();
-            
-            builder.RegisterType<EventSender>().As<IEventSender>()
-                .WithParameters(new[]
-                {
-                    new TypedParameter(typeof(RabbitMqSettings), _settings.CurrentValue.CommissionService.RabbitMq), 
-                })
-                .SingleInstance();
 
             builder.RegisterType<CqrsMessageSender>()
                 .As<ICqrsMessageSender>()
@@ -146,6 +138,7 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<RateSettingsService>()
                 .As<IRateSettingsService>()
+                .As<IRateSettingsCache>()
                 .SingleInstance();
 
             builder.RegisterType<AccountRedisCache>()
@@ -178,10 +171,6 @@ namespace MarginTrading.CommissionService.Modules
             {
                 throw new InvalidOperationException("Storage mode other than SqlServer is not supported");
             }
-
-            builder.Register<IMarginTradingBlobRepository>(ctx =>
-                    new SqlBlobRepository(_settings.CurrentValue.CommissionService.Db.StateConnString))
-                .SingleInstance();
 
             builder.RegisterType<OvernightSwapHistoryRepository>()
                 .As<IOvernightSwapHistoryRepository>()

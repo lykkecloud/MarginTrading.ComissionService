@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using MarginTrading.CommissionService.Core.Domain.Rates;
 
+
 namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IRateSettingsService

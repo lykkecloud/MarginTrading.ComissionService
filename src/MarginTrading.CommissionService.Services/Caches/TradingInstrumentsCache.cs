@@ -5,15 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using Autofac;
-using AutoMapper;
-using Common.Log;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
-using MarginTrading.AssetService.Contracts;
-using MarginTrading.AssetService.Contracts.TradingConditions;
-using Newtonsoft.Json;
 
 namespace MarginTrading.CommissionService.Services.Caches
 {

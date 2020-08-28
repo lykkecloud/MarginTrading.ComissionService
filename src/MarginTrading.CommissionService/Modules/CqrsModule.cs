@@ -19,6 +19,7 @@ using Lykke.Messaging.RabbitMq;
 using Lykke.Messaging.Serialization;
 using MarginTrading.AccountsManagement.Contracts.Commands;
 using MarginTrading.AccountsManagement.Contracts.Events;
+using MarginTrading.AssetService.Contracts.AssetPair;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
@@ -26,13 +27,11 @@ using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Events;
 using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
-using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Workflow;
 using MarginTrading.CommissionService.Workflow.ChargeCommission;
 using MarginTrading.CommissionService.Workflow.DailyPnl;
 using MarginTrading.CommissionService.Workflow.OnBehalf;
 using MarginTrading.CommissionService.Workflow.OvernightSwap;
-using MarginTrading.AssetService.Contracts.AssetPair;
 
 namespace MarginTrading.CommissionService.Modules
 {

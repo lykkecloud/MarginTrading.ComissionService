@@ -3,22 +3,12 @@
 
 using System;
 using System.Threading.Tasks;
-using Common;
-using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
-using Lykke.MarginTrading.CommissionService.Contracts.Events;
-using Lykke.MarginTrading.CommissionService.Contracts.Models;
-using MarginTrading.AccountsManagement.Contracts.Commands;
-using MarginTrading.AccountsManagement.Contracts.Models;
-using MarginTrading.CommissionService.Core.Domain;
-using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands;
-using MarginTrading.AssetService.Contracts.Enums;
-using MarginTrading.AssetService.Contracts.Messages;
 using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Services

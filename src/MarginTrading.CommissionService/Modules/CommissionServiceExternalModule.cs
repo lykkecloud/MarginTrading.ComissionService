@@ -5,11 +5,10 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Lykke.HttpClientGenerator;
 using Lykke.SettingsReader;
-using Lykke.Snow.Common.Startup;
+using MarginTrading.AssetService.Contracts;
 using MarginTrading.Backend.Contracts;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Infrastructure;
-using MarginTrading.AssetService.Contracts;
 using MarginTrading.TradingHistory.Client;
 using Microsoft.Extensions.DependencyInjection;
 using IAccountsApi = MarginTrading.AccountsManagement.Contracts.IAccountsApi;
@@ -45,23 +44,27 @@ namespace MarginTrading.CommissionService.Modules
                 _settings.CurrentValue.CommissionService.Services.AccountManagement);
             
             RegisterClientWithName<IAssetsApi>(builder,
-                "MT Settings",
+                "MT Asset",
                 _settings.CurrentValue.CommissionService.Services.SettingsService);
             
             RegisterClientWithName<IAssetPairsApi>(builder,
-                "MT Settings",
+                "MT Asset",
                 _settings.CurrentValue.CommissionService.Services.SettingsService);
             
             RegisterClientWithName<ITradingConditionsApi>(builder,
-                "MT Settings",
+                "MT Asset",
                 _settings.CurrentValue.CommissionService.Services.SettingsService);
             
             RegisterClientWithName<ITradingInstrumentsApi>(builder,
-                "MT Settings",
+                "MT Asset",
                 _settings.CurrentValue.CommissionService.Services.SettingsService);
             
             RegisterClientWithName<IScheduleSettingsApi>(builder,
-                "MT Settings",
+                "MT Asset",
+                _settings.CurrentValue.CommissionService.Services.SettingsService);
+            
+            RegisterClientWithName<IRateSettingsApi>(builder,
+                "MT Asset",
                 _settings.CurrentValue.CommissionService.Services.SettingsService);
             
             builder.Populate(_services);
