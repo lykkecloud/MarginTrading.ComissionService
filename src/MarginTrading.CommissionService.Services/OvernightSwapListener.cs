@@ -3,9 +3,8 @@
 
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Lykke.MarginTrading.CommissionService.Contracts.Events;
+using MarginTrading.CommissionService.Contracts.Events;
 using MarginTrading.CommissionService.Core.Domain;
-using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Services;
 using Microsoft.Extensions.Internal;
 

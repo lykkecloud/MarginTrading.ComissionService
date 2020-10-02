@@ -4,7 +4,6 @@
 using System;
 using Lykke.AzureStorage.Tables;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace MarginTrading.CommissionService.AzureRepositories.Entities
 {

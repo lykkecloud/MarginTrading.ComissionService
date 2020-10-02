@@ -5,7 +5,7 @@
     <PackageId>Lykke.MarginTrading.CommissionService.Contracts</PackageId>
     <Company>Lykke</Company>
     <AssemblyName>Lykke.MarginTrading.CommissionService.Contracts</AssemblyName>
-    <RootNamespace>Lykke.MarginTrading.CommissionService.Contracts</RootNamespace>
+    <RootNamespace>MarginTrading.CommissionService.Contracts</RootNamespace>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>

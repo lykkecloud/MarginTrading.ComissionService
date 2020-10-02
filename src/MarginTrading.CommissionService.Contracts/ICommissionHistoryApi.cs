@@ -5,10 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Lykke.MarginTrading.CommissionService.Contracts.Models;
+using MarginTrading.CommissionService.Contracts.Models;
 using Refit;
 
-namespace Lykke.MarginTrading.CommissionService.Contracts
+namespace MarginTrading.CommissionService.Contracts
 {
     /// <summary>
     /// Manages commission history.

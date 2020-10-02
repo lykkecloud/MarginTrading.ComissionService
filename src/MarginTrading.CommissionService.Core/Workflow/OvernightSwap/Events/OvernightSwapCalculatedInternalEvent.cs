@@ -3,7 +3,6 @@
 
 using System;
 using JetBrains.Annotations;
-using MarginTrading.CommissionService.Core.Extensions;
 using MessagePack;
 
 namespace MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events

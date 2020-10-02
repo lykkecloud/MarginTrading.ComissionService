@@ -10,13 +10,10 @@ using Common;
 using Common.Log;
 using MarginTrading.Backend.Contracts;
 using MarginTrading.Backend.Contracts.Prices;
-using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Exceptions;
 using MarginTrading.CommissionService.Core.Extensions;
-using MarginTrading.CommissionService.Core.Repositories;
-using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.OrderbookAggregator.Contracts.Messages;
 
 namespace MarginTrading.CommissionService.Services.Caches

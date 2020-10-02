@@ -8,7 +8,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
 using Dapper;
-using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;

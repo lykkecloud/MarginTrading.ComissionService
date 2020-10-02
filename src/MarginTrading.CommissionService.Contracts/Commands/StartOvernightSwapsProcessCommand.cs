@@ -5,7 +5,7 @@ using System;
 using JetBrains.Annotations;
 using MessagePack;
 
-namespace Lykke.MarginTrading.CommissionService.Contracts.Commands
+namespace MarginTrading.CommissionService.Contracts.Commands
 {
     /// <summary>
     /// Command to perform overnight swaps calculation and account charging

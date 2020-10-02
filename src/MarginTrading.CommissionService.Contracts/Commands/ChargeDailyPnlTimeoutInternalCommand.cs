@@ -4,7 +4,7 @@
 using System;
 using MessagePack;
 
-namespace Lykke.MarginTrading.CommissionService.Contracts.Commands
+namespace MarginTrading.CommissionService.Contracts.Commands
 {
     [MessagePackObject]
     public class ChargeDailyPnlTimeoutInternalCommand

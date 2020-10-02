@@ -2,9 +2,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 
-namespace Lykke.MarginTrading.CommissionService.Contracts.Models
+namespace MarginTrading.CommissionService.Contracts.Models
 {
     public class OvernightSwapHistoryContract
     {

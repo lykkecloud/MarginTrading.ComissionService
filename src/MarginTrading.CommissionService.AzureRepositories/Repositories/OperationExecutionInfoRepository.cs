@@ -12,7 +12,6 @@ using MarginTrading.CommissionService.AzureRepositories.Entities;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Repositories;
-using MarginTrading.CommissionService.Core.Settings;
 using Microsoft.Extensions.Internal;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace Lykke.MarginTrading.CommissionService.Contracts.Models
+namespace MarginTrading.CommissionService.Contracts.Models
 {
     public class InstrumentsWithSharedCalculationResult
     {

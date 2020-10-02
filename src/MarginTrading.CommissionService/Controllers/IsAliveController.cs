@@ -3,10 +3,9 @@
 
 using System;
 using System.Net;
-using Lykke.MarginTrading.CommissionService.Contracts.Api;
+using MarginTrading.CommissionService.Contracts.Api;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.PlatformAbstractions;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace MarginTrading.CommissionService.Controllers
 {
