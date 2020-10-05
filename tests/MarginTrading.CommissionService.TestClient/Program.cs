@@ -7,7 +7,7 @@ using AsyncFriendlyStackTrace;
 using Common;
 using JetBrains.Annotations;
 using Lykke.HttpClientGenerator;
-using Lykke.MarginTrading.CommissionService.Contracts;
+using MarginTrading.CommissionService.Contracts;
 using Newtonsoft.Json;
 using Refit;
 

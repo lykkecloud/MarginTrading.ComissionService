@@ -2,17 +2,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Common.Log;
 using Lykke.Common.Log;
-using Lykke.MarginTrading.CommissionService.Contracts;
-using Lykke.MarginTrading.CommissionService.Contracts.Models;
-using MarginTrading.CommissionService.Core;
+using MarginTrading.CommissionService.Contracts;
+using MarginTrading.CommissionService.Contracts.Models;
 using MarginTrading.CommissionService.Core.Domain;
-using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using Microsoft.AspNetCore.Authorization;

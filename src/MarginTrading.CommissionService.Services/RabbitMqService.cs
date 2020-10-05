@@ -5,22 +5,16 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
-using JetBrains.Annotations;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Publisher;
 using Lykke.RabbitMqBroker.Subscriber;
-using Lykke.SettingsReader;
 using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
-using Microsoft.Extensions.PlatformAbstractions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace MarginTrading.CommissionService.Services
 {

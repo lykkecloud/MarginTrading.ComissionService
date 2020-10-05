@@ -4,12 +4,11 @@
 using System;
 using System.Threading.Tasks;
 using Common;
-using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
-using Lykke.MarginTrading.CommissionService.Contracts.Commands;
-using Lykke.MarginTrading.CommissionService.Contracts.Events;
+using MarginTrading.CommissionService.Contracts.Commands;
+using MarginTrading.CommissionService.Contracts.Events;
 using MarginTrading.AccountsManagement.Contracts.Commands;
 using MarginTrading.AccountsManagement.Contracts.Models;
 using MarginTrading.Backend.Contracts.Positions;

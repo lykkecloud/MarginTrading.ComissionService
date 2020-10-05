@@ -5,7 +5,7 @@ using System;
 using JetBrains.Annotations;
 using MessagePack;
 
-namespace Lykke.MarginTrading.CommissionService.Contracts.Events
+namespace MarginTrading.CommissionService.Contracts.Events
 {
     /// <summary>
     /// Event indicates that daily PnLs calculation has finished 

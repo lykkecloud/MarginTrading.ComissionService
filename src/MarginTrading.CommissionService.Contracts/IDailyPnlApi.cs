@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Refit;
 
-namespace Lykke.MarginTrading.CommissionService.Contracts
+namespace MarginTrading.CommissionService.Contracts
 {
     /// <summary>
     /// Api for launching daily pnl process. FOR TESTING ONLY

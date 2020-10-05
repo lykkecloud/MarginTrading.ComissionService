@@ -7,7 +7,6 @@ using Common.Log;
 using Lykke.Common;
 using Lykke.Common.Chaos;
 using Lykke.SettingsReader;
-using MarginTrading.CommissionService.AzureRepositories;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Repositories;

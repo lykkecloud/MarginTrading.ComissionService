@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Lykke.MarginTrading.CommissionService.Contracts.Models
+﻿namespace MarginTrading.CommissionService.Contracts.Models
 {
     public class FileContract
     {

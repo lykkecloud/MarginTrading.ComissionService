@@ -3,19 +3,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
 using MarginTrading.Backend.Contracts.Events;
 using MarginTrading.Backend.Contracts.Orders;
-using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Extensions;
-using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands;
 using Microsoft.Extensions.Internal;
-using Newtonsoft.Json;
 
 namespace MarginTrading.CommissionService.Services
 {

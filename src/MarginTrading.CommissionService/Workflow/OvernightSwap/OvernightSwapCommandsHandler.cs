@@ -7,20 +7,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
 using JetBrains.Annotations;
-using Lykke.Common;
 using Lykke.Common.Chaos;
 using Lykke.Cqrs;
-using Lykke.MarginTrading.CommissionService.Contracts.Commands;
-using Lykke.MarginTrading.CommissionService.Contracts.Events;
+using MarginTrading.CommissionService.Contracts.Commands;
+using MarginTrading.CommissionService.Contracts.Events;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
-using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
-using MarginTrading.CommissionService.Services;
 using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Workflow.OvernightSwap

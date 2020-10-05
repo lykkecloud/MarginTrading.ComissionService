@@ -3,7 +3,6 @@
 
 using System;
 using JetBrains.Annotations;
-using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Services;
 
 namespace MarginTrading.CommissionService.Services

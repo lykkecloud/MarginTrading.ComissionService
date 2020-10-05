@@ -4,8 +4,8 @@
 using System;
 using System.Threading.Tasks;
 using Lykke.Cqrs;
-using Lykke.MarginTrading.CommissionService.Contracts;
-using Lykke.MarginTrading.CommissionService.Contracts.Commands;
+using MarginTrading.CommissionService.Contracts;
+using MarginTrading.CommissionService.Contracts.Commands;
 using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Middleware;

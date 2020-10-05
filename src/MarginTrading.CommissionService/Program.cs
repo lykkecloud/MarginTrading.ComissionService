@@ -2,13 +2,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac.Extensions.DependencyInjection;
 using JetBrains.Annotations;
 using MarginTrading.CommissionService.Services;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;

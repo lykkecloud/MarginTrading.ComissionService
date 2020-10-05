@@ -2,11 +2,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using JetBrains.Annotations;
 using MessagePack;
 
-namespace Lykke.MarginTrading.CommissionService.Contracts.Events
+namespace MarginTrading.CommissionService.Contracts.Events
 {
     /// <summary>
     /// Event indicates that overnight swap calculation has finished 

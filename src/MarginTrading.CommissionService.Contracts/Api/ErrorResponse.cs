@@ -3,7 +3,7 @@
 
 using JetBrains.Annotations;
 
-namespace Lykke.MarginTrading.CommissionService.Contracts.Api
+namespace MarginTrading.CommissionService.Contracts.Api
 {
     [UsedImplicitly] // from startup.cs only in release configuration
     public class ErrorResponse

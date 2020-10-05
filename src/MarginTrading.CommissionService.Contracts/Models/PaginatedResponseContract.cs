@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 
-namespace Lykke.MarginTrading.CommissionService.Contracts.Models
+namespace MarginTrading.CommissionService.Contracts.Models
 {
     /// <summary>
     /// Paginated response wrapper

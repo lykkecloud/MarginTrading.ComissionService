@@ -3,7 +3,7 @@
 
 using System;
 
-namespace Lykke.MarginTrading.CommissionService.Contracts.Models
+namespace MarginTrading.CommissionService.Contracts.Models
 {
     public class CostsAndChargesCalculationContract
     {
