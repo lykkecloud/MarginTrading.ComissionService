@@ -30,6 +30,7 @@ using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Workflow;
 using MarginTrading.OrderbookAggregator.Contracts.Messages;
 using MarginTrading.AssetService.Contracts.Messages;
+using MarginTrading.CommissionService.Contracts.Api;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -130,8 +131,7 @@ namespace MarginTrading.CommissionService
 #if DEBUG
                 app.UseLykkeMiddleware(ServiceName, ex => ex.ToString());
 #else
-                app.UseLykkeMiddleware(ServiceName, ex => new ErrorResponse {ErrorMessage = "Technical problem", Details
- = ex.Message});
+                app.UseLykkeMiddleware(ServiceName, ex => new ErrorResponse {ErrorMessage = "Technical problem", Details = ex.Message});
 #endif
 
                 app.UseRouting();
