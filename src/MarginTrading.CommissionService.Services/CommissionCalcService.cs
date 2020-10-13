@@ -22,6 +22,7 @@ namespace MarginTrading.CommissionService.Services
     {
         private readonly ICfdCalculatorService _cfdCalculatorService;
         private readonly IAssetsCache _assetsCache;
+        private readonly IAssetPairsCache _assetPairsCache;
         private readonly IRateSettingsService _rateSettingsService;
         private readonly IOrderEventsApi _orderEventsApi;
         private readonly IAccountRedisCache _accountRedisCache;
@@ -31,6 +32,7 @@ namespace MarginTrading.CommissionService.Services
         public CommissionCalcService(
             ICfdCalculatorService cfdCalculatorService,
             IAssetsCache assetsCache,
+            IAssetPairsCache assetPairsCache,
             IRateSettingsService rateSettingsService,
             IOrderEventsApi orderEventsApi,
             IAccountRedisCache accountRedisCache,
@@ -39,6 +41,7 @@ namespace MarginTrading.CommissionService.Services
         {
             _cfdCalculatorService = cfdCalculatorService;
             _assetsCache = assetsCache;
+            _assetPairsCache = assetPairsCache;
             _rateSettingsService = rateSettingsService;
             _orderEventsApi = orderEventsApi;
             _accountRedisCache = accountRedisCache;
@@ -146,13 +149,11 @@ namespace MarginTrading.CommissionService.Services
 
             var actionsNum = changeEventsCount + placeEventCharged;
 
-            var rateSettings = await _rateSettingsService.GetOnBehalfRate(); 
+            var assetPair = _assetPairsCache.GetAssetPairById(assetPairId);
             
-            //use fx rates to convert to account asset
-            var quote = _cfdCalculatorService.GetFxRate(rateSettings.CommissionAsset, accountAssetId, 
-                rateSettings.LegalEntity);
-
-            var commission = Math.Round(actionsNum * rateSettings.Commission * quote, 
+            var rateSettings = _rateSettingsService.GetOnBehalfRate(assetPair.AssetType); 
+            
+            var commission = Math.Round(actionsNum * rateSettings.Commission, 
                 _assetsCache.GetAccuracy(accountAssetId));
             
             //calculate commission

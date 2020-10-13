@@ -13,7 +13,7 @@ namespace MarginTrading.CommissionService.Core.Domain
         public AssetPair(string id, string name, string baseAssetId,
             string quoteAssetId, int accuracy, string legalEntity,
             [CanBeNull] string basePairId, MatchingEngineMode matchingEngineMode, decimal stpMultiplierMarkupBid,
-            decimal stpMultiplierMarkupAsk, string marketId)
+            decimal stpMultiplierMarkupAsk, string marketId, string assetType)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
             Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -24,6 +24,7 @@ namespace MarginTrading.CommissionService.Core.Domain
             LegalEntity = legalEntity.RequiredNotNullOrWhiteSpace(nameof(legalEntity));
             BasePairId = basePairId;
             MarketId = marketId;
+            AssetType = assetType;
             MatchingEngineMode = matchingEngineMode.RequiredEnum(nameof(matchingEngineMode));
             StpMultiplierMarkupBid = stpMultiplierMarkupBid.RequiredGreaterThan(0, nameof(stpMultiplierMarkupBid));
             StpMultiplierMarkupAsk = stpMultiplierMarkupAsk.RequiredGreaterThan(0, nameof(stpMultiplierMarkupAsk));
@@ -41,5 +42,7 @@ namespace MarginTrading.CommissionService.Core.Domain
         public decimal StpMultiplierMarkupBid { get; }
         public decimal StpMultiplierMarkupAsk { get; }
         public string MarketId { get; }
+        
+        public string AssetType { get; }
     }
 }

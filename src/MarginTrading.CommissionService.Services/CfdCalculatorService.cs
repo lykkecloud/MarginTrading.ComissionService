@@ -1,6 +1,7 @@
 ﻿// Copyright (c) 2019 Lykke Corp.
 // See the LICENSE file in the project root for more information.
 
+using Cronut.Dto.Assets;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Services;
 
@@ -22,7 +23,6 @@ namespace MarginTrading.CommissionService.Services
         public decimal GetFxRateForAssetPair(string accountAssetId, string assetPairId, string legalEntity)
         {
             var assetPair = _assetPairsCache.GetAssetPairById(assetPairId);
-            
             if (accountAssetId == assetPair.QuoteAssetId)
                 return 1;
 

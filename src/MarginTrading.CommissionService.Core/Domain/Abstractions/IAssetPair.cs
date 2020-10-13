@@ -68,5 +68,7 @@ namespace MarginTrading.CommissionService.Core.Domain.Abstractions
         /// Market
         /// </summary>
         string MarketId { get; }
+        
+        public string AssetType { get; }
     }
 }

@@ -20,6 +20,10 @@ using Lykke.Messaging.Serialization;
 using MarginTrading.AccountsManagement.Contracts.Commands;
 using MarginTrading.AccountsManagement.Contracts.Events;
 using MarginTrading.AssetService.Contracts.AssetPair;
+using MarginTrading.AssetService.Contracts.ClientProfiles;
+using MarginTrading.AssetService.Contracts.ClientProfileSettings;
+using MarginTrading.AssetService.Contracts.MarketSettings;
+using MarginTrading.AssetService.Contracts.Products;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Events;
@@ -27,6 +31,7 @@ using MarginTrading.CommissionService.Core.Workflow.DailyPnl.Events;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Commands;
 using MarginTrading.CommissionService.Core.Workflow.OnBehalf.Events;
 using MarginTrading.CommissionService.Core.Workflow.OvernightSwap.Events;
+using MarginTrading.CommissionService.Projections;
 using MarginTrading.CommissionService.Workflow;
 using MarginTrading.CommissionService.Workflow.ChargeCommission;
 using MarginTrading.CommissionService.Workflow.DailyPnl;
@@ -73,10 +78,11 @@ namespace MarginTrading.CommissionService.Modules
                             rabbitMqSettings.Password, "None", "RabbitMq")
                     }
                 }), new RabbitMqTransportFactory());
-            
+
             // Sagas & command handlers
             builder.RegisterAssemblyTypes(GetType().Assembly)
-                .Where(t => t.Name.EndsWith("Saga") || t.Name.EndsWith("CommandsHandler") || t.Name.EndsWith("Projection"))
+                .Where(t => t.Name.EndsWith("Saga") || t.Name.EndsWith("CommandsHandler") ||
+                            t.Name.EndsWith("Projection"))
                 .AsSelf();
 
             builder.Register(ctx => CreateEngine(ctx, messagingEngine))
@@ -91,7 +97,7 @@ namespace MarginTrading.CommissionService.Modules
                 "RabbitMq",
                 SerializationFormat.MessagePack,
                 environment: _settings.EnvironmentName);
-            
+
             var engine = new CqrsEngine(
                 _log,
                 ctx.Resolve<IDependencyResolver>(),
@@ -105,7 +111,7 @@ namespace MarginTrading.CommissionService.Modules
                 RegisterContext(),
                 Register.CommandInterceptors(new DefaultCommandLoggingInterceptor(_log)),
                 Register.EventInterceptors(new DefaultEventLoggingInterceptor(_log)));
-            
+
             engine.StartPublishers();
 
             return engine;
@@ -123,6 +129,10 @@ namespace MarginTrading.CommissionService.Modules
             RegisterOvernightSwapCommandHandler(contextRegistration);
             RegisterDailyPnlCommandsHandler(contextRegistration);
             RegisterAssetPairsProjection(contextRegistration);
+            RegisterProductProjection(contextRegistration);
+            RegisterClientProfileProjection(contextRegistration);
+            RegisterClientProfileSettingsProjection(contextRegistration);
+            RegisterMarketSettingsProjection(contextRegistration);
             return contextRegistration;
         }
 
@@ -137,21 +147,19 @@ namespace MarginTrading.CommissionService.Modules
                 .To(_contextNames.CommissionService)
                 .With(DefaultPipeline);
         }
-        
+
         private IRegistration RegisterChargeCommissionSaga()
         {
             var sagaRegistration = RegisterSaga<ChargeCommissionSaga>();
-            
+
             sagaRegistration
                 .ListeningEvents(
                     typeof(OrderExecCommissionCalculatedInternalEvent),
                     typeof(OnBehalfCalculatedInternalEvent),
                     typeof(OvernightSwapCalculatedInternalEvent),
                     typeof(DailyPnlCalculatedInternalEvent),
-                    
                     typeof(DailyPnlsCalculatedEvent),
                     typeof(OvernightSwapsCalculatedEvent),
-                    
                     typeof(OvernightSwapsStartFailedEvent),
                     typeof(OvernightSwapsChargedEvent),
                     typeof(DailyPnlsStartFailedEvent),
@@ -164,7 +172,7 @@ namespace MarginTrading.CommissionService.Modules
                 )
                 .To(_contextNames.AccountsManagement)
                 .With(DefaultPipeline);
-            
+
             sagaRegistration
                 .PublishingCommands(
                     typeof(ChargeSwapsTimeoutInternalCommand),
@@ -188,7 +196,7 @@ namespace MarginTrading.CommissionService.Modules
                     typeof(OrderExecCommissionCalculatedInternalEvent))
                 .With(DefaultPipeline);
         }
-        
+
         private static void RegisterOnBehalfCommandsHandler(
             ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
         {
@@ -220,7 +228,7 @@ namespace MarginTrading.CommissionService.Modules
                     typeof(OvernightSwapsChargedEvent))
                 .With(DefaultPipeline);
         }
-        
+
         private static void RegisterDailyPnlCommandsHandler(
             ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
         {
@@ -261,6 +269,50 @@ namespace MarginTrading.CommissionService.Modules
                 .On(EventsRoute)
                 .WithProjection(
                     typeof(AssetPairsProjection), _settings.ContextNames.SettingsService);
+        }
+
+        private void RegisterProductProjection(
+            ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
+        {
+            contextRegistration.ListeningEvents(
+                    typeof(ProductChangedEvent))
+                .From(_settings.ContextNames.SettingsService)
+                .On(EventsRoute)
+                .WithProjection(
+                    typeof(ProductProjection), _settings.ContextNames.SettingsService);
+        }
+
+        private void RegisterClientProfileProjection(
+            ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
+        {
+            contextRegistration.ListeningEvents(
+                    typeof(ClientProfileChangedEvent))
+                .From(_settings.ContextNames.SettingsService)
+                .On(EventsRoute)
+                .WithProjection(
+                    typeof(ClientProfileProjection), _settings.ContextNames.SettingsService);
+        }
+
+        private void RegisterClientProfileSettingsProjection(
+            ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
+        {
+            contextRegistration.ListeningEvents(
+                    typeof(ClientProfileSettingsChangedEvent))
+                .From(_settings.ContextNames.SettingsService)
+                .On(EventsRoute)
+                .WithProjection(
+                    typeof(ClientProfileSettingsProjection), _settings.ContextNames.SettingsService);
+        }
+
+        private void RegisterMarketSettingsProjection(
+            ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
+        {
+            contextRegistration.ListeningEvents(
+                    typeof(MarketSettingsChangedEvent))
+                .From(_settings.ContextNames.SettingsService)
+                .On(EventsRoute)
+                .WithProjection(
+                    typeof(MarketSettingsProjection), _settings.ContextNames.SettingsService);
         }
 
         private ISagaRegistration RegisterSaga<TSaga>()
