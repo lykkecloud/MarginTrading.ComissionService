@@ -13,10 +13,5 @@ namespace MarginTrading.CommissionService.Infrastructure
                    bool.TryParse(configuration["NOT_THROW_EXCEPTIONS_ON_SERVICES_VALIDATION"],
                        out var trowExceptionsOnInvalidService) && trowExceptionsOnInvalidService;
         }
-
-        public static string InstanceId(this IConfigurationRoot configuration)
-        {
-            return configuration.GetValue<string>("InstanceId");
-        }
     }
 }
