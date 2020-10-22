@@ -14,12 +14,16 @@ namespace MarginTrading.CommissionService.Projections
 {
     public class ClientProfileProjection
     {
+        private readonly ICacheUpdater _cacheUpdater;
         private readonly IClientProfileCache _clientProfileCache;
         private readonly IConvertService _convertService;
 
-        public ClientProfileProjection(IClientProfileCache clientProfileCache,
+        public ClientProfileProjection(
+            ICacheUpdater cacheUpdater,
+            IClientProfileCache clientProfileCache,
             IConvertService convertService)
         {
+            _cacheUpdater = cacheUpdater;
             _clientProfileCache = clientProfileCache;
             _convertService = convertService;
         }
@@ -30,11 +34,14 @@ namespace MarginTrading.CommissionService.Projections
             switch (@event.ChangeType)
             {
                 case ChangeType.Creation:
+                    UpdateCaches();
                     _clientProfileCache.AddOrUpdate(
                         _convertService.Convert<ClientProfileContract, ClientProfileCacheModel>(
                             @event.NewValue));
                     break;
                 case ChangeType.Edition:
+                    if (@event.OldValue.IsDefault != @event.NewValue.IsDefault) UpdateCaches();
+                    
                     _clientProfileCache.AddOrUpdate(
                         _convertService.Convert<ClientProfileContract, ClientProfileCacheModel>(
                             @event.NewValue));
@@ -48,6 +55,12 @@ namespace MarginTrading.CommissionService.Projections
                     throw new ArgumentOutOfRangeException();
             }
         }
-        
+
+        private void UpdateCaches()
+        {
+            _cacheUpdater.InitTradingInstruments();
+            _cacheUpdater.InitOrderExecutionRates();
+            _cacheUpdater.InitOvernightSwapRates();
+        }
     }
 }
