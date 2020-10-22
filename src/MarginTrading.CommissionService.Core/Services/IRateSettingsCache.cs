@@ -12,7 +12,5 @@ namespace MarginTrading.CommissionService.Core.Services
         Task<List<OrderExecutionRate>> RefreshOrderExecutionRates();
 
         Task<List<OvernightSwapRate>> RefreshOvernightSwapRates();
-
-        Task<OnBehalfRate> RefreshOnBehalfRate();
     }
 }

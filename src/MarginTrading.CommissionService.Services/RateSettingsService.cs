@@ -25,18 +25,24 @@ namespace MarginTrading.CommissionService.Services
 
         private readonly IAssetPairsCache _assetPairsCache;
         private readonly IRateSettingsApi _rateSettingsApi;
+        private readonly IClientProfileCache _clientProfileCache;
+        private readonly IClientProfileSettingsCache _clientProfileSettingsCache;
         private readonly IConvertService _convertService;
 
         public RateSettingsService(IDatabase redisDatabase,
             ILog log,
             IAssetPairsCache assetPairsCache,
             IRateSettingsApi rateSettingsApi,
+            IClientProfileCache clientProfileCache,
+            IClientProfileSettingsCache clientProfileSettingsCache,
             IConvertService convertService)
         {
             _redisDatabase = redisDatabase;
             _log = log;
             _assetPairsCache = assetPairsCache;
             _rateSettingsApi = rateSettingsApi;
+            _clientProfileCache = clientProfileCache;
+            _clientProfileSettingsCache = clientProfileSettingsCache;
             _convertService = convertService;
         }
 
@@ -122,18 +128,6 @@ namespace MarginTrading.CommissionService.Services
             return repoData;
         }
 
-        public async Task ReplaceOrderExecutionRates(List<OrderExecutionRate> rates)
-        {
-            await _rateSettingsApi.ReplaceOrderExecutionRatesAsync(rates
-                .Select(rate => _convertService.Convert<OrderExecutionRate, OrderExecutionRateContract>(rate))
-                .ToArray());
-            var updatedRates =
-                await _rateSettingsApi.GetOrderExecutionRatesAsync(rates.Select(rate => rate.AssetPairId).ToArray());
-
-            await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OrderExecutionKey),
-                updatedRates.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
-        }
-
         #endregion Order Execution
 
         #region Overnight Swaps
@@ -192,63 +186,20 @@ namespace MarginTrading.CommissionService.Services
             return repoData;
         }
 
-        public async Task ReplaceOvernightSwapRates(List<OvernightSwapRate> rates)
-        {
-            await _rateSettingsApi.ReplaceOvernightSwapRatesAsync(rates
-                .Select(rate => _convertService.Convert<OvernightSwapRate, OvernightSwapRateContract>(rate))
-                .ToArray());
-            var updatedRates =
-                await _rateSettingsApi.GetOvernightSwapRatesAsync(rates.Select(rate => rate.AssetPairId).ToArray());
-
-            await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OvernightSwapKey),
-                updatedRates.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
-        }
-
         #endregion Overnight Swaps
 
         #region On Behalf
 
-        public async Task<OnBehalfRate> GetOnBehalfRate()
+        public OnBehalfRate GetOnBehalfRate(string assetType)
         {
-            //first we try to grab from Redis
-            var serializedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OnBehalfKey))
-                ? await _redisDatabase.StringGetAsync(GetKey(LykkeConstants.OnBehalfKey))
-                : (RedisValue) string.Empty;
-            var cachedData = serializedData.HasValue ? Deserialize<OnBehalfRate>(serializedData) : null;
+            var defaultProfile = _clientProfileCache.GetDefaultClientProfileId();
+            var clientProfileSettings = _clientProfileSettingsCache.GetByIds(defaultProfile, assetType);
 
-            //now we try to refresh the cache from repository
-            if (cachedData == null)
+            return new OnBehalfRate()
             {
-                cachedData = await RefreshOnBehalfRate();
-                if (cachedData == null)
-                {
-                    await _log.WriteWarningAsync(nameof(RateSettingsService), nameof(GetOnBehalfRate),
-                        $"No OnBehalf rate saved, should never reach here");
-                }
-            }
-
-            return cachedData;
+                Commission = clientProfileSettings.OnBehalfFee,
+            };
         }
-
-        public async Task<OnBehalfRate> RefreshOnBehalfRate()
-        {
-            var repoData = _convertService.Convert<OnBehalfRateContract, OnBehalfRate>(await _rateSettingsApi.GetOnBehalfRateAsync());
-            if (repoData != null)
-            {
-                await _redisDatabase.StringSetAsync(GetKey(LykkeConstants.OnBehalfKey), Serialize(repoData));
-            }
-
-            return repoData;
-        }
-
-        public async Task ReplaceOnBehalfRate(OnBehalfRate rate)
-        {
-            await _rateSettingsApi.ReplaceOnBehalfRateAsync(_convertService.Convert<OnBehalfRate, OnBehalfRateContract>(rate));
-            var updatedRate = _rateSettingsApi.GetOnBehalfRateAsync();
-
-            await _redisDatabase.StringSetAsync(GetKey(LykkeConstants.OnBehalfKey), Serialize(updatedRate));
-        }
-
         #endregion On Behalf
 
         private string Serialize<TMessage>(TMessage obj)

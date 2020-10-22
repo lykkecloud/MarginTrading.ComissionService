@@ -53,5 +53,11 @@ namespace MarginTrading.CommissionService.Core.Settings
             new CostsAndChargesDefaultSettings();
         
         public ReportSettings ReportSettings { get; set; }
+        
+        public string BrokerId { get; set; }
+       
+        public RabbitSubscriptionSettings UnderlyingChangedRabbitSubscriptionSettings { get; set; }
+        
+        public RabbitSubscriptionSettings BrokerSettingsChangedRabbitSubscriptionSettings { get; set; }
     }
 }

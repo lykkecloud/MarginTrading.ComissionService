@@ -76,7 +76,7 @@ namespace MarginTrading.CommissionService
                         throwExceptionOnCheckError: !Configuration.NotThrowExceptionsOnServiceValidation())
                     .Nested(s =>
                     {
-                        s.CommissionService.InstanceId = Configuration.InstanceId() ?? Guid.NewGuid().ToString("N");
+                        s.CommissionService.InstanceId ??= Guid.NewGuid().ToString("N");
 
                         return s;
                     });
@@ -110,6 +110,7 @@ namespace MarginTrading.CommissionService
             builder.RegisterModule(new CommissionServiceModule(_mtSettingsManager, Log));
             builder.RegisterModule(new CommissionServiceExternalModule(_mtSettingsManager));
             builder.RegisterModule(new CqrsModule(_mtSettingsManager.CurrentValue.CommissionService.Cqrs, Log));
+            builder.RegisterModule(new RabbitMqModule(_mtSettingsManager.CurrentValue.CommissionService, Log));
         }
 
         [UsedImplicitly]
@@ -164,7 +165,6 @@ namespace MarginTrading.CommissionService
                 var fxRateCacheService = ApplicationContainer.Resolve<IFxRateCacheService>();
                 var quotesCacheService = ApplicationContainer.Resolve<IQuoteCacheService>();
                 var executedOrdersHandlingService = ApplicationContainer.Resolve<IExecutedOrdersHandlingService>();
-                var assetPairManager = ApplicationContainer.Resolve<ISettingsManager>();
                 var accountMarginEventsProjection = ApplicationContainer.Resolve<AccountMarginEventsProjection>();
                 var cqrsEngine = ApplicationContainer.Resolve<ICqrsEngine>();
 
@@ -178,10 +178,6 @@ namespace MarginTrading.CommissionService
 
                 rabbitMqService.Subscribe(settings.RabbitMq.Consumers.OrderExecutedSettings, true,
                     executedOrdersHandlingService.Handle, rabbitMqService.GetJsonDeserializer<OrderHistoryEvent>());
-
-                rabbitMqService.Subscribe(settings.RabbitMq.Consumers.SettingsChanged, false,
-                    arg => assetPairManager.HandleSettingsChanged(arg),
-                    rabbitMqService.GetJsonDeserializer<SettingsChangedEvent>(), settings.InstanceId);
 
                 rabbitMqService.Subscribe(settings.RabbitMq.Consumers.AccountMarginEvents, true,
                     arg => accountMarginEventsProjection.Handle(arg),

@@ -14,6 +14,7 @@ using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Services.Caches;
+using MarginTrading.CommissionService.Services.Handlers;
 using MarginTrading.CommissionService.SqlRepositories.Repositories;
 using Microsoft.Extensions.Internal;
 using StackExchange.Redis;
@@ -120,12 +121,6 @@ namespace MarginTrading.CommissionService.Modules
                 .As<IAssetPairsCache>()
                 .AsSelf()
                 .SingleInstance();
-            
-            builder.RegisterType<SettingsManager>()
-                .AsSelf()
-                .As<IStartable>()
-                .As<ISettingsManager>()
-                .SingleInstance();
 
             builder.RegisterType<OvernightSwapListener>()
                 .As<IOvernightSwapListener>()
@@ -161,6 +156,29 @@ namespace MarginTrading.CommissionService.Modules
                     ctx.Resolve<IAssetsCache>(), 
                     "./Fonts/",
                     _settings.CurrentValue.CommissionService.ReportSettings.TimeZonePartOfTheName))
+                .SingleInstance();
+
+            builder.RegisterType<ClientProfileCache>()
+                .As<IStartable>()
+                .As<IClientProfileCache>()
+                .SingleInstance();
+            
+            builder.RegisterType<ClientProfileSettingsCache>()
+                .As<IStartable>()
+                .As<IClientProfileSettingsCache>()
+                .SingleInstance();
+            
+            builder.RegisterType<CacheUpdater>()
+                .As<IStartable>()
+                .As<ICacheUpdater>()
+                .SingleInstance();
+            
+            builder.RegisterType<UnderlyingChangedHandler>()
+                .AsSelf()
+                .SingleInstance();
+
+            builder.RegisterType<BrokerSettingsChangedHandler>()
+                .AsSelf()
                 .SingleInstance();
         }
 
