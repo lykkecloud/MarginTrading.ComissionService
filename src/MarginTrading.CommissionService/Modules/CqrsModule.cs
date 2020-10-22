@@ -266,7 +266,7 @@ namespace MarginTrading.CommissionService.Modules
             contextRegistration.ListeningEvents(
                     typeof(AssetPairChangedEvent))
                 .From(_settings.ContextNames.SettingsService)
-                .On(EventsRoute)
+                .On(nameof(AssetPairChangedEvent))
                 .WithProjection(
                     typeof(AssetPairsProjection), _settings.ContextNames.SettingsService);
         }
@@ -277,7 +277,7 @@ namespace MarginTrading.CommissionService.Modules
             contextRegistration.ListeningEvents(
                     typeof(ProductChangedEvent))
                 .From(_settings.ContextNames.SettingsService)
-                .On(EventsRoute)
+                .On(nameof(ProductChangedEvent))
                 .WithProjection(
                     typeof(ProductProjection), _settings.ContextNames.SettingsService);
         }
@@ -288,7 +288,7 @@ namespace MarginTrading.CommissionService.Modules
             contextRegistration.ListeningEvents(
                     typeof(ClientProfileChangedEvent))
                 .From(_settings.ContextNames.SettingsService)
-                .On(EventsRoute)
+                .On(nameof(ClientProfileChangedEvent))
                 .WithProjection(
                     typeof(ClientProfileProjection), _settings.ContextNames.SettingsService);
         }
@@ -299,7 +299,7 @@ namespace MarginTrading.CommissionService.Modules
             contextRegistration.ListeningEvents(
                     typeof(ClientProfileSettingsChangedEvent))
                 .From(_settings.ContextNames.SettingsService)
-                .On(EventsRoute)
+                .On(nameof(ClientProfileSettingsChangedEvent))
                 .WithProjection(
                     typeof(ClientProfileSettingsProjection), _settings.ContextNames.SettingsService);
         }
@@ -310,7 +310,7 @@ namespace MarginTrading.CommissionService.Modules
             contextRegistration.ListeningEvents(
                     typeof(MarketSettingsChangedEvent))
                 .From(_settings.ContextNames.SettingsService)
-                .On(EventsRoute)
+                .On(nameof(MarketSettingsChangedEvent))
                 .WithProjection(
                     typeof(MarketSettingsProjection), _settings.ContextNames.SettingsService);
         }

@@ -63,7 +63,7 @@ namespace MarginTrading.CommissionService.Services.Caches
             _lockSlim.EnterWriteLock();
             try
             {
-                _cache[clientProfileSettings.ClientProfileId] = clientProfileSettings;
+                _cache[GetKey(clientProfileSettings)] = clientProfileSettings;
             }
             finally
             {
@@ -76,7 +76,7 @@ namespace MarginTrading.CommissionService.Services.Caches
             _lockSlim.EnterWriteLock();
             try
             {
-                var isInCache = _cache.ContainsKey(clientProfileSettings.ClientProfileId);
+                var isInCache = _cache.ContainsKey(GetKey(clientProfileSettings));
                 if (isInCache)
                     _cache.Remove(clientProfileSettings.ClientProfileId);
             }
@@ -98,6 +98,11 @@ namespace MarginTrading.CommissionService.Services.Caches
         }
 
         private string GetKey(ClientProfileSettingsContract clientProfileSettings)
+        {
+            return GetKey(clientProfileSettings.ClientProfileId, clientProfileSettings.AssetTypeId);
+        }
+
+        private string GetKey(ClientProfileSettingsCacheModel clientProfileSettings)
         {
             return GetKey(clientProfileSettings.ClientProfileId, clientProfileSettings.AssetTypeId);
         }

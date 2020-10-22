@@ -24,13 +24,13 @@ namespace MarginTrading.CommissionService.Modules
         protected override void Load(ContainerBuilder builder)
         {
             builder.Register(x => new UnderlyingChangedSubscriber(x.Resolve<UnderlyingChangedHandler>(),
-                    _settings.UnderlyingChangedRabbitSubscriptionSettings.AppendToQueueName($"{_settings.InstanceId}:{_settings.BrokerId}"), _log))
+                    _settings.UnderlyingChangedRabbitSubscriptionSettings.AppendToQueueName($"{_settings.BrokerId}:{_settings.InstanceId}"), _log))
                 .AsImplementedInterfaces()
                 .AsSelf()
                 .SingleInstance();
             
             builder.Register(x => new BrokerSettingsSubscriber(x.Resolve<BrokerSettingsChangedHandler>(),
-                    _settings.BrokerSettingsChangedRabbitSubscriptionSettings.AppendToQueueName($"{_settings.InstanceId}:{_settings.BrokerId}"), _log))
+                    _settings.BrokerSettingsChangedRabbitSubscriptionSettings.AppendToQueueName($"{_settings.BrokerId}:{_settings.InstanceId}"), _log))
                 .AsImplementedInterfaces()
                 .AsSelf()
                 .SingleInstance();
