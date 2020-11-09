@@ -91,21 +91,13 @@ namespace MarginTrading.CommissionService.Services
             var rateSettings = (await _rateSettingsService.GetOrderExecutionRates(new[] {instrument})).Single();
             var account = await _accountRedisCache.GetAccount(accountId);
 
-            var fxRate = account.BaseAssetId != rateSettings.CommissionAsset
-                ? _cfdCalculatorService.GetFxRateForAssetPair(rateSettings.CommissionAsset, instrument,
-                    account.LegalEntity)
-                : orderExecutionFxRate;
-            
-            var volumeInCommissionAsset = fxRate * Math.Abs(volume) * orderExecutionPrice;
-            var commissionToAccountRate = _cfdCalculatorService.GetFxRate(rateSettings.CommissionAsset, 
-                account.BaseAssetId, rateSettings.LegalEntity);
-            
+            var volumeInSettlementCurrency = orderExecutionFxRate * Math.Abs(volume) * orderExecutionPrice;
+
             var commission = Math.Min(
-                rateSettings.CommissionCap, 
+                rateSettings.CommissionCap,
                 Math.Max(
                     rateSettings.CommissionFloor,
-                    rateSettings.CommissionRate * volumeInCommissionAsset))
-                * commissionToAccountRate;
+                    rateSettings.CommissionRate * volumeInSettlementCurrency));
 
             return Math.Round(commission, _assetsCache.GetAccuracy(account.BaseAssetId));
         }

@@ -6,7 +6,5 @@ namespace MarginTrading.CommissionService.Core.Settings
     public class CostsAndChargesDefaultSettings
     {
         public string LegalEntity { get; set; } = "Default";
-
-        public string[] BaseAssetIds { get; set; } = {"EUR"};
     }
 }

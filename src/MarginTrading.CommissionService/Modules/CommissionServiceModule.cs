@@ -7,6 +7,7 @@ using Common.Log;
 using Lykke.Common;
 using Lykke.Common.Chaos;
 using Lykke.SettingsReader;
+using Lykke.Snow.Mdm.Contracts.Api;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Repositories;
@@ -179,6 +180,12 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<BrokerSettingsChangedHandler>()
                 .AsSelf()
+                .SingleInstance();
+
+            builder.Register<IBrokerSettingsService>(ctx =>
+                    new BrokerSettingsService(
+                        ctx.Resolve<IBrokerSettingsApi>(),
+                        _settings.CurrentValue.CommissionService.BrokerId))
                 .SingleInstance();
         }
 

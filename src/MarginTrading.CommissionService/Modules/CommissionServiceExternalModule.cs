@@ -5,6 +5,7 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Lykke.HttpClientGenerator;
 using Lykke.SettingsReader;
+using Lykke.Snow.Mdm.Contracts.Api;
 using MarginTrading.AssetService.Contracts;
 using MarginTrading.Backend.Contracts;
 using MarginTrading.CommissionService.Core.Settings;
@@ -74,7 +75,11 @@ namespace MarginTrading.CommissionService.Modules
             RegisterClientWithName<IClientProfileSettingsApi>(builder,
                 "MT Asset",
                 _settings.CurrentValue.CommissionService.Services.SettingsService);
-            
+
+            RegisterClientWithName<IBrokerSettingsApi>(builder,
+                "MDM",
+                _settings.CurrentValue.CommissionService.Services.MdmService);
+
             builder.Populate(_services);
         }
 

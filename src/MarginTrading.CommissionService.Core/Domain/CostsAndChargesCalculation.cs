@@ -6,7 +6,8 @@ using System.Linq;
 
 namespace MarginTrading.CommissionService.Core.Domain
 {
-    public class CostsAndChargesCalculation
+    public class 
+        CostsAndChargesCalculation
     {
         public string Id { get; set; }
         
