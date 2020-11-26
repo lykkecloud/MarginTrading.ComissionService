@@ -144,7 +144,7 @@ namespace MarginTrading.CommissionService.Services
             var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
                                               overnightFeeDays / 2; //same
             var directionMultiplier = direction == OrderDirection.Sell ? -1 : 1;
-            var referenceRateAmount = directionMultiplier * -(variableRateBase - variableRateQuote) *
+            var referenceRateAmount = directionMultiplier * (variableRateBase - variableRateQuote) *
                                       transactionVolume / fxRate / 365 * overnightFeeDays;
             var repoCost = direction == OrderDirection.Sell
                 ? -overnightSwapRate.RepoSurchargePercent * transactionVolume / fxRate / 365 * overnightFeeDays
