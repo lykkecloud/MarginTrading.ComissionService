@@ -29,6 +29,7 @@ namespace MarginTrading.CommissionService.Services
         private readonly IInterestRatesCacheService _interestRatesCacheService;
         private readonly IAssetPairsCache _assetPairsCache;
         private readonly ITradingDaysInfoProvider _tradingDaysInfoProvider;
+        private readonly IBrokerSettingsService _brokerSettingsService;
         private readonly CostsAndChargesDefaultSettings _defaultSettings;
 
         private const decimal DefaultCcVolume = 5000;
@@ -44,7 +45,8 @@ namespace MarginTrading.CommissionService.Services
             IRateSettingsService rateSettingsService, 
             IInterestRatesCacheService interestRatesCacheService,
             IAssetPairsCache assetPairsCache,
-            ITradingDaysInfoProvider tradingDaysInfoProvider, 
+            ITradingDaysInfoProvider tradingDaysInfoProvider,
+            IBrokerSettingsService brokerSettingsService,
             CostsAndChargesDefaultSettings defaultSettings)
         {
             _quoteCacheService = quoteCacheService;
@@ -58,6 +60,7 @@ namespace MarginTrading.CommissionService.Services
             _interestRatesCacheService = interestRatesCacheService;
             _assetPairsCache = assetPairsCache;
             _tradingDaysInfoProvider = tradingDaysInfoProvider;
+            _brokerSettingsService = brokerSettingsService;
             _defaultSettings = defaultSettings;
             _sharedRepository = sharedRepository;
         }
@@ -83,18 +86,16 @@ namespace MarginTrading.CommissionService.Services
         tradingConditionId)
         {
             var result = new List<CostsAndChargesCalculation>();
+            var settlementCurrency = await _brokerSettingsService.GetSettlementCurrencyAsync();
 
-            foreach (var baseAssetId in _defaultSettings.BaseAssetIds)
+            foreach (var direction in new[] { OrderDirection.Buy, OrderDirection.Sell })
             {
-                foreach (var direction in new []{OrderDirection.Buy, OrderDirection.Sell})
-                {
-                    var calculation = await GetCalculationAsync(instrument, direction, baseAssetId,
-                        tradingConditionId, _defaultSettings.LegalEntity);
-                    
-                    await _sharedRepository.SaveAsync(calculation);
-                    
-                    result.Add(calculation);
-                }
+                var calculation = await GetCalculationAsync(instrument, direction, settlementCurrency,
+                    tradingConditionId, _defaultSettings.LegalEntity);
+
+                await _sharedRepository.SaveAsync(calculation);
+
+                result.Add(calculation);
             }
 
             return result;

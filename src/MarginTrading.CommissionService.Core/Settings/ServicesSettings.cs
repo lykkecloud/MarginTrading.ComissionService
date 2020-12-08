@@ -9,5 +9,6 @@ namespace MarginTrading.CommissionService.Core.Settings
         public ServiceSettings TradingHistory { get; set; }
         public ServiceSettings AccountManagement { get; set; }
         public ServiceSettings SettingsService { get; set; }
+        public ServiceSettings MdmService { get; set; }
     }
 }

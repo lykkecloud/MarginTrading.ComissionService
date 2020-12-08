@@ -15,8 +15,6 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
         
         public decimal CommissionRate { get; set; }
         
-        [NotNull] public string CommissionAsset { get; set; }
-        
         [CanBeNull] public string LegalEntity { get; set; }
     }
 }
