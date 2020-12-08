@@ -11,6 +11,8 @@ namespace MarginTrading.CommissionService.Services
 {
     public class BrokerSettingsService : IBrokerSettingsService
     {
+        private string _settlementCurrency;
+
         private readonly IBrokerSettingsApi _brokerSettingsApi;
         private readonly string _brokerId;
 
@@ -22,12 +24,18 @@ namespace MarginTrading.CommissionService.Services
 
         public async Task<string> GetSettlementCurrencyAsync()
         {
-            var brokerSettings = await _brokerSettingsApi.GetByIdAsync(_brokerId);
+            if (!string.IsNullOrEmpty(_settlementCurrency))
+                return _settlementCurrency;
 
-            if(brokerSettings.ErrorCode != BrokerSettingsErrorCodesContract.None)
+            var response = await _brokerSettingsApi.GetByIdAsync(_brokerId);
+
+            if(response.ErrorCode != BrokerSettingsErrorCodesContract.None)
                 throw new Exception($"Missing broker settings for configured broker id: {_brokerId}");
 
-            return brokerSettings.BrokerSettings.SettlementCurrency;
+            //Since settlement currency is readonly and won't be updated I don't think sync is needed
+            _settlementCurrency = response.BrokerSettings.SettlementCurrency;
+
+            return response.BrokerSettings.SettlementCurrency;
         }
     }
 }
