@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using JetBrains.Annotations;
 using Lykke.Common.Chaos;
 using Lykke.SettingsReader.Attributes;
@@ -59,5 +60,7 @@ namespace MarginTrading.CommissionService.Core.Settings
         public RabbitSubscriptionSettings UnderlyingChangedRabbitSubscriptionSettings { get; set; }
         
         public RabbitSubscriptionSettings BrokerSettingsChangedRabbitSubscriptionSettings { get; set; }
+        
+        public List<string> AssetTypesWithZeroInterestRates { get; set; } = new List<string>();
     }
 }
