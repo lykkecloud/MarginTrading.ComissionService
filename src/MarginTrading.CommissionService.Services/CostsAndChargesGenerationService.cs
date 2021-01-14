@@ -30,6 +30,7 @@ namespace MarginTrading.CommissionService.Services
         private readonly IAssetPairsCache _assetPairsCache;
         private readonly ITradingDaysInfoProvider _tradingDaysInfoProvider;
         private readonly CostsAndChargesDefaultSettings _defaultSettings;
+        private readonly CommissionServiceSettings _settings;
 
         private const decimal DefaultCcVolume = 5000;
 
@@ -37,15 +38,16 @@ namespace MarginTrading.CommissionService.Services
             ISystemClock systemClock,
             ICostsAndChargesRepository repository,
             ISharedCostsAndChargesRepository sharedRepository,
-            IPositionReceiveService positionReceiveService, 
+            IPositionReceiveService positionReceiveService,
             ITradingInstrumentsCache tradingInstrumentsCache,
-            ICfdCalculatorService cfdCalculatorService, 
-            IAccountRedisCache accountRedisCache, 
-            IRateSettingsService rateSettingsService, 
+            ICfdCalculatorService cfdCalculatorService,
+            IAccountRedisCache accountRedisCache,
+            IRateSettingsService rateSettingsService,
             IInterestRatesCacheService interestRatesCacheService,
             IAssetPairsCache assetPairsCache,
             ITradingDaysInfoProvider tradingDaysInfoProvider, 
-            CostsAndChargesDefaultSettings defaultSettings)
+            CostsAndChargesDefaultSettings defaultSettings,
+            CommissionServiceSettings settings)
         {
             _quoteCacheService = quoteCacheService;
             _systemClock = systemClock;
@@ -59,18 +61,18 @@ namespace MarginTrading.CommissionService.Services
             _assetPairsCache = assetPairsCache;
             _tradingDaysInfoProvider = tradingDaysInfoProvider;
             _defaultSettings = defaultSettings;
+            _settings = settings;
             _sharedRepository = sharedRepository;
         }
-        
+
         public async Task<CostsAndChargesCalculation> GenerateSingle(string accountId, string instrument,
             decimal quantity, OrderDirection direction, bool withOnBehalf, decimal? anticipatedExecutionPrice = null)
         {
-            
             var account = await _accountRedisCache.GetAccount(accountId);
 
-            var calculation = await GetCalculationAsync(instrument, direction, 
+            var calculation = await GetCalculationAsync(instrument, direction,
                 account.BaseAssetId, account
-                .TradingConditionId, account.LegalEntity, anticipatedExecutionPrice);
+                    .TradingConditionId, account.LegalEntity, anticipatedExecutionPrice);
 
             calculation.AccountId = accountId;
 
@@ -79,8 +81,8 @@ namespace MarginTrading.CommissionService.Services
             return calculation;
         }
 
-        public async Task<List<CostsAndChargesCalculation>> GenerateSharedAsync(string instrument, string 
-        tradingConditionId)
+        public async Task<List<CostsAndChargesCalculation>> GenerateSharedAsync(string instrument, string
+            tradingConditionId)
         {
             var result = new List<CostsAndChargesCalculation>();
 
@@ -100,8 +102,9 @@ namespace MarginTrading.CommissionService.Services
             return result;
         }
 
-        private async Task<CostsAndChargesCalculation> GetCalculationAsync(string instrument, OrderDirection direction, 
-            string baseAssetId, string tradingConditionId, string legalEntity, decimal? anticipatedExecutionPrice = null)
+        private async Task<CostsAndChargesCalculation> GetCalculationAsync(string instrument, OrderDirection direction,
+            string baseAssetId, string tradingConditionId, string legalEntity,
+            decimal? anticipatedExecutionPrice = null)
         {
             if (string.IsNullOrEmpty(instrument))
                 throw new ArgumentNullException(nameof(instrument));
@@ -113,15 +116,13 @@ namespace MarginTrading.CommissionService.Services
                 throw new ArgumentNullException(nameof(tradingConditionId));
 
             var currentBestPrice = _quoteCacheService.GetBidAskPair(instrument);
-            var executionPrice = anticipatedExecutionPrice ?? 
-                                        (direction == OrderDirection.Buy ? currentBestPrice.Ask : currentBestPrice.Bid);
-            
+            var executionPrice = anticipatedExecutionPrice ??
+                                 (direction == OrderDirection.Buy ? currentBestPrice.Ask : currentBestPrice.Bid);
+
             var tradingInstrument = _tradingInstrumentsCache.Get(tradingConditionId, instrument);
             var fxRate = 1 / _cfdCalculatorService.GetFxRateForAssetPair(baseAssetId, instrument, legalEntity);
             var commissionRate = (await _rateSettingsService.GetOrderExecutionRates(new[] {instrument})).Single();
             var overnightSwapRate = await _rateSettingsService.GetOvernightSwapRate(instrument);
-            var variableRateBase = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateBase);
-            var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);
             var units = DefaultCcVolume / executionPrice * fxRate;
             var transactionVolume = units * executionPrice;
             var spread = currentBestPrice.Ask - currentBestPrice.Bid;
@@ -138,14 +139,24 @@ namespace MarginTrading.CommissionService.Services
                     Math.Max(commissionRate.CommissionFloor,
                         commissionRate.CommissionRate * transactionVolume / fxRate), commissionRate.CommissionCap) +
                 entryConsorsDonation;
-            var asset = _assetPairsCache.GetAssetPairById(instrument);
-            var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(asset.MarketId,
+            var assetPair = _assetPairsCache.GetAssetPairById(instrument);
+            var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(assetPair.MarketId,
                 _systemClock.UtcNow.UtcDateTime);
             var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
-                                              overnightFeeDays / 2; //same
+                overnightFeeDays / 2; //same
             var directionMultiplier = direction == OrderDirection.Sell ? -1 : 1;
-            var referenceRateAmount = directionMultiplier * (variableRateBase - variableRateQuote) *
-                                      transactionVolume / fxRate / 365 * overnightFeeDays;
+
+            var referenceRateAmount = 0m;
+
+            if (!_settings.AssetTypesWithZeroInterestRates.Contains(assetPair.AssetType))
+            {
+                var variableRateBase = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateBase);
+                var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);
+
+                referenceRateAmount = directionMultiplier * (variableRateBase - variableRateQuote) *
+                    transactionVolume / fxRate / 365 * overnightFeeDays;
+            }
+
             var repoCost = direction == OrderDirection.Sell
                 ? -overnightSwapRate.RepoSurchargePercent * transactionVolume / fxRate / 365 * overnightFeeDays
                 : 0;
@@ -236,7 +247,7 @@ namespace MarginTrading.CommissionService.Services
             return await GenerateForPositionsList(positions, withOnBehalf);
         }
 
-        private async Task<List<CostsAndChargesCalculation>> GenerateForPositionsList(List<IOpenPosition> positions, 
+        private async Task<List<CostsAndChargesCalculation>> GenerateForPositionsList(List<IOpenPosition> positions,
             bool withOnBehalf)
         {
             var groups = positions.GroupBy(p => (p.AccountId, p.AssetPairId, p.Direction));
@@ -249,9 +260,9 @@ namespace MarginTrading.CommissionService.Services
                     ? OrderDirection.Sell
                     : OrderDirection.Buy;
 
-                var calculation = await GenerateSingle(positionsGroup.Key.AccountId, 
-                    positionsGroup.Key.AssetPairId,netVolume, direction, withOnBehalf);
-                
+                var calculation = await GenerateSingle(positionsGroup.Key.AccountId,
+                    positionsGroup.Key.AssetPairId, netVolume, direction, withOnBehalf);
+
                 result.Add(calculation);
             }
 
