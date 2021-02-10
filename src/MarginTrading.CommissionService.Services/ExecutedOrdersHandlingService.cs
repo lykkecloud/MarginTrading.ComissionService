@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Common.Log;
 using MarginTrading.Backend.Contracts.Events;
 using MarginTrading.Backend.Contracts.Orders;
+using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Extensions;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands;
@@ -60,7 +61,8 @@ namespace MarginTrading.CommissionService.Services
                     volume: order.Volume.RequiredNotNull(nameof(order.Volume)),
                     tradingDay: order.ModifiedTimestamp,
                     orderExecutionPrice: order.ExecutionPrice.RequiredNotNull(nameof(order.ExecutionPrice)),
-                    orderExecutionFxRate: order.FxRate.RequiredNotEqualsTo(default, nameof(order.FxRate)))
+                    orderExecutionFxRate: order.FxRate.RequiredNotEqualsTo(default, nameof(order.FxRate)),  
+                    (OrderDirection)order.Direction)
                 )
             };
             

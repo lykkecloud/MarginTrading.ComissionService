@@ -20,4 +20,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\MarginTrading.CommissionService\MarginTrading.CommissionService.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\src\MarginTrading.CommissionService.SqlRepositories\Scripts\**" CopyToOutputDirectory="PreserveNewest" LinkBase="Scripts" />
+  </ItemGroup>
 </Project>
