@@ -41,12 +41,12 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                                      || x.Status == OrderStatusContract.Expired
                                      || x.Status == OrderStatusContract.Rejected);
 
-            if (order == null) throw new Exception("Cannot find order");
-            if (order.AccountId != accountId) throw new Exception("AccountId does not match");
+            if (order == null) throw new Exception($"Cannot find order {orderId} in final status");
+            if (order.AccountId != accountId) throw new Exception($"AccountId does not match for {orderId}: {order.AccountId} on order, {accountId} in request");
 
             var commissionHistory = await _commissionHistoryRepository.GetByOrderIdAsync(orderId);
             if (order.Status == OrderStatusContract.Executed && commissionHistory == null)
-                throw new Exception("Commission has not been calculated yet");
+                throw new Exception($"Commission has not been calculated yet for order {orderId}");
 
             var result = new OrderDetailsData();
             
