@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using MarginTrading.CommissionService.Contracts;
 using MarginTrading.CommissionService.Contracts.Models;
 using MarginTrading.CommissionService.Core.Domain.OrderDetailFeature;
+using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Services.OrderDetailsFeature;
 using MarginTrading.CommissionService.Middleware;
 using Microsoft.AspNetCore.Authorization;
@@ -21,14 +22,17 @@ namespace MarginTrading.CommissionService.Controllers
         private readonly IOrderDetailsCalculationService _orderDetailsCalculationService;
         private readonly IOrderDetailsDataSourceBuilder _dataSourceBuilder;
         private readonly IOrderDetailsPdfGenerator _orderDetailsPdfGenerator;
+        private readonly IBrokerSettingsService _brokerSettingsService;
 
         public OrderDetailsController(IOrderDetailsCalculationService orderDetailsCalculationService,
             IOrderDetailsDataSourceBuilder dataSourceBuilder,
-            IOrderDetailsPdfGenerator orderDetailsPdfGenerator)
+            IOrderDetailsPdfGenerator orderDetailsPdfGenerator,
+            IBrokerSettingsService brokerSettingsService)
         {
             _orderDetailsCalculationService = orderDetailsCalculationService;
             _dataSourceBuilder = dataSourceBuilder;
             _orderDetailsPdfGenerator = orderDetailsPdfGenerator;
+            _brokerSettingsService = brokerSettingsService;
         }
 
         [HttpPost]
@@ -37,6 +41,9 @@ namespace MarginTrading.CommissionService.Controllers
         public async Task<FileContract> GenerateOrderDetailsReport([FromQuery] string orderId,
             [FromQuery] string accountId)
         {
+            var enabled = await _brokerSettingsService.IsOrderDetailsReportEnabledAsync();
+            if (!enabled) throw new Exception("Feature is disabled");
+            
             var calculation = await _orderDetailsCalculationService.Calculate(orderId, accountId);
             var dataSource = _dataSourceBuilder.Build(calculation);
             var pdf = _orderDetailsPdfGenerator.GenerateReport(dataSource, new ReportProperties()
