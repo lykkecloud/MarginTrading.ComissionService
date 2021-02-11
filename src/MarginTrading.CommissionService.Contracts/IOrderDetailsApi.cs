@@ -9,7 +9,7 @@ namespace MarginTrading.CommissionService.Contracts
 {
     public interface IOrderDetailsApi
     {
-        [Post("api/orderDetails")]
+        [Post("/api/orderDetails")]
         Task<FileContract> GenerateOrderDetailsReport([Query] string orderId, [Query] string accountId);
     }
 }
