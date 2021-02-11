@@ -36,9 +36,9 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                     doc.PageSize(PdfPageSize.A4);
                     doc.DocumentMetadata(new DocumentMetadata
                     {
-                        Author = "Lykke Business",
+                        Author = "BNP Paribas",
                         Application = nameof(CommissionService),
-                        Keywords = "Lykke BNP Paribas",
+                        Keywords = "BNP Paribas",
                         Subject = "Order Details",
                         Title = "Order Details"
                     });

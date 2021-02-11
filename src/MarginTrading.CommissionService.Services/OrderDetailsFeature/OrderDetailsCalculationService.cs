@@ -35,7 +35,6 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
         {
             var orderHistory = await _orderEventsApi.OrderById(orderId);
             var order = orderHistory
-                // check order & status
                 .OrderByDescending(x => x.ModifiedTimestamp)
                 .FirstOrDefault(x => x.Status == OrderStatusContract.Executed
                                      || x.Status == OrderStatusContract.Canceled
@@ -50,9 +49,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                 throw new Exception("Commission has not been calculated yet");
 
             var result = new OrderDetailsData();
-
-            // todo: check api (download as pdf from frontend grid)
-            // donut api for executed orders
+            
             var exchangeRate = order.FxRate == 0 ? 1 : 1 / order.FxRate;
 
             decimal? notional = null;
