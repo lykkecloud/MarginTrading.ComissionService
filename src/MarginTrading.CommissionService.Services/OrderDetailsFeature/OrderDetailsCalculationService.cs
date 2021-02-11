@@ -5,10 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.OrderDetailFeature;
 using MarginTrading.CommissionService.Core.Repositories;
+using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Services.OrderDetailsFeature;
 using MarginTrading.TradingHistory.Client;
 using MarginTrading.TradingHistory.Client.Models;
@@ -20,15 +20,15 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
     {
         private readonly IOrderEventsApi _orderEventsApi;
         private readonly ICommissionHistoryRepository _commissionHistoryRepository;
-        private readonly IMapper _mapper;
+        private readonly IConvertService _convertService;
 
         public OrderDetailsCalculationService(IOrderEventsApi orderEventsApi,
             ICommissionHistoryRepository commissionHistoryRepository,
-            IMapper mapper)
+            IConvertService convertService)
         {
             _orderEventsApi = orderEventsApi;
             _commissionHistoryRepository = commissionHistoryRepository;
-            _mapper = mapper;
+            _convertService = convertService;
         }
 
         public async Task<OrderDetailsData> Calculate(string orderId, string accountId)
@@ -62,8 +62,8 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
 
             result.Instrument = order.AssetPairId;
             result.Quantity = order.Volume;
-            result.Status = _mapper.Map<OrderStatusContract, OrderStatus>(order.Status);
-            result.OrderType = _mapper.Map<OrderTypeContract, OrderType>(order.Type);
+            result.Status = _convertService.Convert<OrderStatusContract, OrderStatus>(order.Status);
+            result.OrderType = _convertService.Convert<OrderTypeContract, OrderType>(order.Type);
             result.LimitStopPrice = order.ExpectedOpenPrice;
             result.TakeProfitPrice = order.TakeProfit?.Price;
             result.StopLossPrice = order.StopLoss?.Price;
@@ -72,8 +72,8 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             result.NotionalEUR = notionalEUR;
             result.ExchangeRate = exchangeRate;
             result.ProductCost = commissionHistory.ProductCost;
-            result.OrderDirection = _mapper.Map<OrderDirectionContract, OrderDirection>(order.Direction);
-            result.Origin = _mapper.Map<OriginatorTypeContract, OriginatorType>(order.Originator);
+            result.OrderDirection = _convertService.Convert<OrderDirectionContract, OrderDirection>(order.Direction);
+            result.Origin = _convertService.Convert<OriginatorTypeContract, OriginatorType>(order.Originator);
             result.OrderId = order.Id;
             result.CreatedTimestamp = order.CreatedTimestamp;
             result.ModifiedTimestamp = order.ModifiedTimestamp;
