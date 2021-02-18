@@ -8,6 +8,6 @@ namespace MarginTrading.CommissionService.Core.Services.OrderDetailsFeature
 {
     public interface IOrderDetailsDataSourceBuilder
     {
-        IReadOnlyCollection<OrderDetailsReportRow> Build(OrderDetailsData data);
+        OrderDetailsReport Build(OrderDetailsData data);
     }
 }

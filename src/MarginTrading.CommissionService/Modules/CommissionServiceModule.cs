@@ -192,7 +192,7 @@ namespace MarginTrading.CommissionService.Modules
                         _settings.CurrentValue.CommissionService.BrokerId))
                 .SingleInstance();
 
-            builder.RegisterType<ProductCostCalculationService>()
+            builder.RegisterType<BbvaProductCostCalculationService>()
                 .AsImplementedInterfaces()
                 .SingleInstance();
 

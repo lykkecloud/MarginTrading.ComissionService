@@ -36,8 +36,8 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
         {
             if (quantity.HasValue)
             {
-                var sign = direction == OrderDirection.Buy ? "+" : "-";
-                return $"{sign}{quantity.Value.ToString("N0", CultureInfo.InvariantCulture)}";
+                var sign = direction == OrderDirection.Buy ? "+" : "";
+                return $"{sign}{quantity.Value.ToString("G29", CultureInfo.InvariantCulture)}";
             }
 
             return empty;

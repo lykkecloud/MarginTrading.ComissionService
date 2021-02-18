@@ -8,6 +8,6 @@ namespace MarginTrading.CommissionService.Core.Services.OrderDetailsFeature
 {
     public interface IOrderDetailsPdfGenerator
     {
-        byte[] GenerateReport(IReadOnlyCollection<OrderDetailsReportRow> data, ReportProperties properties);
+        byte[] GenerateReport(IReadOnlyCollection<OrderDetailsReportRow> rows, ReportProperties props);
     }
 }

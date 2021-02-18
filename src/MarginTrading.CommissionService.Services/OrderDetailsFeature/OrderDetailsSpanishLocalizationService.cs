@@ -16,6 +16,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
 
         private readonly CultureInfo _cultureInfo = new CultureInfo("es-ES");
         private string _dateTimeFormat = "dd.MM.yyyy hh:mm:ss";
+        private const string decimalFormat = "G29";
 
         private readonly Dictionary<string, string> _fieldMap = new Dictionary<string, string>()
         {
@@ -37,7 +38,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             {nameof(OrderDetailsData.ValidityTime), "Validez"},
             {nameof(OrderDetailsData.Notional), "Efectivo"},
             {nameof(OrderDetailsData.OrderComment), "Comentario de la orden"},
-            {nameof(OrderDetailsData.NotionalEUR), "Efectivo (EUR)"},
+            {nameof(OrderDetailsData.NotionalEUR), "Efectivo"},
             {nameof(OrderDetailsData.ExchangeRate), "Tipo de cambio"},
             {nameof(OrderDetailsData.Commission), "Comisión de compra/venta"},
             {nameof(OrderDetailsData.ProductCost), "Coste del producto (Spread oferta/demanda)"},
@@ -92,7 +93,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
         {
             if (value.HasValue)
             {
-                return $"{value.Value.ToString("G", _cultureInfo)}";
+                return $"{value.Value.ToString(decimalFormat, _cultureInfo)}";
             }
 
             return empty;
@@ -102,8 +103,8 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
         {
             if (quantity.HasValue)
             {
-                var sign = direction == OrderDirection.Buy ? "+" : "-";
-                return $"{sign}{quantity.Value.ToString("N0", _cultureInfo)}";
+                var sign = direction == OrderDirection.Buy ? "+" : "";
+                return $"{sign}{quantity.Value.ToString(decimalFormat, _cultureInfo)}";
             }
 
             return empty;

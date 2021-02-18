@@ -46,12 +46,7 @@ namespace MarginTrading.CommissionService.Controllers
             
             var calculation = await _orderDetailsCalculationService.Calculate(orderId, accountId);
             var dataSource = _dataSourceBuilder.Build(calculation);
-            var pdf = _orderDetailsPdfGenerator.GenerateReport(dataSource, new ReportProperties()
-            {
-                AccountId = calculation.AccountId,
-                OrderId = calculation.OrderId,
-                IncludeManualConfirmationFooter = calculation.ConfirmedManually,
-            });
+            var pdf = _orderDetailsPdfGenerator.GenerateReport(dataSource.Data, dataSource.Properties);
 
             return new FileContract()
             {

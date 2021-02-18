@@ -16,9 +16,39 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             _localizationService = localizationService;
         }
 
-        public IReadOnlyCollection<OrderDetailsReportRow> Build(OrderDetailsData data)
+        public OrderDetailsReport Build(OrderDetailsData data)
         {
-            var result = new List<OrderDetailsReportRow>();
+            var rows = GetRows(data);
+            var props = GetProperties(data);
+
+            var result = new OrderDetailsReport()
+            {
+                Data = rows,
+                Properties = props,
+            };
+
+            return result;
+        }
+
+        private ReportProperties GetProperties(OrderDetailsData data)
+        {
+            return new ReportProperties()
+            {
+                AccountName = data.AccountName,
+                OrderId = data.OrderId,
+                HasManualConfirmationWarning = data.ConfirmedManually,
+                ProductName = data.Instrument,
+                HasLossRatioWarning = data.LossRatioFrom.HasValue &&  data.LossRatioTo.HasValue,
+                LossRatioFrom = _localizationService.LocalizeDecimal(data.LossRatioFrom),
+                LossRatioTo = _localizationService.LocalizeDecimal(data.LossRatioTo),
+                HasMoreThan5PercentWarning = data.MoreThan5Percent.HasValue,
+                MoreThan5PercentWarning = _localizationService.LocalizeDecimal(data.MoreThan5Percent),
+            };
+        }
+
+        private List<OrderDetailsReportRow> GetRows(OrderDetailsData data)
+        {
+            var rows = new List<OrderDetailsReportRow>();
 
             var row1 = new OrderDetailsReportRow(
                 _localizationService.LocalizeField(nameof(OrderDetailsData.Instrument)),
@@ -54,49 +84,50 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                 _localizationService.LocalizeField(nameof(OrderDetailsData.ModifiedTimestamp)),
                 _localizationService.LocalizeDate(data.ModifiedTimestamp)
             );
-            
+
             var row6 = new OrderDetailsReportRow(
                 _localizationService.LocalizeField(nameof(OrderDetailsData.TakeProfitPrice)),
                 _localizationService.LocalizeDecimal(data.TakeProfitPrice),
                 _localizationService.LocalizeField(nameof(OrderDetailsData.ExecutedTimestamp)),
                 _localizationService.LocalizeDate(data.ExecutedTimestamp)
-            );  
-            
+            );
+
             var row7 = new OrderDetailsReportRow(
                 _localizationService.LocalizeField(nameof(OrderDetailsData.StopLossPrice)),
                 _localizationService.LocalizeDecimal(data.StopLossPrice),
                 _localizationService.LocalizeField(nameof(OrderDetailsData.CanceledTimestamp)),
                 _localizationService.LocalizeDate(data.CanceledTimestamp)
-            );   
-            
+            );
+
             var row8 = new OrderDetailsReportRow(
                 _localizationService.LocalizeField(nameof(OrderDetailsData.ExecutionPrice)),
                 _localizationService.LocalizeDecimal(data.ExecutionPrice),
                 _localizationService.LocalizeField(nameof(OrderDetailsData.ValidityTime)),
                 _localizationService.LocalizeValidity(data.ValidityTime)
             );
-            
+
             var row9 = new OrderDetailsReportRow(
                 _localizationService.LocalizeField(nameof(OrderDetailsData.Notional)),
                 _localizationService.LocalizeDecimal(data.Notional),
                 _localizationService.LocalizeField(nameof(OrderDetailsData.OrderComment)),
                 data.OrderComment
             );
-            
+
+            var notionalEUR = _localizationService.LocalizeField(nameof(OrderDetailsData.NotionalEUR));
             var row10 = new OrderDetailsReportRow(
-                _localizationService.LocalizeField(nameof(OrderDetailsData.NotionalEUR)),
+                $"{notionalEUR} ({data.SettlementCurrency})",
                 _localizationService.LocalizeDecimal(data.NotionalEUR),
                 _localizationService.LocalizeField(nameof(OrderDetailsData.ForceOpen)),
                 _localizationService.LocalizeBoolean(data.ForceOpen)
             );
-            
+
             var row11 = new OrderDetailsReportRow(
                 _localizationService.LocalizeField(nameof(OrderDetailsData.ExchangeRate)),
                 _localizationService.LocalizeDecimal(data.ExchangeRate),
                 _localizationService.LocalizeField(nameof(OrderDetailsData.Commission)),
                 _localizationService.LocalizeDecimal(data.Commission)
             );
-            
+
             var row12 = new OrderDetailsReportRow(
                 _localizationService.LocalizeField(nameof(OrderDetailsData.ProductCost)),
                 _localizationService.LocalizeDecimal(data.ProductCost),
@@ -104,20 +135,19 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                 _localizationService.LocalizeDecimal(data.TotalCostsAndCharges)
             );
 
-            result.Add(row1);
-            result.Add(row2);
-            result.Add(row3);
-            result.Add(row4);
-            result.Add(row5);
-            result.Add(row6);
-            result.Add(row7);
-            result.Add(row8);
-            result.Add(row9);
-            result.Add(row10);
-            result.Add(row11);
-            result.Add(row12);
-
-            return result;
+            rows.Add(row1);
+            rows.Add(row2);
+            rows.Add(row3);
+            rows.Add(row4);
+            rows.Add(row5);
+            rows.Add(row6);
+            rows.Add(row7);
+            rows.Add(row8);
+            rows.Add(row9);
+            rows.Add(row10);
+            rows.Add(row11);
+            rows.Add(row12);
+            return rows;
         }
     }
 }

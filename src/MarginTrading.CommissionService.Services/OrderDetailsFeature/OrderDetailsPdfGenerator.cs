@@ -7,6 +7,7 @@ using iTextSharp.text;
 using MarginTrading.CommissionService.Core.Domain.OrderDetailFeature;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Services.OrderDetailsFeature;
+using Microsoft.AspNetCore.Hosting;
 using PdfRpt.Core.Contracts;
 using PdfRpt.Core.Helper.HtmlToPdf;
 using PdfRpt.FluentInterface;
@@ -16,18 +17,20 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
     public class OrderDetailsPdfGenerator : IOrderDetailsPdfGenerator
     {
         private readonly IFontProvider _fontProvider;
+        private readonly IHostingEnvironment _environment;
         private string _header;
         private string _footer;
+        private string _assetsPath = Path.Combine("ReportAssets", "OrderDetails");
 
-        public OrderDetailsPdfGenerator(IFontProvider fontProvider)
+        public OrderDetailsPdfGenerator(IFontProvider fontProvider, IHostingEnvironment environment)
         {
             _fontProvider = fontProvider;
-            var assetsPath = "./ReportAssets/OrderDetails";
-            _header = File.ReadAllText(Path.Combine(assetsPath, "header.html"));
-            _footer = File.ReadAllText(Path.Combine(assetsPath, "footer.html"));
+            _environment = environment;
+            _header = File.ReadAllText(Path.Combine(_assetsPath, "header.html"));
+            _footer = File.ReadAllText(Path.Combine(_assetsPath, "footer.html"));
         }
 
-        public byte[] GenerateReport(IReadOnlyCollection<OrderDetailsReportRow> data, ReportProperties properties)
+        public byte[] GenerateReport(IReadOnlyCollection<OrderDetailsReportRow> rows, ReportProperties props)
         {
             return new PdfReport().DocumentPreferences(doc =>
                 {
@@ -64,7 +67,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                     table.ColumnsWidthsType(TableColumnWidthType.Relative);
                     table.ShowHeaderRow(false);
                 })
-                .MainTableDataSource(dataSource => { dataSource.StronglyTypedList(data); })
+                .MainTableDataSource(dataSource => { dataSource.StronglyTypedList(rows); })
                 .PagesHeader(builder =>
                 {
                     builder.HtmlHeader(providerBuilder =>
@@ -76,10 +79,9 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                             PdfFont = builder.PdfFont,
                             HorizontalAlignment = HorizontalAlignment.Left,
                         });
-                        providerBuilder.AddPageHeader(headerData => string.Format(_header, 
-                            properties.AccountId,
-                            properties.OrderId
-                            ));
+                        providerBuilder.AddPageHeader(headerData => string.Format(_header,
+                            GetAsset("bbva_logo.png")
+                        ));
                     });
                 })
                 .MainTableColumns(columns =>
@@ -146,26 +148,72 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                 )
                 .MainTableEvents(events =>
                     {
-                        if (properties.IncludeManualConfirmationFooter) events.DocumentClosing(args => { AddFooter(args.PdfDoc, args.PdfFont); });
+                        events.MainTableCreated(args =>
+                        {
+                            AddHtml(args.PdfDoc, args.PdfFont, GetAssetText("heading.html"), HorizontalAlignment.Center,
+                                props.OrderId);
+                            AddHtml(args.PdfDoc, args.PdfFont, GetAssetText("account.html"), HorizontalAlignment.Left,
+                                props.AccountName);
+                        });
+
+
+                        events.DocumentClosing(args =>
+                        {
+                            if (props.HasManualConfirmationWarning)
+                                AddHtml(args.PdfDoc, args.PdfFont, GetAssetText("handwritten_warning.html"),
+                                    HorizontalAlignment.Left);
+
+                            if (props.HasMoreThan5PercentWarning)
+                                AddHtml(args.PdfDoc, args.PdfFont, GetAssetText("percent_warning.html"),
+                                    HorizontalAlignment.Left,
+                                    props.MoreThan5PercentWarning);
+
+                            if (props.HasLossRatioWarning)
+                                AddHtml(args.PdfDoc, args.PdfFont, GetAssetText("loss_ratio_warning.html"),
+                                    HorizontalAlignment.Left,
+                                    props.ProductName,
+                                    props.LossRatioFrom,
+                                    props.LossRatioTo);
+
+                            AddHtml(args.PdfDoc, args.PdfFont, GetAssetText("statement_warning.html"),
+                                HorizontalAlignment.Left);
+                            AddHtml(args.PdfDoc, args.PdfFont, GetAssetText("general_warning.html"),
+                                HorizontalAlignment.Left);
+                        });
                     }
                 )
                 .GenerateAsByteArray();
         }
 
-        private void AddFooter(Document argsPdfDoc, IPdfFont eventsPdfFont)
+        private string GetAsset(string asset)
+        {
+            return Path.Combine(_environment.ContentRootPath, _assetsPath, asset);
+        }
+
+        private string GetAssetText(string asset)
+        {
+            return File.ReadAllText(Path.Combine(_environment.ContentRootPath, _assetsPath, asset));
+        }
+
+        private void AddHtml(Document argsPdfDoc,
+            IPdfFont eventsPdfFont,
+            string html,
+            HorizontalAlignment alignment,
+            params object[] format)
         {
             var table = new PdfGrid(1)
             {
                 RunDirection = (int) PdfRunDirection.LeftToRight,
                 WidthPercentage = 100,
-                SpacingBefore = 25,
+                SpacingBefore = 5,
+                SpacingAfter = 5,
             };
 
             var htmlCell = new HtmlWorkerHelper
             {
                 PdfFont = eventsPdfFont,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                Html = _footer,
+                HorizontalAlignment = alignment,
+                Html = string.Format(html, format),
                 RunDirection = PdfRunDirection.LeftToRight,
             }.RenderHtml();
             htmlCell.Border = 0;

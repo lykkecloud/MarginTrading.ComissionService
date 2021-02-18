@@ -7,28 +7,32 @@ using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.OrderDetailFeature;
 using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Services.OrderDetailsFeature;
+using Microsoft.AspNetCore.Hosting;
+using Moq;
 using NUnit.Framework;
 
 namespace MarginTrading.CommissionService.Tests
 {
     public class OrderDetailsGeneratorTests
     {
+        private Mock<IHostingEnvironment> _hostingEnvironment = new Mock<IHostingEnvironment>();
+
         public OrderDetailsGeneratorTests()
         {
             Directory.CreateDirectory("./reports");
         }
-        
+
         [Test]
         [Ignore("Run manually")]
         public void CreateEnglishOrderDetailsPdf()
         {
-            var generator = new OrderDetailsPdfGenerator(new FontProvider("./Fonts/"));
+            var generator = new OrderDetailsPdfGenerator(new FontProvider("./Fonts/"), _hostingEnvironment.Object);
             var builder = new OrderDetailsDataSourceBuilder(new OrderDetailsEnglishLocalizationService());
             var data = GetData();
-            var properties = GetProperties(data);
+
             var datasource = builder.Build(data);
 
-            var result = generator.GenerateReport(datasource, properties);
+            var result = generator.GenerateReport(datasource.Data, datasource.Properties);
 
             File.WriteAllBytes("reports/test.pdf", result);
         }
@@ -37,13 +41,12 @@ namespace MarginTrading.CommissionService.Tests
         [Ignore("Run manually")]
         public void CreateSpanishOrderDetailsPdf()
         {
-            var generator = new OrderDetailsPdfGenerator(new FontProvider("./Fonts/"));
+            var generator = new OrderDetailsPdfGenerator(new FontProvider("./Fonts/"), _hostingEnvironment.Object);
             var builder = new OrderDetailsDataSourceBuilder(new OrderDetailsSpanishLocalizationService());
             var data = GetData();
-            var properties = GetProperties(data);
             var datasource = builder.Build(data);
 
-            var result = generator.GenerateReport(datasource, properties);
+            var result = generator.GenerateReport(datasource.Data, datasource.Properties);
 
             File.WriteAllBytes("reports/sp_test.pdf", result);
         }
@@ -65,7 +68,7 @@ namespace MarginTrading.CommissionService.Tests
                 TakeProfitPrice = null,
                 ExecutedTimestamp = DateTime.Now,
                 LimitStopPrice = 48.22M,
-                CanceledTimestamp =  null,
+                CanceledTimestamp = null,
                 ExecutionPrice = 50.1M,
                 ValidityTime = null,
                 Notional = 500.10M,
@@ -77,17 +80,7 @@ namespace MarginTrading.CommissionService.Tests
                 ProductCost = 150M,
                 TotalCostsAndCharges = 200M,
                 ConfirmedManually = false,
-                AccountId = "AA001Account"
-            };
-        }
-
-        private ReportProperties GetProperties(OrderDetailsData data)
-        {
-            return new ReportProperties()
-            {
-                IncludeManualConfirmationFooter = data.ConfirmedManually,
-                AccountId = data.AccountId,
-                OrderId = data.OrderId,
+                AccountName = "AA001Account"
             };
         }
     }

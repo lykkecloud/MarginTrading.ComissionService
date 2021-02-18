@@ -67,7 +67,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                   command.AccountId, command.Instrument,command.Volume, 
                   command.OrderExecutionPrice, command.OrderExecutionFxRate);
 
-                // todo: calculation is different for consors
+                // todo: move fxrate / volume calculation to service
                 var exchangeRate = command.OrderExecutionFxRate == 0 ? 1 : 1 / command.OrderExecutionFxRate;
                 var productCost = await _productCostCalculationService.ProductCost(command.Instrument,
                     command.Volume * command.OrderExecutionPrice,

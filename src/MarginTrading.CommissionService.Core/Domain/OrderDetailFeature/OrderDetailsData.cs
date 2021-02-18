@@ -39,6 +39,14 @@ namespace MarginTrading.CommissionService.Core.Domain.OrderDetailFeature
         /// </summary>
         public bool ConfirmedManually { get; set; }
 
-        public string AccountId { get; set; }
+        public string AccountName { get; set; }
+
+        public string SettlementCurrency { get; set; }
+        
+        public decimal? MoreThan5Percent { get; set; }
+        
+        public decimal? LossRatioFrom { get; set; }
+        
+        public decimal? LossRatioTo { get; set; }
     }
 }

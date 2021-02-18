@@ -109,6 +109,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include=".\ReportAssets\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include=".\ReportAssets\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
