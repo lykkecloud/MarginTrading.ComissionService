@@ -18,16 +18,12 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
     {
         private readonly IFontProvider _fontProvider;
         private readonly IHostingEnvironment _environment;
-        private string _header;
-        private string _footer;
         private string _assetsPath = Path.Combine("ReportAssets", "OrderDetails");
 
         public OrderDetailsPdfGenerator(IFontProvider fontProvider, IHostingEnvironment environment)
         {
             _fontProvider = fontProvider;
             _environment = environment;
-            _header = File.ReadAllText(Path.Combine(_assetsPath, "header.html"));
-            _footer = File.ReadAllText(Path.Combine(_assetsPath, "footer.html"));
         }
 
         public byte[] GenerateReport(IReadOnlyCollection<OrderDetailsReportRow> rows, ReportProperties props)
@@ -79,7 +75,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                             PdfFont = builder.PdfFont,
                             HorizontalAlignment = HorizontalAlignment.Left,
                         });
-                        providerBuilder.AddPageHeader(headerData => string.Format(_header,
+                        providerBuilder.AddPageHeader(headerData => string.Format(GetAssetText("header.html"),
                             GetAsset("bbva_logo.png")
                         ));
                     });
@@ -159,21 +155,23 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
 
                         events.DocumentClosing(args =>
                         {
-                            if (props.HasManualConfirmationWarning)
+                            if (!props.EnableAllWarnings) return;
+                            
+                            if (props.EnableProductComplexityWarning)
                                 AddHtml(args.PdfDoc, args.PdfFont, GetAssetText("handwritten_warning.html"),
                                     HorizontalAlignment.Left);
 
-                            if (props.HasMoreThan5PercentWarning)
+                            if (props.EnableTotalCostPercentWarning)
                                 AddHtml(args.PdfDoc, args.PdfFont, GetAssetText("percent_warning.html"),
                                     HorizontalAlignment.Left,
-                                    props.MoreThan5PercentWarning);
+                                    props.TotalCostPercentWarning);
 
-                            if (props.HasLossRatioWarning)
+                            if (props.EnableLossRatioWarning)
                                 AddHtml(args.PdfDoc, args.PdfFont, GetAssetText("loss_ratio_warning.html"),
                                     HorizontalAlignment.Left,
                                     props.ProductName,
-                                    props.LossRatioFrom,
-                                    props.LossRatioTo);
+                                    props.LossRatioMin,
+                                    props.LossRatioMax);
 
                             AddHtml(args.PdfDoc, args.PdfFont, GetAssetText("statement_warning.html"),
                                 HorizontalAlignment.Left);

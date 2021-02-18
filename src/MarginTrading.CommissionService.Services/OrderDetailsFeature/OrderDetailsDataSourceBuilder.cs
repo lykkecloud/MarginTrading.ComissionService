@@ -36,13 +36,14 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             {
                 AccountName = data.AccountName,
                 OrderId = data.OrderId,
-                HasManualConfirmationWarning = data.ConfirmedManually,
+                EnableProductComplexityWarning = data.ProductComplexityConfirmationReceived,
                 ProductName = data.Instrument,
-                HasLossRatioWarning = data.LossRatioFrom.HasValue &&  data.LossRatioTo.HasValue,
-                LossRatioFrom = _localizationService.LocalizeDecimal(data.LossRatioFrom),
-                LossRatioTo = _localizationService.LocalizeDecimal(data.LossRatioTo),
-                HasMoreThan5PercentWarning = data.MoreThan5Percent.HasValue,
-                MoreThan5PercentWarning = _localizationService.LocalizeDecimal(data.MoreThan5Percent),
+                EnableLossRatioWarning = data.LossRatioMin.HasValue &&  data.LossRatioMax.HasValue,
+                LossRatioMin = _localizationService.LocalizeDecimal(data.LossRatioMin),
+                LossRatioMax = _localizationService.LocalizeDecimal(data.LossRatioMax),
+                EnableTotalCostPercentWarning = data.TotalCostPercent.HasValue,
+                TotalCostPercentWarning = _localizationService.LocalizeDecimal(data.TotalCostPercent),
+                EnableAllWarnings = data.EnableAllWarnings,
             };
         }
 

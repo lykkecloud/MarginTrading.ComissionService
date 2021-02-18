@@ -9,18 +9,23 @@ namespace MarginTrading.CommissionService.Core.Domain.OrderDetailFeature
 
         public string AccountName { get; set; }
 
-        public bool HasManualConfirmationWarning { get; set; }
+        public bool EnableProductComplexityWarning { get; set; }
 
         public string ProductName { get; set; }
 
-        public bool HasMoreThan5PercentWarning { get; set; }
+        public bool EnableTotalCostPercentWarning { get; set; }
 
-        public string MoreThan5PercentWarning { get; set; }
+        public string TotalCostPercentWarning { get; set; }
 
-        public bool HasLossRatioWarning { get; set; }
+        public bool EnableLossRatioWarning { get; set; }
 
-        public string LossRatioFrom { get; set; }
+        public string LossRatioMin { get; set; }
 
-        public string LossRatioTo { get; set; }
+        public string LossRatioMax { get; set; }
+
+        /// <summary>
+        /// Enables / disables all warnings globally
+        /// </summary>
+        public bool EnableAllWarnings { get; set; }
     }
 }

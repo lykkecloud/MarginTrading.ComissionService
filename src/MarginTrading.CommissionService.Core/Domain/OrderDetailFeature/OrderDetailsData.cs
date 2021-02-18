@@ -37,16 +37,18 @@ namespace MarginTrading.CommissionService.Core.Domain.OrderDetailFeature
         /// <summary>
         /// Indicates that user had to manually confirm that they understand trading risks
         /// </summary>
-        public bool ConfirmedManually { get; set; }
+        public bool ProductComplexityConfirmationReceived { get; set; }
 
         public string AccountName { get; set; }
 
         public string SettlementCurrency { get; set; }
         
-        public decimal? MoreThan5Percent { get; set; }
+        public decimal? TotalCostPercent { get; set; }
         
-        public decimal? LossRatioFrom { get; set; }
+        public decimal? LossRatioMin { get; set; }
         
-        public decimal? LossRatioTo { get; set; }
+        public decimal? LossRatioMax { get; set; }
+        
+        public bool EnableAllWarnings { get; set; }
     }
 }

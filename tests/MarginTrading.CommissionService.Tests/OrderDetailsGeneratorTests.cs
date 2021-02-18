@@ -20,6 +20,7 @@ namespace MarginTrading.CommissionService.Tests
         public OrderDetailsGeneratorTests()
         {
             Directory.CreateDirectory("./reports");
+            _hostingEnvironment.Setup(x => x.ContentRootPath).Returns(Directory.GetCurrentDirectory);
         }
 
         [Test]
@@ -79,7 +80,7 @@ namespace MarginTrading.CommissionService.Tests
                 Commission = 9.95M,
                 ProductCost = 150M,
                 TotalCostsAndCharges = 200M,
-                ConfirmedManually = false,
+                ProductComplexityConfirmationReceived = false,
                 AccountName = "AA001Account"
             };
         }

@@ -106,18 +106,36 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             result.ExecutedTimestamp = order.ExecutedTimestamp;
             result.CanceledTimestamp = order.CanceledTimestamp;
             result.ValidityTime = order.ValidityTime;
+            // todo: check that this is the correct comment
             result.OrderComment = GetString(order.AdditionalInfo, "UserComments");
             result.ForceOpen = order.ForceOpen;
             result.Commission = commissionHistory?.Commission;
             result.TotalCostsAndCharges = commissionHistory?.Commission + commissionHistory?.ProductCost;
-            result.ConfirmedManually = GetManualConfirmationStatus(order.AdditionalInfo);
-            result.MoreThan5Percent = GetDecimal(order.AdditionalInfo, "MoreThan5Percent");
-            result.LossRatioFrom = GetDecimal(order.AdditionalInfo, "LossRatioFrom");
-            result.LossRatioTo = GetDecimal(order.AdditionalInfo, "LossRatioTo");
+            result.ProductComplexityConfirmationReceived =
+                GetBoolean(order.AdditionalInfo, "ProductComplexityConfirmationReceived");
+            result.TotalCostPercent = GetDecimal(order.AdditionalInfo, "TotalCostPercentShownToUser");
+            result.LossRatioMin = GetDecimal(order.AdditionalInfo, "LossRatioMinShownToUser");
+            result.LossRatioMax = GetDecimal(order.AdditionalInfo, "LossRatioMaxShownToUser");
             result.AccountName = accountName;
             result.SettlementCurrency = await _brokerSettingsService.GetSettlementCurrencyAsync();
+            result.EnableAllWarnings = GetAllWarningsFlag(order);
 
             return result;
+        }
+
+        private bool GetAllWarningsFlag(OrderEventWithAdditionalContract order)
+        {
+            if (order.Type == OrderTypeContract.StopLoss
+                || order.Type == OrderTypeContract.TakeProfit
+                || order.Type == OrderTypeContract.TrailingStop)
+                return false;
+
+            if (order.Originator == OriginatorTypeContract.System)
+                return false;
+
+            // todo: return false when order is executed from "close position" button on FE - how to detect? 
+
+            return true;
         }
 
         private string GetString(string orderInfo, string fieldName)
@@ -132,17 +150,15 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             return null;
         }
 
-        private bool GetManualConfirmationStatus(string orderInfo)
+        private bool GetBoolean(string orderInfo, string fieldName)
         {
-            const string fieldName = "ConfirmedManually";
-
             var info = JsonConvert.DeserializeObject<Dictionary<string, object>>(orderInfo);
 
-            if (info.TryGetValue(fieldName, out var confirmedManuallyFlagStr))
+            if (info.TryGetValue(fieldName, out var fieldValue))
             {
-                if (bool.TryParse(confirmedManuallyFlagStr.ToString(), out var confirmedManually))
+                if (bool.TryParse(fieldValue.ToString(), out var result))
                 {
-                    return confirmedManually;
+                    return result;
                 }
             }
 
