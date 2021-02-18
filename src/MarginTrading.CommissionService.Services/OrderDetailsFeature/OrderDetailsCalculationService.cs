@@ -106,7 +106,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             result.ExecutedTimestamp = order.ExecutedTimestamp;
             result.CanceledTimestamp = order.CanceledTimestamp;
             result.ValidityTime = order.ValidityTime;
-            result.OrderComment = order.Comment;
+            result.OrderComment = GetString(order.AdditionalInfo, "UserComments");
             result.ForceOpen = order.ForceOpen;
             result.Commission = commissionHistory?.Commission;
             result.TotalCostsAndCharges = commissionHistory?.Commission + commissionHistory?.ProductCost;
@@ -118,6 +118,18 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             result.SettlementCurrency = await _brokerSettingsService.GetSettlementCurrencyAsync();
 
             return result;
+        }
+
+        private string GetString(string orderInfo, string fieldName)
+        {
+            var info = JsonConvert.DeserializeObject<Dictionary<string, object>>(orderInfo);
+
+            if (info.TryGetValue(fieldName, out var fieldValue))
+            {
+                return fieldValue.ToString();
+            }
+
+            return null;
         }
 
         private bool GetManualConfirmationStatus(string orderInfo)
