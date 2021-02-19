@@ -77,7 +77,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             decimal? notionalEUR = null;
             if (order.Status == OrderStatusContract.Executed && order.ExecutionPrice.HasValue)
             {
-                notional = order.Volume * order.ExecutionPrice.Value;
+                notional = Math.Abs(order.Volume * order.ExecutionPrice.Value);
                 notionalEUR = notional / exchangeRate;
             }
 
@@ -107,12 +107,12 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             result.CanceledTimestamp = order.CanceledTimestamp;
             result.ValidityTime = order.ValidityTime;
             // todo: check that this is the correct comment
-            result.OrderComment = GetString(order.AdditionalInfo, "UserComments");
+            result.OrderComment = GetFieldAsString(order.AdditionalInfo, "UserComments");
             result.ForceOpen = order.ForceOpen;
             result.Commission = commissionHistory?.Commission;
             result.TotalCostsAndCharges = commissionHistory?.Commission + commissionHistory?.ProductCost;
             result.ProductComplexityConfirmationReceived =
-                GetBoolean(order.AdditionalInfo, "ProductComplexityConfirmationReceived");
+                GetBoolean(order.AdditionalInfo, "ProductComplexityConfirmationReceived") ?? false;
             result.TotalCostPercent = GetDecimal(order.AdditionalInfo, "TotalCostPercentShownToUser");
             result.LossRatioMin = GetDecimal(order.AdditionalInfo, "LossRatioMinShownToUser");
             result.LossRatioMax = GetDecimal(order.AdditionalInfo, "LossRatioMaxShownToUser");
@@ -138,46 +138,38 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             return true;
         }
 
-        private string GetString(string orderInfo, string fieldName)
-        {
-            var info = JsonConvert.DeserializeObject<Dictionary<string, object>>(orderInfo);
 
-            if (info.TryGetValue(fieldName, out var fieldValue))
+        private bool? GetBoolean(string orderInfo, string fieldName)
+        {
+            var value = GetFieldAsString(orderInfo, fieldName);
+            if (value == null) return null;
+
+            if (bool.TryParse(value, out var result))
             {
-                return fieldValue.ToString();
+                return result;
             }
 
             return null;
-        }
-
-        private bool GetBoolean(string orderInfo, string fieldName)
-        {
-            var info = JsonConvert.DeserializeObject<Dictionary<string, object>>(orderInfo);
-
-            if (info.TryGetValue(fieldName, out var fieldValue))
-            {
-                if (bool.TryParse(fieldValue.ToString(), out var result))
-                {
-                    return result;
-                }
-            }
-
-            return false;
         }
 
         private decimal? GetDecimal(string orderInfo, string fieldName)
         {
-            var info = JsonConvert.DeserializeObject<Dictionary<string, object>>(orderInfo);
+            var value = GetFieldAsString(orderInfo, fieldName);
+            if (value == null) return null;
 
-            if (info.TryGetValue(fieldName, out var fieldValue))
+            if (decimal.TryParse(value, out var result))
             {
-                if (decimal.TryParse(fieldValue.ToString(), out var result))
-                {
-                    return result;
-                }
+                return result;
             }
 
             return null;
+        }
+
+        private string GetFieldAsString(string json, string fieldName)
+        {
+            var dict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+            return dict.TryGetValue(fieldName, out var fieldValue) ? fieldValue?.ToString() : null;
         }
     }
 }
