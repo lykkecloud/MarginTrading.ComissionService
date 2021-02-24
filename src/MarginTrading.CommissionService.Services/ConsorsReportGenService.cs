@@ -15,13 +15,13 @@ using PdfRpt.FluentInterface;
 
 namespace MarginTrading.CommissionService.Services
 {
-    public class ReportGenService : IReportGenService
+    public class ConsorsReportGenService : IReportGenService
     {
         private readonly IAssetsCache _assetsCache;
         private readonly string _fontPath;
         private readonly string _timeZonePartOfTheName;
 
-        public ReportGenService(IAssetsCache assetsCache, string fontPath, string timeZonePartOfTheName)
+        public ConsorsReportGenService(IAssetsCache assetsCache, string fontPath, string timeZonePartOfTheName)
         {
             _assetsCache = assetsCache;
             _fontPath = fontPath;

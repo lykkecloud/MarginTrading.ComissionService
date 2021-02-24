@@ -41,18 +41,18 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.CostsAndChargesDefaults).SingleInstance();
             builder.RegisterInstance(_log).As<ILog>().SingleInstance();
             builder.RegisterType<SystemClock>().As<ISystemClock>().SingleInstance();
-            
+
             builder.RegisterType<RabbitMqService>().As<IRabbitMqService>().SingleInstance();
 
             builder.RegisterType<CqrsMessageSender>()
                 .As<ICqrsMessageSender>()
                 .PropertiesAutowired(PropertyWiringOptions.AllowCircularDependencies)
                 .SingleInstance();
-            
+
             builder.RegisterType<ThreadSwitcherToNewTask>()
                 .As<IThreadSwitcher>()
                 .SingleInstance();
-            
+
             builder.RegisterType<SystemClock>()
                 .As<ISystemClock>()
                 .SingleInstance();
@@ -60,12 +60,47 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterInstance(new ConsoleLWriter(Console.WriteLine))
                 .As<IConsole>()
                 .SingleInstance();
-            
+
             builder.RegisterChaosKitty(_settings.CurrentValue.CommissionService.ChaosKitty);
 
             RegisterRepositories(builder);
             RegisterServices(builder);
+            RegisterBrokerSpecificServices(builder);
             RegisterRedis(builder);
+        }
+
+        private void RegisterBrokerSpecificServices(ContainerBuilder builder)
+        {
+            var broker = _settings.CurrentValue.CommissionService.BrokerId.ToLowerInvariant();
+            switch (broker)
+            {
+                case "consors":
+                    RegisterConsorsServices(builder);
+                    break;
+                case "bbva":
+                    RegisterBBVAServices(builder);
+                    break;
+                default:
+                    throw new Exception(
+                        $"Broker {broker} is not supported");
+            }
+        }
+
+        private void RegisterConsorsServices(ContainerBuilder builder)
+        {
+            builder.Register<IReportGenService>(ctx =>
+                    new ConsorsReportGenService(
+                        ctx.Resolve<IAssetsCache>(),
+                        "./Fonts/",
+                        _settings.CurrentValue.CommissionService.ReportSettings.TimeZonePartOfTheName))
+                .SingleInstance();
+        }
+
+        private void RegisterBBVAServices(ContainerBuilder builder)
+        {
+            builder.RegisterType<BbvaReportGenService>()
+                .As<IReportGenService>()
+                .SingleInstance();
         }
 
         private void RegisterServices(ContainerBuilder builder)
@@ -73,7 +108,7 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<CfdCalculatorService>()
                 .As<ICfdCalculatorService>()
                 .SingleInstance();
-            
+
             builder.RegisterType<CommissionCalcService>()
                 .As<ICommissionCalcService>()
                 .SingleInstance();
@@ -81,19 +116,19 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<ExecutedOrdersHandlingService>()
                 .As<IExecutedOrdersHandlingService>()
                 .SingleInstance();
-            
+
             builder.RegisterType<ConvertService>()
                 .As<IConvertService>()
                 .SingleInstance();
-           
+
             builder.RegisterType<PositionReceiveService>()
                 .As<IPositionReceiveService>()
                 .SingleInstance();
-            
+
             builder.RegisterType<OvernightSwapService>()
                 .As<IOvernightSwapService>()
                 .SingleInstance();
-            
+
             builder.RegisterType<DailyPnlService>()
                 .As<IDailyPnlService>()
                 .SingleInstance();
@@ -112,12 +147,12 @@ namespace MarginTrading.CommissionService.Modules
                 .As<IInterestRatesCacheService>()
                 .SingleInstance()
                 .OnActivated(args => args.Instance.InitCache());
-            
+
             builder.RegisterType<AssetsCache>()
                 .As<IAssetsCache>()
                 .AsSelf()
                 .SingleInstance();
-            
+
             builder.RegisterType<AssetPairsCache>()
                 .As<IAssetPairsCache>()
                 .AsSelf()
@@ -147,33 +182,27 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<TradingInstrumentsCache>()
                 .As<ITradingInstrumentsCache>()
                 .SingleInstance();
-            
+
             builder.RegisterType<TradingDaysInfoProvider>()
                 .As<ITradingDaysInfoProvider>()
                 .SingleInstance();
 
-            builder.Register<IReportGenService>(ctx =>
-                new ReportGenService(
-                    ctx.Resolve<IAssetsCache>(), 
-                    "./Fonts/",
-                    _settings.CurrentValue.CommissionService.ReportSettings.TimeZonePartOfTheName))
-                .SingleInstance();
 
             builder.RegisterType<ClientProfileCache>()
                 .As<IStartable>()
                 .As<IClientProfileCache>()
                 .SingleInstance();
-            
+
             builder.RegisterType<ClientProfileSettingsCache>()
                 .As<IStartable>()
                 .As<IClientProfileSettingsCache>()
                 .SingleInstance();
-            
+
             builder.RegisterType<CacheUpdater>()
                 .As<IStartable>()
                 .As<ICacheUpdater>()
                 .SingleInstance();
-            
+
             builder.RegisterType<UnderlyingChangedHandler>()
                 .AsSelf()
                 .SingleInstance();
