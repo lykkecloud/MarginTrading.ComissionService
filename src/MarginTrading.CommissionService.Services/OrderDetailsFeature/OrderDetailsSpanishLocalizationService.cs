@@ -16,6 +16,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
 
         private readonly CultureInfo _cultureInfo = new CultureInfo("es-ES");
         private string _dateTimeFormat = "dd.MM.yyyy hh:mm:ss";
+        private string _dateFormat = "dd.MM.yyyy";
         private const string decimalFormat = "G29";
 
         private readonly Dictionary<string, string> _fieldMap = new Dictionary<string, string>()
@@ -89,11 +90,12 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             return success ? value : empty;
         }
 
-        public string LocalizeDecimal(decimal? value)
+        public string LocalizeDecimal(decimal? value, int? precision = null)
         {
+            var format = precision == null ? decimalFormat : $"N{precision}";
             if (value.HasValue)
             {
-                return $"{value.Value.ToString(decimalFormat, _cultureInfo)}";
+                return $"{value.Value.ToString(format, _cultureInfo)}";
             }
 
             return empty;
@@ -132,7 +134,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
         public string LocalizeValidity(DateTime? validityTime)
         {
             return validityTime.HasValue
-                ? validityTime.Value.ToString(_dateTimeFormat)
+                ? validityTime.Value.ToString(_dateFormat)
                 : "GTC";
         }
 

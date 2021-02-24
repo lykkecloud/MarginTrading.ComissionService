@@ -109,7 +109,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
 
             var row9 = new OrderDetailsReportRow(
                 _localizationService.LocalizeField(nameof(OrderDetailsData.Notional)),
-                _localizationService.LocalizeDecimal(data.Notional),
+                _localizationService.LocalizeDecimal(data.Notional, 2),
                 _localizationService.LocalizeField(nameof(OrderDetailsData.OrderComment)),
                 data.OrderComment
             );
@@ -117,7 +117,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             var notionalEUR = _localizationService.LocalizeField(nameof(OrderDetailsData.NotionalEUR));
             var row10 = new OrderDetailsReportRow(
                 $"{notionalEUR} ({data.SettlementCurrency})",
-                _localizationService.LocalizeDecimal(data.NotionalEUR),
+                _localizationService.LocalizeDecimal(data.NotionalEUR, 2),
                 _localizationService.LocalizeField(nameof(OrderDetailsData.ForceOpen)),
                 _localizationService.LocalizeBoolean(data.ForceOpen)
             );
@@ -126,14 +126,14 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                 _localizationService.LocalizeField(nameof(OrderDetailsData.ExchangeRate)),
                 _localizationService.LocalizeDecimal(data.ExchangeRate),
                 _localizationService.LocalizeField(nameof(OrderDetailsData.Commission)),
-                _localizationService.LocalizeDecimal(data.Commission)
+                _localizationService.LocalizeDecimal(data.Commission, 2)
             );
 
             var row12 = new OrderDetailsReportRow(
                 _localizationService.LocalizeField(nameof(OrderDetailsData.ProductCost)),
-                _localizationService.LocalizeDecimal(data.ProductCost),
+                _localizationService.LocalizeDecimal(data.ProductCost, 2),
                 _localizationService.LocalizeField(nameof(OrderDetailsData.TotalCostsAndCharges)),
-                _localizationService.LocalizeDecimal(data.TotalCostsAndCharges)
+                _localizationService.LocalizeDecimal(data.TotalCostsAndCharges, 2)
             );
 
             rows.Add(row1);

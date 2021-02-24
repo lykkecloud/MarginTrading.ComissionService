@@ -22,7 +22,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             return orderDirection.ToString("G");
         }
 
-        public string LocalizeDecimal(decimal? value)
+        public string LocalizeDecimal(decimal? value, int? precision = null)
         {
             return value.HasValue ? value.ToString() : empty;
         }
