@@ -27,6 +27,11 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             return value.HasValue ? value.ToString() : empty;
         }
 
+        public string LocalizeExchangeRate(decimal? value)
+        {
+            return LocalizeDecimal(value, 3);
+        }
+
         public string LocalizeOrigin(OriginatorType origin)
         {
             return origin.ToString("G");

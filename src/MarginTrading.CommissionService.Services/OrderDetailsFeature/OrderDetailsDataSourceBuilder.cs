@@ -124,7 +124,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
 
             var row11 = new OrderDetailsReportRow(
                 _localizationService.LocalizeField(nameof(OrderDetailsData.ExchangeRate)),
-                _localizationService.LocalizeDecimal(data.ExchangeRate),
+                _localizationService.LocalizeExchangeRate(data.ExchangeRate),
                 _localizationService.LocalizeField(nameof(OrderDetailsData.Commission)),
                 _localizationService.LocalizeDecimal(data.Commission, 2)
             );

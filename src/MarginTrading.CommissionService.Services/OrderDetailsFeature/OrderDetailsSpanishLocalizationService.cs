@@ -101,6 +101,16 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             return empty;
         }
 
+        public string LocalizeExchangeRate(decimal? value)
+        {
+            var isInteger = (value % 1) == 0;
+            if (isInteger)
+            {
+                return LocalizeDecimal(value, 0);
+            }
+            return LocalizeDecimal(value, 3);
+        }
+
         public string LocalizeQuantity(decimal? quantity, OrderDirection direction)
         {
             if (quantity.HasValue)

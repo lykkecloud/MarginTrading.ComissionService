@@ -12,6 +12,7 @@ namespace MarginTrading.CommissionService.Core.Services.OrderDetailsFeature
         string LocalizeDirection(OrderDirection orderDirection);
         
         string LocalizeDecimal(decimal? value, int? precision = null);
+        string LocalizeExchangeRate(decimal? value);
         string LocalizeOrigin(OriginatorType origin);
         string LocalizeQuantity(decimal? quantity, OrderDirection direction);
         string LocalizeOrderType(OrderType orderType);
