@@ -29,6 +29,21 @@
     <None Update="Fonts\Raleway-Regular.ttf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Fonts\OpenSans-Bold.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Fonts\OpenSans-Italic.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Fonts\Raleway-Bold.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Fonts\Raleway-Italic.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="..\MarginTrading.CommissionService.SqlRepositories\Scripts\commission.add_commission_history.sql">
+      <Link>Scripts\add_commission_history.sql</Link>
+    </None>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <Content Update="appsettings.json">
@@ -58,12 +73,12 @@
     <PackageReference Include="Lykke.Logs" Version="7.4.0" />
     <PackageReference Include="Lykke.Logs.MsSql" Version="2.1.0" />
     <PackageReference Include="Lykke.Logs.Serilog" Version="2.1.0" />
-    <PackageReference Include="Lykke.MarginTrading.AccountsManagement.Contracts" Version="1.12.8" />
+    <PackageReference Include="Lykke.MarginTrading.AccountsManagement.Contracts" Version="2.0.6" />
     <PackageReference Include="Lykke.MarginTrading.AssetService.Contracts" Version="4.29.2" />
     <PackageReference Include="Lykke.MarginTrading.BackendSnow.Contracts" Version="1.15.0" />
     <PackageReference Include="Lykke.Snow.Common.Startup" Version="2.3.0" />
-    <PackageReference Include="Lykke.Snow.Mdm.Contracts" Version="3.14.0" />
-    <PackageReference Include="MarginTrading.TradingHistory.Client" Version="3.4.9" />
+    <PackageReference Include="Lykke.Snow.Mdm.Contracts" Version="3.17.0" />
+    <PackageReference Include="MarginTrading.TradingHistory.Client" Version="3.10.0" />
     <PackageReference Include="Lykke.Messaging" Version="6.3.1" />
     <PackageReference Include="Lykke.Messaging.RabbitMq" Version="2.2.2" />
     <PackageReference Include="Lykke.RabbitMqBroker" Version="7.13.2" />
@@ -87,5 +102,13 @@
     <ProjectReference Include="..\MarginTrading.CommissionService.Contracts\MarginTrading.CommissionService.Contracts.csproj" />
     <ProjectReference Include="..\MarginTrading.CommissionService.Core\MarginTrading.CommissionService.Core.csproj" />
     <ProjectReference Include="..\MarginTrading.CommissionService.Services\MarginTrading.CommissionService.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>    
+    <None Include="..\MarginTrading.CommissionService.SqlRepositories\Scripts\**" CopyToOutputDirectory="PreserveNewest" LinkBase="Scripts" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include=".\ReportAssets\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

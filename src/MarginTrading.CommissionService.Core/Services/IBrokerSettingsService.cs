@@ -8,5 +8,6 @@ namespace MarginTrading.CommissionService.Core.Services
     public interface IBrokerSettingsService
     {
         Task<string> GetSettlementCurrencyAsync();
+        Task<bool> IsOrderDetailsReportEnabledAsync();
     }
 }

@@ -35,5 +35,8 @@ namespace MarginTrading.CommissionService.Core.Domain
 
         [Key(8)]
         public DateTime ModificationTimestamp { get; set; }
+
+        [Key(9)]
+        public string AccountName { get; set; }
     }
 }

@@ -3,6 +3,7 @@
 
 using System;
 using JetBrains.Annotations;
+using MarginTrading.CommissionService.Core.Domain;
 using MessagePack;
 
 namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Commands
@@ -16,7 +17,8 @@ namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Command
         public HandleOrderExecInternalCommand([NotNull] string operationId,
             [NotNull] string accountId, [NotNull] string orderId, long orderCode, 
             [NotNull] string instrument, [NotNull] string legalEntity, decimal volume, 
-            DateTime tradingDay, decimal orderExecutionPrice, decimal orderExecutionFxRate)
+            DateTime tradingDay, decimal orderExecutionPrice, decimal orderExecutionFxRate,
+            OrderDirection direction)
         {
             OperationId = operationId ?? throw new ArgumentNullException(nameof(operationId));
             AccountId = accountId ?? throw new ArgumentNullException(nameof(accountId));
@@ -28,6 +30,7 @@ namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Command
             OrderExecutionPrice = orderExecutionPrice;
             OrderExecutionFxRate = orderExecutionFxRate;
             TradingDay = tradingDay == default ? DateTime.UtcNow : tradingDay;
+            Direction = direction;
         }
 
         /// <summary>
@@ -91,5 +94,8 @@ namespace MarginTrading.CommissionService.Core.Workflow.ChargeCommission.Command
         /// </summary>
         [Key(9)]
         public decimal OrderExecutionFxRate { get; }
+
+        [Key(10)]
+        public OrderDirection Direction { get; }
     }
 }

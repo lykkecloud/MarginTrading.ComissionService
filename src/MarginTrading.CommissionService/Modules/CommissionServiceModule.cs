@@ -16,6 +16,7 @@ using MarginTrading.CommissionService.Core.Settings;
 using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Services.Caches;
 using MarginTrading.CommissionService.Services.Handlers;
+using MarginTrading.CommissionService.Services.OrderDetailsFeature;
 using MarginTrading.CommissionService.SqlRepositories.Repositories;
 using Microsoft.Extensions.Internal;
 using StackExchange.Redis;
@@ -159,6 +160,9 @@ namespace MarginTrading.CommissionService.Modules
                     _settings.CurrentValue.CommissionService.ReportSettings.TimeZonePartOfTheName))
                 .SingleInstance();
 
+            builder.Register<IFontProvider>(ctx => new FontProvider("./Fonts/"))
+                .SingleInstance();
+
             builder.RegisterType<ClientProfileCache>()
                 .As<IStartable>()
                 .As<IClientProfileCache>()
@@ -186,6 +190,26 @@ namespace MarginTrading.CommissionService.Modules
                     new BrokerSettingsService(
                         ctx.Resolve<IBrokerSettingsApi>(),
                         _settings.CurrentValue.CommissionService.BrokerId))
+                .SingleInstance();
+
+            builder.RegisterType<BbvaProductCostCalculationService>()
+                .AsImplementedInterfaces()
+                .SingleInstance();
+
+            builder.RegisterType<OrderDetailsCalculationService>()
+                .AsImplementedInterfaces()
+                .SingleInstance();
+
+            builder.RegisterType<OrderDetailsSpanishLocalizationService>()
+                .AsImplementedInterfaces()
+                .SingleInstance();
+            
+            builder.RegisterType<OrderDetailsDataSourceBuilder>()
+                .AsImplementedInterfaces()
+                .SingleInstance();
+            
+            builder.RegisterType<OrderDetailsPdfGenerator>()
+                .AsImplementedInterfaces()
                 .SingleInstance();
         }
 
@@ -223,6 +247,11 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<SharedCostsAndChargesRepository>()
                 .As<ISharedCostsAndChargesRepository>()
                 .SingleInstance();
+
+            builder.Register(provider =>
+                new CommissionHistoryRepository(_settings.CurrentValue.CommissionService.Db.StateConnString))
+                .AsImplementedInterfaces();
+            
         }
 
         private void RegisterRedis(ContainerBuilder builder)

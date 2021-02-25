@@ -17,15 +17,21 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
     {
         public const string OperationName = "ExecutedOrderCommission";
         private readonly ICommissionCalcService _commissionCalcService;
+        private readonly IProductCostCalculationService _productCostCalculationService;
         private readonly IOperationExecutionInfoRepository _executionInfoRepository;
+        private readonly ICommissionHistoryRepository _commissionHistoryRepository;
         private readonly ISystemClock _systemClock;
 
         public OrderExecCommissionCommandsHandler(ICommissionCalcService commissionCalcService,
+            IProductCostCalculationService productCostCalculationService,
             IOperationExecutionInfoRepository executionInfoRepository,
+            ICommissionHistoryRepository commissionHistoryRepository,
             ISystemClock systemClock)
         {
             _commissionCalcService = commissionCalcService;
+            _productCostCalculationService = productCostCalculationService;
             _executionInfoRepository = executionInfoRepository;
+            _commissionHistoryRepository = commissionHistoryRepository;
             _systemClock = systemClock;
         }
 
@@ -60,6 +66,21 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 var commissionAmount = await _commissionCalcService.CalculateOrderExecutionCommission(
                   command.AccountId, command.Instrument,command.Volume, 
                   command.OrderExecutionPrice, command.OrderExecutionFxRate);
+
+                // todo: move fxrate / volume calculation to service
+                var exchangeRate = command.OrderExecutionFxRate == 0 ? 1 : 1 / command.OrderExecutionFxRate;
+                var productCost = await _productCostCalculationService.ProductCost(command.Instrument,
+                    command.Volume * command.OrderExecutionPrice,
+                    exchangeRate,
+                    1,
+                    command.Direction);
+                
+                await _commissionHistoryRepository.AddAsync(new CommissionHistory()
+                {
+                    OrderId = command.OrderId,
+                    Commission = commissionAmount,
+                    ProductCost = productCost,
+                });
 
                 //no failure handling.. so operation will be retried on fail
 
