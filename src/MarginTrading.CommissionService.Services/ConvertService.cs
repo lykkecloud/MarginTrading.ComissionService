@@ -9,6 +9,7 @@ using MarginTrading.CommissionService.Contracts.Models.KidScenarios;
 using MarginTrading.CommissionService.Core.Domain.CacheModels;
 using MarginTrading.CommissionService.Core.Domain.KidScenarios;
 using MarginTrading.CommissionService.Core.Services;
+using Asset = MarginTrading.CommissionService.Core.Domain.Asset;
 
 namespace MarginTrading.CommissionService.Services
 {

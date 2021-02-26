@@ -11,6 +11,7 @@ using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Services;
+using Asset = MarginTrading.CommissionService.Core.Domain.Asset;
 
 namespace MarginTrading.CommissionService.Services
 {
@@ -53,8 +54,6 @@ namespace MarginTrading.CommissionService.Services
             InitProducts();
             InitTradingInstruments();
             InitSchedules();
-            InitOrderExecutionRates();
-            InitOvernightSwapRates();
         }
 
         public void InitAssetPairs()
@@ -85,16 +84,6 @@ namespace MarginTrading.CommissionService.Services
                 .GetAwaiter().GetResult()
                 .ToDictionary(k => k.Key, v => MapTradingDayInfo(v.Value));
             _tradingDaysInfoProvider.Initialize(schedules);
-        }
-
-        public void InitOrderExecutionRates()
-        {
-            _rateSettingsCache.RefreshOrderExecutionRates().GetAwaiter().GetResult();
-        }
-
-        public void InitOvernightSwapRates()
-        {
-            _rateSettingsCache.RefreshOvernightSwapRates();
         }
 
         private static TradingInstrument MapTradingInstrument(TradingInstrumentContract tic) =>

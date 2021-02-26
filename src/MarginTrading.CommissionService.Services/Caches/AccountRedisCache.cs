@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Common.Log;
 using MarginTrading.AccountsManagement.Contracts;
 using MarginTrading.AccountsManagement.Contracts.Models;
 using MarginTrading.CommissionService.Core;
@@ -20,18 +19,15 @@ namespace MarginTrading.CommissionService.Services.Caches
         private readonly IDatabase _redisDatabase;
         private readonly IAccountsApi _accountsApi;
         private readonly IConvertService _convertService;
-        private readonly ILog _log;
 
         public AccountRedisCache(
             IDatabase redisDatabase,
             IAccountsApi accountsApi,
-            IConvertService convertService,
-            ILog log)
+            IConvertService convertService)
         {
             _redisDatabase = redisDatabase;
             _accountsApi = accountsApi;
             _convertService = convertService;
-            _log = log;
         }
         
         public async Task<Account> GetAccount(string id)
@@ -45,7 +41,7 @@ namespace MarginTrading.CommissionService.Services.Caches
             //now we try to refresh the cache from repository
             if (cachedData == null)
             {//todo now it is only used for account asset. possibly it might be needed to subscribe on account changed events..
-               cachedData = (await RefreshRedisFromApi((List<Account>)null)).FirstOrDefault(x => x.Id == id);
+               cachedData = (await RefreshRedisFromApi()).FirstOrDefault(x => x.Id == id);
             }
 
             return cachedData;

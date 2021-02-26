@@ -25,13 +25,15 @@ namespace MarginTrading.CommissionService.Services
         private readonly ITradingInstrumentsCache _tradingInstrumentsCache;
         private readonly ICfdCalculatorService _cfdCalculatorService;
         private readonly IAccountRedisCache _accountRedisCache;
-        private readonly IRateSettingsService _rateSettingsService;
+        private readonly IRateSettingsCache _rateSettingsCache;
         private readonly IInterestRatesCacheService _interestRatesCacheService;
         private readonly IAssetPairsCache _assetPairsCache;
         private readonly ITradingDaysInfoProvider _tradingDaysInfoProvider;
         private readonly IBrokerSettingsService _brokerSettingsService;
         private readonly CostsAndChargesDefaultSettings _defaultSettings;
         private readonly CommissionServiceSettings _settings;
+        private readonly IAssetsCache _assetsCache;
+        private readonly OrderExecutionSettings _defaultOrderExecutionRateSettings;
 
         private readonly decimal _defaultCcVolume;
         private readonly decimal _donationShare;
@@ -44,7 +46,7 @@ namespace MarginTrading.CommissionService.Services
             ITradingInstrumentsCache tradingInstrumentsCache,
             ICfdCalculatorService cfdCalculatorService,
             IAccountRedisCache accountRedisCache,
-            IRateSettingsService rateSettingsService,
+            IRateSettingsCache rateSettingsCache,
             IInterestRatesCacheService interestRatesCacheService,
             IAssetPairsCache assetPairsCache,
             ITradingDaysInfoProvider tradingDaysInfoProvider,
@@ -61,13 +63,15 @@ namespace MarginTrading.CommissionService.Services
             _tradingInstrumentsCache = tradingInstrumentsCache;
             _cfdCalculatorService = cfdCalculatorService;
             _accountRedisCache = accountRedisCache;
-            _rateSettingsService = rateSettingsService;
+            _rateSettingsCache = rateSettingsCache;
             _interestRatesCacheService = interestRatesCacheService;
             _assetPairsCache = assetPairsCache;
             _tradingDaysInfoProvider = tradingDaysInfoProvider;
             _brokerSettingsService = brokerSettingsService;
             _defaultSettings = defaultSettings;
             _settings = settings;
+            _assetsCache = assetsCache;
+            _defaultOrderExecutionRateSettings = defaultOrderExecutionRateSettings;
             _sharedRepository = sharedRepository;
             _defaultCcVolume = defaultCcVolume;
             _donationShare = donationShare;
@@ -127,8 +131,7 @@ namespace MarginTrading.CommissionService.Services
 
             var tradingInstrument = _tradingInstrumentsCache.Get(tradingConditionId, instrument);
             var fxRate = 1 / _cfdCalculatorService.GetFxRateForAssetPair(baseAssetId, instrument, legalEntity);
-            var commissionRate = (await _rateSettingsService.GetOrderExecutionRates(new[] {instrument})).Single();
-            var overnightSwapRate = await _rateSettingsService.GetOvernightSwapRate(instrument);
+            var overnightSwapRate = await _rateSettingsCache.GetOvernightSwapRate(instrument, tradingConditionId);
             var units = _defaultCcVolume / executionPrice * fxRate;
             var transactionVolume = units * executionPrice;
             var spread = currentBestPrice.Ask - currentBestPrice.Bid;
@@ -138,13 +141,15 @@ namespace MarginTrading.CommissionService.Services
                 spread = tradingInstrument.Spread;
             }
 
-            var entryConsorsDonation = -(1 - tradingInstrument.HedgeCost) * spread * units / fxRate / 2 * _donationShare;
-            var entryCost = -spread * units / 2 / fxRate - entryConsorsDonation;
-            var entryCommission =
-                -Math.Min(
-                    Math.Max(commissionRate.CommissionFloor,
-                        commissionRate.CommissionRate * transactionVolume / fxRate), commissionRate.CommissionCap) +
-                entryConsorsDonation;
+            var entryBrokerDonation = -(1 - tradingInstrument.HedgeCost) * spread * units / fxRate / 2 * _donationShare;
+            var entryCost = -spread * units / 2 / fxRate - entryBrokerDonation;
+            var clientProfileSettings = _assetsCache.GetClientProfile(instrument, tradingConditionId);
+            var commissionBase = -Math.Min(
+                Math.Max(
+                    clientProfileSettings?.ExecutionFeesFloor ?? _defaultOrderExecutionRateSettings.ExecutionFeesFloor,
+                    (clientProfileSettings?.ExecutionFeesRate ?? _defaultOrderExecutionRateSettings.ExecutionFeesRate) * transactionVolume / fxRate),
+                clientProfileSettings?.ExecutionFeesCap ?? _defaultOrderExecutionRateSettings.ExecutionFeesCap);
+            var entryCommission = commissionBase + entryBrokerDonation;
             var assetPair = _assetPairsCache.GetAssetPairById(instrument);
             var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(assetPair.MarketId,
                 _systemClock.UtcNow.UtcDateTime);
@@ -173,17 +178,13 @@ namespace MarginTrading.CommissionService.Services
             var runningCostsProductReturnsSum = runningCosts + referenceRateAmount + repoCost;
 
             var runningCommission = runningCostsConsorsDonation;
-            var exitConsorsDonation = -(1 - tradingInstrument.HedgeCost) * spread * units / fxRate / 2 * _donationShare;
-            var exitCost = -spread * units / 2 / fxRate - exitConsorsDonation;
-            var exitCommission =
-                -Math.Min(
-                    Math.Max(commissionRate.CommissionFloor,
-                        commissionRate.CommissionRate * transactionVolume / fxRate), commissionRate.CommissionCap) +
-                exitConsorsDonation;
+            var exitBrokerDonation = -(1 - tradingInstrument.HedgeCost) * spread * units / fxRate / 2 * _donationShare;
+            var exitCost = -spread * units / 2 / fxRate - exitBrokerDonation;
+            var exitCommission = commissionBase + exitBrokerDonation;
             var productsReturn = entryCost + runningCostsProductReturnsSum + exitCost;
             var serviceCost = entryCommission + runningCommission + exitCommission;
             var productsReturnConsorsDonation =
-                entryConsorsDonation + runningCostsConsorsDonation + exitConsorsDonation;
+                entryBrokerDonation + runningCostsConsorsDonation + exitBrokerDonation;
             var totalCosts = productsReturn + serviceCost + 0;
 
             var percentCoef = 1 / (transactionVolume / fxRate) * 100;
@@ -204,8 +205,8 @@ namespace MarginTrading.CommissionService.Services
                 EntryCost = new CostsAndChargesValue(entryCost, entryCost * percentCoef),
                 EntryCommission = new CostsAndChargesValue(entryCommission,
                     entryCommission * percentCoef),
-                EntryConsorsDonation = new CostsAndChargesValue(entryConsorsDonation,
-                    entryConsorsDonation * percentCoef),
+                EntryConsorsDonation = new CostsAndChargesValue(entryBrokerDonation,
+                    entryBrokerDonation * percentCoef),
                 EntryForeignCurrencyCosts = new CostsAndChargesValue(0, 0),
                 RunningCostsSum = new CostsAndChargesValue(
                     runningCostsProductReturnsSum + runningCostsConsorsDonation,
@@ -227,8 +228,8 @@ namespace MarginTrading.CommissionService.Services
                 ExitCost = new CostsAndChargesValue(exitCost, exitCost * percentCoef),
                 ExitCommission = new CostsAndChargesValue(exitCommission,
                     exitCommission * percentCoef),
-                ExitConsorsDonation = new CostsAndChargesValue(exitConsorsDonation,
-                    exitConsorsDonation * percentCoef),
+                ExitConsorsDonation = new CostsAndChargesValue(exitBrokerDonation,
+                    exitBrokerDonation * percentCoef),
                 ExitForeignCurrencyCosts = new CostsAndChargesValue(0, 0),
                 ProductsReturn = new CostsAndChargesValue(productsReturn,
                     productsReturn * percentCoef),

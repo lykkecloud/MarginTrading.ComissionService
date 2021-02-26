@@ -19,13 +19,16 @@ namespace MarginTrading.CommissionService.Projections
         private readonly IConvertService _convertService;
         private readonly IProductsCache _productsCache;
         private readonly ILogger<ProductProjection> _logger;
+        private readonly IRateSettingsCache _rateSettingsCache;
 
         public ProductProjection(ICacheUpdater cacheUpdater,
             IConvertService convertService,
             IProductsCache productsCache,
+            IRateSettingsCache rateSettingsCache,
             ILogger<ProductProjection> logger)
         {
             _cacheUpdater = cacheUpdater;
+            _rateSettingsCache = rateSettingsCache;
             _convertService = convertService;
             _productsCache = productsCache;
             _logger = logger;
@@ -53,8 +56,7 @@ namespace MarginTrading.CommissionService.Projections
 
             _cacheUpdater.InitAssetPairs();
             _cacheUpdater.InitTradingInstruments();
-            _cacheUpdater.InitOrderExecutionRates();
-            _cacheUpdater.InitOvernightSwapRates();
+            await _rateSettingsCache.ClearOvernightSwapRatesCache();
         }
     }
 }

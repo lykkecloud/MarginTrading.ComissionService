@@ -23,34 +23,37 @@ namespace MarginTrading.CommissionService.Services
     {
         private readonly ICfdCalculatorService _cfdCalculatorService;
         private readonly IAssetPairsCache _assetPairsCache;
-        private readonly IRateSettingsService _rateSettingsService;
+        private readonly IRateSettingsCache _rateSettingsCache;
         private readonly IOrderEventsApi _orderEventsApi;
         private readonly IAccountRedisCache _accountRedisCache;
         private readonly IProductsCache _productsCache;
         private readonly ILog _log;
         private readonly IInterestRatesCacheService _interestRatesCacheService;
         private readonly CommissionServiceSettings _settings;
+        private readonly OrderExecutionSettings _defaultOrderExecutionRateSettings;
 
         public CommissionCalcService(
             ICfdCalculatorService cfdCalculatorService,
             IAssetPairsCache assetPairsCache,
-            IRateSettingsService rateSettingsService,
+            IRateSettingsCache rateSettingsCache,
             IOrderEventsApi orderEventsApi,
             IAccountRedisCache accountRedisCache,
             IProductsCache productsCache,
             ILog log,
             IInterestRatesCacheService interestRatesCacheService,
-            CommissionServiceSettings settings)
+            CommissionServiceSettings settings,
+            OrderExecutionSettings defaultOrderExecutionRateSettings)
         {
             _cfdCalculatorService = cfdCalculatorService;
             _assetPairsCache = assetPairsCache;
-            _rateSettingsService = rateSettingsService;
+            _rateSettingsCache = rateSettingsCache;
             _orderEventsApi = orderEventsApi;
             _accountRedisCache = accountRedisCache;
             _productsCache = productsCache;
             _log = log;
             _interestRatesCacheService = interestRatesCacheService;
             _settings = settings;
+            _defaultOrderExecutionRateSettings = defaultOrderExecutionRateSettings;
         }
 
         /// <summary>
@@ -60,8 +63,8 @@ namespace MarginTrading.CommissionService.Services
             decimal volume, decimal closePrice, decimal fxRate, PositionDirection direction,
             int numberOfFinancingDays, int financingDaysPerYear)
         {
-            var rateSettings = await _rateSettingsService.GetOvernightSwapRate(instrument);
             var account = await _accountRedisCache.GetAccount(accountId);
+            var rateSettings = await _rateSettingsCache.GetOvernightSwapRate(instrument, account.TradingConditionId);
 
             var calculationBasis = fxRate * Math.Abs(volume) * closePrice;
 
@@ -98,22 +101,21 @@ namespace MarginTrading.CommissionService.Services
         public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument,
             decimal volume, decimal orderExecutionPrice, decimal orderExecutionFxRate)
         {
-            var rateSettings = (await _rateSettingsService.GetOrderExecutionRates(new[] {instrument})).Single();
             var account = await _accountRedisCache.GetAccount(accountId);
-
+            var clientProfileSettings = _assetsCache.GetClientProfile(instrument, account.TradingConditionId);
             var volumeInSettlementCurrency = orderExecutionFxRate * Math.Abs(volume) * orderExecutionPrice;
 
             var commission = Math.Min(
-                rateSettings.CommissionCap,
+                clientProfileSettings?.ExecutionFeesCap ?? _defaultOrderExecutionRateSettings.ExecutionFeesCap,
                 Math.Max(
-                    rateSettings.CommissionFloor,
-                    rateSettings.CommissionRate * volumeInSettlementCurrency));
+                    clientProfileSettings?.ExecutionFeesFloor ?? _defaultOrderExecutionRateSettings.ExecutionFeesFloor,
+                    (clientProfileSettings?.ExecutionFeesRate ?? _defaultOrderExecutionRateSettings.ExecutionFeesRate) * volumeInSettlementCurrency));
 
             return Math.Round(commission, _productsCache.GetAccuracy(account.BaseAssetId));
         }
 
         public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId,
-            string accountAssetId, string assetPairId)
+            string accountAssetId, string assetPairId, string accountId)
         {
             var events = await ApiHelpers
                 .RefitRetryPolicy<List<OrderEventWithAdditionalContract>>(
@@ -153,7 +155,7 @@ namespace MarginTrading.CommissionService.Services
 
             var assetPair = _assetPairsCache.GetAssetPairById(assetPairId);
             
-            var rateSettings = _rateSettingsService.GetOnBehalfRate(assetPair.AssetType); 
+            var rateSettings = await _rateSettingsCache.GetOnBehalfRate(accountId, assetPair.AssetType); 
             
             var commission = Math.Round(actionsNum * rateSettings.Commission, 
                 _productsCache.GetAccuracy(accountAssetId));
