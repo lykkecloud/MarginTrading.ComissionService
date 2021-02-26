@@ -6,6 +6,7 @@ using Autofac;
 using Common.Log;
 using Lykke.Common;
 using Lykke.Common.Chaos;
+using Lykke.Common.MsSql;
 using Lykke.SettingsReader;
 using Lykke.Snow.Mdm.Contracts.Api;
 using MarginTrading.CommissionService.Core.Caches;
@@ -17,6 +18,7 @@ using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Services.Caches;
 using MarginTrading.CommissionService.Services.Handlers;
 using MarginTrading.CommissionService.Services.OrderDetailsFeature;
+using MarginTrading.CommissionService.SqlRepositories;
 using MarginTrading.CommissionService.SqlRepositories.Repositories;
 using Microsoft.Extensions.Internal;
 using StackExchange.Redis;
@@ -211,6 +213,10 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<OrderDetailsPdfGenerator>()
                 .AsImplementedInterfaces()
                 .SingleInstance();
+
+            builder.RegisterType<KidScenariosService>()
+                .As<IKidScenariosService>()
+                .SingleInstance();
         }
 
         private void RegisterRepositories(ContainerBuilder builder)
@@ -252,6 +258,13 @@ namespace MarginTrading.CommissionService.Modules
                 new CommissionHistoryRepository(_settings.CurrentValue.CommissionService.Db.StateConnString))
                 .AsImplementedInterfaces();
             
+            builder.RegisterMsSql(_settings.CurrentValue.CommissionService.Db.StateConnString,
+                connString => new CommissionDbContext(connString, false),
+                dbConn => new CommissionDbContext((dbConn)));
+
+            builder.RegisterType<KidScenariosRepository>()
+                .As<IKidScenariosRepository>()
+                .SingleInstance();
         }
 
         private void RegisterRedis(ContainerBuilder builder)
