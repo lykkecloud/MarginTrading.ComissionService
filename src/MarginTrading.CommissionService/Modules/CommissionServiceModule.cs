@@ -40,6 +40,7 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterInstance(_settings.CurrentValue.CommissionService).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.RequestLoggerSettings).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.CostsAndChargesDefaults).SingleInstance();
+            builder.RegisterInstance(_settings.CurrentValue.CommissionService.DefaultRateSettings.DefaultOrderExecutionSettings).SingleInstance();
             builder.RegisterInstance(_log).As<ILog>().SingleInstance();
             builder.RegisterType<SystemClock>().As<ISystemClock>().SingleInstance();
 
@@ -167,8 +168,7 @@ namespace MarginTrading.CommissionService.Modules
                 .As<IDailyPnlListener>()
                 .SingleInstance();
 
-            builder.RegisterType<RateSettingsService>()
-                .As<IRateSettingsService>()
+            builder.RegisterType<RateSettingsCache>()
                 .As<IRateSettingsCache>()
                 .SingleInstance();
 
@@ -285,13 +285,18 @@ namespace MarginTrading.CommissionService.Modules
 
         private void RegisterRedis(ContainerBuilder builder)
         {
-            builder.Register(c => ConnectionMultiplexer.Connect(
-                    _settings.CurrentValue.CommissionService.RedisSettings.Configuration))
+            var redis = ConnectionMultiplexer.Connect(
+                _settings.CurrentValue.CommissionService.RedisSettings.Configuration);
+            
+            builder.RegisterInstance(redis)
                 .As<IConnectionMultiplexer>()
                 .SingleInstance();
 
             builder.Register(c => c.Resolve<IConnectionMultiplexer>().GetDatabase())
                 .As<IDatabase>();
+
+            builder.Register(c => c.Resolve<IConnectionMultiplexer>().GetServer(redis.GetEndPoints()[0]))
+                .As<IServer>();
         }
     }
 }

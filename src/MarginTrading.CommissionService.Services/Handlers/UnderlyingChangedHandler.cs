@@ -10,16 +10,18 @@ namespace MarginTrading.CommissionService.Services.Handlers
     public class UnderlyingChangedHandler
     {
         private readonly ICacheUpdater _cacheUpdater;
+        private readonly IRateSettingsCache _rateSettingsCache;
 
-        public UnderlyingChangedHandler(ICacheUpdater cacheUpdater)
+        public UnderlyingChangedHandler(ICacheUpdater cacheUpdater, IRateSettingsCache rateSettingsCache)
         {
             _cacheUpdater = cacheUpdater;
+            _rateSettingsCache = rateSettingsCache;
         }
         
         public async Task Handle(UnderlyingChangedEvent @event)
         {
             _cacheUpdater.InitTradingInstruments();
-            _cacheUpdater.InitOvernightSwapRates();
+            await _rateSettingsCache.ClearOvernightSwapRatesCache();
         }
     }
 }

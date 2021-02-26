@@ -86,15 +86,5 @@ namespace MarginTrading.CommissionService.Services.Caches
                 _lockSlim.ExitWriteLock();
             }
         }
-
-        public string GetDefaultClientProfileId()
-        {
-            var defaultProfile = _cache.Values.FirstOrDefault(x => x.IsDefault);
-
-            if (defaultProfile == null)
-                throw new Exception("There is no default client profile in the system");
-
-            return defaultProfile.Id;
-        }
     }
 }

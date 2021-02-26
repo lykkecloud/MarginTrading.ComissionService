@@ -17,22 +17,24 @@ namespace MarginTrading.CommissionService.Projections
         private readonly ICacheUpdater _cacheUpdater;
         private readonly IClientProfileSettingsCache _clientProfileSettingsCache;
         private readonly IConvertService _convertService;
+        private readonly IRateSettingsCache _rateSettingsCache;
 
         public ClientProfileSettingsProjection(ICacheUpdater cacheUpdater,
             IClientProfileSettingsCache clientProfileSettingsCache,
-            IConvertService convertService)
+            IConvertService convertService,
+            IRateSettingsCache rateSettingsCache)
         {
             _cacheUpdater = cacheUpdater;
             _clientProfileSettingsCache = clientProfileSettingsCache;
             _convertService = convertService;
+            _rateSettingsCache = rateSettingsCache;
         }
 
         [UsedImplicitly]
         public async Task Handle(ClientProfileSettingsChangedEvent @event)
         {
             _cacheUpdater.InitTradingInstruments();
-            _cacheUpdater.InitOrderExecutionRates();
-            _cacheUpdater.InitOvernightSwapRates();
+            await _rateSettingsCache.ClearOvernightSwapRatesCache();
 
             switch (@event.ChangeType)
             {

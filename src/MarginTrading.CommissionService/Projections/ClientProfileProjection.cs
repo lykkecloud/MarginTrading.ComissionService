@@ -17,15 +17,18 @@ namespace MarginTrading.CommissionService.Projections
         private readonly ICacheUpdater _cacheUpdater;
         private readonly IClientProfileCache _clientProfileCache;
         private readonly IConvertService _convertService;
+        private readonly IRateSettingsCache _rateSettingsCache;
 
         public ClientProfileProjection(
             ICacheUpdater cacheUpdater,
             IClientProfileCache clientProfileCache,
-            IConvertService convertService)
+            IConvertService convertService,
+            IRateSettingsCache rateSettingsCache)
         {
             _cacheUpdater = cacheUpdater;
             _clientProfileCache = clientProfileCache;
             _convertService = convertService;
+            _rateSettingsCache = rateSettingsCache;
         }
 
         [UsedImplicitly]
@@ -34,13 +37,13 @@ namespace MarginTrading.CommissionService.Projections
             switch (@event.ChangeType)
             {
                 case ChangeType.Creation:
-                    UpdateCaches();
+                    await UpdateCaches();
                     _clientProfileCache.AddOrUpdate(
                         _convertService.Convert<ClientProfileContract, ClientProfileCacheModel>(
                             @event.NewValue));
                     break;
                 case ChangeType.Edition:
-                    if (@event.OldValue.IsDefault != @event.NewValue.IsDefault) UpdateCaches();
+                    if (@event.OldValue.IsDefault != @event.NewValue.IsDefault) await UpdateCaches();
                     
                     _clientProfileCache.AddOrUpdate(
                         _convertService.Convert<ClientProfileContract, ClientProfileCacheModel>(
@@ -56,11 +59,10 @@ namespace MarginTrading.CommissionService.Projections
             }
         }
 
-        private void UpdateCaches()
+        private async Task UpdateCaches()
         {
             _cacheUpdater.InitTradingInstruments();
-            _cacheUpdater.InitOrderExecutionRates();
-            _cacheUpdater.InitOvernightSwapRates();
+            await _rateSettingsCache.ClearOvernightSwapRatesCache();
         }
     }
 }

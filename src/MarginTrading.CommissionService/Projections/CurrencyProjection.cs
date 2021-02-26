@@ -10,17 +10,17 @@ namespace MarginTrading.CommissionService.Projections
 {
     public class CurrencyProjection
     {
-        private readonly ICacheUpdater _cacheUpdater;
+        private readonly IRateSettingsCache _rateSettingsCache;
 
-        public CurrencyProjection(ICacheUpdater cacheUpdater)
+        public CurrencyProjection(IRateSettingsCache rateSettingsCache)
         {
-            _cacheUpdater = cacheUpdater;
+            _rateSettingsCache = rateSettingsCache;
         }
 
         [UsedImplicitly]
-        public async Task Handle(CurrencyChangedEvent @event)
+        public Task Handle(CurrencyChangedEvent @event)
         {
-            _cacheUpdater.InitOvernightSwapRates();
+            return _rateSettingsCache.ClearOvernightSwapRatesCache();
         }
     }
 }

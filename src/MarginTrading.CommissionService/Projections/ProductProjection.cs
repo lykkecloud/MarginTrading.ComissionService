@@ -13,10 +13,12 @@ namespace MarginTrading.CommissionService.Projections
     public class ProductProjection
     {
         private readonly ICacheUpdater _cacheUpdater;
+        private readonly IRateSettingsCache _rateSettingsCache;
 
-        public ProductProjection(ICacheUpdater cacheUpdater)
+        public ProductProjection(ICacheUpdater cacheUpdater, IRateSettingsCache rateSettingsCache)
         {
             _cacheUpdater = cacheUpdater;
+            _rateSettingsCache = rateSettingsCache;
         }
 
         [UsedImplicitly]
@@ -38,8 +40,7 @@ namespace MarginTrading.CommissionService.Projections
             _cacheUpdater.InitAssetPairs();
             _cacheUpdater.InitAssets();
             _cacheUpdater.InitTradingInstruments();
-            _cacheUpdater.InitOrderExecutionRates();
-            _cacheUpdater.InitOvernightSwapRates();
+            await _rateSettingsCache.ClearOvernightSwapRatesCache();
         }
     }
 }

@@ -5,6 +5,7 @@ using System;
 using AutoMapper;
 using JetBrains.Annotations;
 using MarginTrading.CommissionService.Core.Services;
+using Asset = MarginTrading.CommissionService.Core.Domain.Asset;
 
 namespace MarginTrading.CommissionService.Services
 {
@@ -17,7 +18,12 @@ namespace MarginTrading.CommissionService.Services
         {
             return new MapperConfiguration(cfg =>
             {
-                // todo: add some global configurations here?
+                cfg.CreateMap<MarginTrading.AssetService.Contracts.LegacyAsset.Asset, Asset>()
+                    .ForMember(dest => dest.AvailableClientProfiles,
+                        opt => opt.MapFrom(x => x.Underlying.AvailableClientProfiles))
+                    .ForMember(dest => dest.Id, opt => opt.MapFrom(x => x.AssetId))
+                    .ForMember(dest => dest.Name, opt => opt.MapFrom(x => x.Name))
+                    .ForMember(dest => dest.Accuracy, opt => opt.MapFrom(x => x.DisplayPrecision));
             }).CreateMapper();
         }
 

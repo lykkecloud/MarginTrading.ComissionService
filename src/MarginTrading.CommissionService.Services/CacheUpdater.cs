@@ -4,7 +4,6 @@
 using System.Linq;
 using Autofac;
 using MarginTrading.AssetService.Contracts;
-using MarginTrading.AssetService.Contracts.Asset;
 using MarginTrading.AssetService.Contracts.AssetPair;
 using MarginTrading.AssetService.Contracts.Scheduling;
 using MarginTrading.AssetService.Contracts.TradingConditions;
@@ -12,6 +11,7 @@ using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Services;
+using Asset = MarginTrading.CommissionService.Core.Domain.Asset;
 
 namespace MarginTrading.CommissionService.Services
 {
@@ -25,7 +25,6 @@ namespace MarginTrading.CommissionService.Services
         private readonly ITradingInstrumentsCache _tradingInstrumentsCache;
         private readonly IScheduleSettingsApi _scheduleSettingsApi;
         private readonly ITradingDaysInfoProvider _tradingDaysInfoProvider;
-        private readonly IRateSettingsCache _rateSettingsCache;
         private readonly IConvertService _convertService;
 
         public CacheUpdater(IAssetPairsCache assetPairsCache,
@@ -36,7 +35,6 @@ namespace MarginTrading.CommissionService.Services
             ITradingInstrumentsCache tradingInstrumentsCache,
             IScheduleSettingsApi scheduleSettingsApi,
             ITradingDaysInfoProvider tradingDaysInfoProvider,
-            IRateSettingsCache rateSettingsCache,
             IConvertService convertService)
         {
             _assetPairsCache = assetPairsCache;
@@ -47,7 +45,6 @@ namespace MarginTrading.CommissionService.Services
             _tradingInstrumentsCache = tradingInstrumentsCache;
             _scheduleSettingsApi = scheduleSettingsApi;
             _tradingDaysInfoProvider = tradingDaysInfoProvider;
-            _rateSettingsCache = rateSettingsCache;
             _convertService = convertService;
         }
 
@@ -57,8 +54,6 @@ namespace MarginTrading.CommissionService.Services
             InitAssetPairs();
             InitTradingInstruments();
             InitSchedules();
-            InitOrderExecutionRates();
-            InitOvernightSwapRates();
         }
 
         public void InitAssetPairs()
@@ -71,9 +66,9 @@ namespace MarginTrading.CommissionService.Services
 
         public void InitAssets()
         {
-            var assets = _assetsApi.List().GetAwaiter().GetResult()
-                .ToDictionary(x => x.Id,
-                    s => _convertService.Convert<AssetContract, Asset>(s));
+            var assets = _assetsApi.GetLegacyAssets().GetAwaiter().GetResult()
+                .ToDictionary(x => x.AssetId,
+                    s => _convertService.Convert<MarginTrading.AssetService.Contracts.LegacyAsset.Asset, Asset>(s));
             _assetsCache.Initialize(assets);
         }
 
@@ -92,16 +87,6 @@ namespace MarginTrading.CommissionService.Services
                 .GetAwaiter().GetResult()
                 .ToDictionary(k => k.Key, v => MapTradingDayInfo(v.Value));
             _tradingDaysInfoProvider.Initialize(schedules);
-        }
-
-        public void InitOrderExecutionRates()
-        {
-            _rateSettingsCache.RefreshOrderExecutionRates().GetAwaiter().GetResult();
-        }
-
-        public void InitOvernightSwapRates()
-        {
-            _rateSettingsCache.RefreshOvernightSwapRates();
         }
 
         private static TradingInstrument MapTradingInstrument(TradingInstrumentContract tic) =>
