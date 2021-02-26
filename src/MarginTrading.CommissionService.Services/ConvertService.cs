@@ -19,11 +19,8 @@ namespace MarginTrading.CommissionService.Services
             return new MapperConfiguration(cfg =>
             {
                 cfg.CreateMap<MarginTrading.AssetService.Contracts.LegacyAsset.Asset, Asset>()
-                    .ForMember(dest => dest.AvailableClientProfiles,
-                        opt => opt.MapFrom(x => x.Underlying.AvailableClientProfiles))
-                    .ForMember(dest => dest.Id, opt => opt.MapFrom(x => x.AssetId))
-                    .ForMember(dest => dest.Name, opt => opt.MapFrom(x => x.Name))
-                    .ForMember(dest => dest.Accuracy, opt => opt.MapFrom(x => x.DisplayPrecision));
+                    .ConstructUsing(x =>
+                        new Asset(x.AssetId, x.Name, x.DisplayPrecision, x.Underlying.AvailableClientProfiles));
             }).CreateMapper();
         }
 
