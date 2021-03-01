@@ -5,8 +5,9 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
+using MarginTrading.AssetService.Contracts.LegacyAsset;
 using MarginTrading.CommissionService.Core.Caches;
-using MarginTrading.CommissionService.Core.Domain;
+using Asset = MarginTrading.CommissionService.Core.Domain.Asset;
 
 namespace MarginTrading.CommissionService.Services.Caches
 {
@@ -65,6 +66,22 @@ namespace MarginTrading.CommissionService.Services.Caches
                 return id != null && _cache.TryGetValue(id, out var result)
                     ? result.Name
                     : id;
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
+
+        public ClientProfile GetClientProfile(string assetId, string clientProfileId)
+        {
+            _lock.EnterReadLock();
+
+            try
+            {
+                return assetId != null && _cache.TryGetValue(assetId, out var result)
+                    ? result.AvailableClientProfiles.SingleOrDefault(x => x.Id == clientProfileId)
+                    : null;
             }
             finally
             {

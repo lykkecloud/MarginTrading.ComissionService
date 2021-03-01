@@ -9,6 +9,5 @@ namespace MarginTrading.CommissionService.Core.Caches
     {
         void AddOrUpdate(ClientProfileCacheModel clientProfile);
         void Remove(ClientProfileCacheModel clientProfile);
-        string GetDefaultClientProfileId();
     }
 }

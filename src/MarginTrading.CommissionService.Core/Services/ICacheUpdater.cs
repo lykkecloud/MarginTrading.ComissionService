@@ -8,8 +8,6 @@ namespace MarginTrading.CommissionService.Core.Services
         void InitAssetPairs();
         void InitAssets();
         void InitTradingInstruments();
-        void InitOrderExecutionRates();
-        void InitOvernightSwapRates();
         void InitSchedules();
     }
 }
