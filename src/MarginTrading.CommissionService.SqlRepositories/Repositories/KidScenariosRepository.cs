@@ -129,7 +129,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
                 if (skip.HasValue && take.HasValue)
                 {
                     skip = Math.Max(0, skip.Value);
-                    take = take < 0 ? 20 : Math.Min(take.Value, 100);
+                    take = take <= 0 ? 20 : Math.Min(take.Value, 100);
                     
                     query = query
                         .Skip(skip.Value)

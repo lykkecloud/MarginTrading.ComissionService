@@ -4,6 +4,8 @@
 using System;
 using AutoMapper;
 using JetBrains.Annotations;
+using MarginTrading.CommissionService.Contracts.Models.KidScenarios;
+using MarginTrading.CommissionService.Core.Domain.KidScenarios;
 using MarginTrading.CommissionService.Core.Services;
 
 namespace MarginTrading.CommissionService.Services
@@ -17,7 +19,14 @@ namespace MarginTrading.CommissionService.Services
         {
             return new MapperConfiguration(cfg =>
             {
-                // todo: add some global configurations here?
+                // kid scenarios
+
+                cfg.CreateMap<AddKidScenarioRequest, KidScenario>()
+                    .ForMember(x => x.Timestamp, o => o.Ignore());
+                
+                cfg.CreateMap<UpdateKidScenarioRequest, KidScenario>()
+                    .ForMember(x => x.Isin, o => o.Ignore())
+                    .ForMember(x => x.Timestamp, o => o.Ignore());
             }).CreateMapper();
         }
 

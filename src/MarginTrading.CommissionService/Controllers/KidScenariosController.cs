@@ -31,7 +31,8 @@ namespace MarginTrading.CommissionService.Controllers
 
         [HttpPost]
         [ProducesResponseType(typeof(ErrorCodeResponse<KidScenariosErrorCodesContract>), (int) HttpStatusCode.OK)]
-        public async Task<ErrorCodeResponse<KidScenariosErrorCodesContract>> AddAsync(AddKidScenarioRequest request)
+        public async Task<ErrorCodeResponse<KidScenariosErrorCodesContract>> AddAsync(
+            [FromBody] AddKidScenarioRequest request)
         {
             var kidScenario = _convertService.Convert<AddKidScenarioRequest, KidScenario>(request);
 
@@ -52,7 +53,7 @@ namespace MarginTrading.CommissionService.Controllers
         [HttpPut("{isin}")]
         [ProducesResponseType(typeof(ErrorCodeResponse<KidScenariosErrorCodesContract>), (int) HttpStatusCode.OK)]
         public async Task<ErrorCodeResponse<KidScenariosErrorCodesContract>> UpdateAsync(string isin,
-            UpdateKidScenarioRequest request)
+            [FromBody] UpdateKidScenarioRequest request)
         {
             var kidScenario = _convertService.Convert<UpdateKidScenarioRequest, KidScenario>(request);
             kidScenario.Isin = isin;
@@ -70,7 +71,7 @@ namespace MarginTrading.CommissionService.Controllers
 
             return response;
         }
-        
+
         [HttpDelete("{isin}")]
         [ProducesResponseType(typeof(ErrorCodeResponse<KidScenariosErrorCodesContract>), (int) HttpStatusCode.OK)]
         public async Task<ErrorCodeResponse<KidScenariosErrorCodesContract>> DeleteAsync(string isin)
@@ -103,19 +104,19 @@ namespace MarginTrading.CommissionService.Controllers
             }
             else
             {
-                response.ErrorCode =    _convertService.Convert<KidScenariosErrorCodes, KidScenariosErrorCodesContract>(
+                response.ErrorCode = _convertService.Convert<KidScenariosErrorCodes, KidScenariosErrorCodesContract>(
                     result.Error.GetValueOrDefault());
             }
 
             return response;
         }
-        
+
         [HttpPost("list")]
         [ProducesResponseType(typeof(GetKidScenariosResponse), (int) HttpStatusCode.OK)]
-        public async Task<GetKidScenariosResponse> GetAllAsync([FromBody]GetKidScenariosRequest request)
+        public async Task<GetKidScenariosResponse> GetAllAsync([FromBody] GetKidScenariosRequest request)
         {
             var result = await _kidScenariosService.GetAllAsync(request.Isins.ToArray(), request.Skip, request.Take);
-            
+
             var response = new GetKidScenariosResponse()
             {
                 KidScenarios = result.Value
