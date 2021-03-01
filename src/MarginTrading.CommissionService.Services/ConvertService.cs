@@ -4,6 +4,8 @@
 using System;
 using AutoMapper;
 using JetBrains.Annotations;
+using MarginTrading.CommissionService.Contracts.Models.KidScenarios;
+using MarginTrading.CommissionService.Core.Domain.KidScenarios;
 using MarginTrading.CommissionService.Core.Services;
 using Asset = MarginTrading.CommissionService.Core.Domain.Asset;
 
@@ -21,6 +23,15 @@ namespace MarginTrading.CommissionService.Services
                 cfg.CreateMap<MarginTrading.AssetService.Contracts.LegacyAsset.Asset, Asset>()
                     .ConstructUsing(x =>
                         new Asset(x.AssetId, x.Name, x.DisplayPrecision, x.Underlying.AvailableClientProfiles));
+                
+                // kid scenarios
+
+                cfg.CreateMap<AddKidScenarioRequest, KidScenario>()
+                    .ForMember(x => x.Timestamp, o => o.Ignore());
+                
+                cfg.CreateMap<UpdateKidScenarioRequest, KidScenario>()
+                    .ForMember(x => x.Isin, o => o.Ignore())
+                    .ForMember(x => x.Timestamp, o => o.Ignore());
             }).CreateMapper();
         }
 
