@@ -2,7 +2,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
-
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Rates;
@@ -12,15 +11,16 @@ namespace MarginTrading.CommissionService.Services
 {
     public class BbvaProductCostCalculationService : IProductCostCalculationService
     {
-        private readonly IRateSettingsService _rateSettingsService;
+        private readonly IRateSettingsCache _rateSettingsCache;
         private readonly IInterestRatesCacheService _interestRatesCacheService;
         private readonly IQuoteCacheService _quoteCacheService;
 
-        public BbvaProductCostCalculationService(IRateSettingsService rateSettingsService,
+        public BbvaProductCostCalculationService(IRateSettingsCache
+                rateSettingsCache,
             IInterestRatesCacheService interestRatesCacheService,
             IQuoteCacheService quoteCacheService)
         {
-            _rateSettingsService = rateSettingsService;
+            _rateSettingsCache = rateSettingsCache;
             _interestRatesCacheService = interestRatesCacheService;
             _quoteCacheService = quoteCacheService;
         }
@@ -28,13 +28,13 @@ namespace MarginTrading.CommissionService.Services
         public decimal EntryCost(decimal ask, decimal bid, decimal transactionVolume, decimal fxRate)
         {
             var spread = ask - bid;
-            return  -spread * transactionVolume / 2 / fxRate;
+            return -spread * transactionVolume / 2 / fxRate;
         }
-        
+
         public decimal ExitCost(decimal ask, decimal bid, decimal transactionVolume, decimal fxRate)
         {
             var spread = ask - bid;
-            return  -spread * transactionVolume / 2 / fxRate;
+            return -spread * transactionVolume / 2 / fxRate;
         }
 
         public decimal RunningOvernightCostInEUR(
@@ -44,7 +44,7 @@ namespace MarginTrading.CommissionService.Services
             int overnightFeeDays)
         {
             return -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
-                   overnightFeeDays ;
+                   overnightFeeDays;
         }
 
         public decimal ReferenceRateAmountInEUR(
@@ -81,7 +81,8 @@ namespace MarginTrading.CommissionService.Services
             int overnightFeeDays,
             OrderDirection direction)
         {
-            var overnightSwapRate = await _rateSettingsService.GetOvernightSwapRate(productId);
+            // TODO: get trading condition
+            var overnightSwapRate = await _rateSettingsCache.GetOvernightSwapRate(productId, null);
 
             var runningOvernightCostInEUR =
                 RunningOvernightCostInEUR(overnightSwapRate, transactionVolume, fxRate, overnightFeeDays);
@@ -101,10 +102,11 @@ namespace MarginTrading.CommissionService.Services
         {
             var currentBestPrice = _quoteCacheService.GetBidAskPair(productId);
             var entryCost = EntryCost(currentBestPrice.Ask, currentBestPrice.Bid, transactionVolume, fxRate);
-            var runningCost = await RunningProductCost(productId, transactionVolume, fxRate, overnightFeeDays, direction);
+            var runningCost =
+                await RunningProductCost(productId, transactionVolume, fxRate, overnightFeeDays, direction);
 
             var exitCost = ExitCost(currentBestPrice.Ask, currentBestPrice.Bid, transactionVolume, fxRate);
-            
+
             return entryCost + runningCost + exitCost;
         }
     }
