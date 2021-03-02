@@ -9,8 +9,8 @@ namespace MarginTrading.CommissionService.SqlRepositories.Entities
     {
         public string Isin { get; set; }
 
-        public decimal KidModerateScenario { get; set; }
-        public decimal KidModerateScenarioAvreturn { get; set; }
+        public decimal? KidModerateScenario { get; set; }
+        public decimal? KidModerateScenarioAvreturn { get; set; }
 
         public DateTime Timestamp { get; set; }
     }
