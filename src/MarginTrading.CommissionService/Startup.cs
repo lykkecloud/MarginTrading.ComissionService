@@ -171,6 +171,9 @@ namespace MarginTrading.CommissionService
                 var cqrsEngine = ApplicationContainer.Resolve<ICqrsEngine>();
                 var clientProfilesCache = ApplicationContainer.Resolve<IClientProfileCache>();
                 var clientProfileSettingsCache = ApplicationContainer.Resolve<IClientProfileSettingsCache>();
+                
+                clientProfilesCache.Start();
+                clientProfileSettingsCache.Start();
 
                 rabbitMqService.Subscribe(settings.RabbitMq.Consumers.FxRateRabbitMqSettings, false,
                     fxRateCacheService.SetQuote,
@@ -190,9 +193,6 @@ namespace MarginTrading.CommissionService
                 cqrsEngine.StartSubscribers();
                 cqrsEngine.StartProcesses();
                 
-                clientProfilesCache.Start();
-                clientProfileSettingsCache.Start();
-
                 Program.AppHost.WriteLogs(Environment, LogLocator.CommonLog);
 
                 Log?.WriteMonitorAsync("", "", "Started").Wait();
