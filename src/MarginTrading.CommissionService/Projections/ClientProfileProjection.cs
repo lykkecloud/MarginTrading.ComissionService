@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using MarginTrading.AssetService.Contracts.ClientProfiles;
 using MarginTrading.AssetService.Contracts.Enums;
-using MarginTrading.CommissionService.Core.Caches;
-using MarginTrading.CommissionService.Core.Domain.CacheModels;
 using MarginTrading.CommissionService.Core.Services;
 
 namespace MarginTrading.CommissionService.Projections
@@ -16,18 +14,15 @@ namespace MarginTrading.CommissionService.Projections
     {
         private readonly ICacheUpdater _cacheUpdater;
         private readonly IClientProfileCache _clientProfileCache;
-        private readonly IConvertService _convertService;
         private readonly IRateSettingsCache _rateSettingsCache;
 
         public ClientProfileProjection(
             ICacheUpdater cacheUpdater,
             IClientProfileCache clientProfileCache,
-            IConvertService convertService,
             IRateSettingsCache rateSettingsCache)
         {
             _cacheUpdater = cacheUpdater;
             _clientProfileCache = clientProfileCache;
-            _convertService = convertService;
             _rateSettingsCache = rateSettingsCache;
         }
 
@@ -38,21 +33,15 @@ namespace MarginTrading.CommissionService.Projections
             {
                 case ChangeType.Creation:
                     await UpdateCaches();
-                    _clientProfileCache.AddOrUpdate(
-                        _convertService.Convert<ClientProfileContract, ClientProfileCacheModel>(
-                            @event.NewValue));
+                    _clientProfileCache.AddOrUpdate(@event.NewValue);
                     break;
                 case ChangeType.Edition:
                     if (@event.OldValue.IsDefault != @event.NewValue.IsDefault) await UpdateCaches();
                     
-                    _clientProfileCache.AddOrUpdate(
-                        _convertService.Convert<ClientProfileContract, ClientProfileCacheModel>(
-                            @event.NewValue));
+                    _clientProfileCache.AddOrUpdate(@event.NewValue);
                     break;
                 case ChangeType.Deletion:
-                    _clientProfileCache.Remove(
-                        _convertService.Convert<ClientProfileContract, ClientProfileCacheModel>(
-                            @event.OldValue));
+                    _clientProfileCache.Remove(@event.OldValue);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

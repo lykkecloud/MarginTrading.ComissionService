@@ -9,6 +9,8 @@ using Lykke.Common.Chaos;
 using Lykke.Common.MsSql;
 using Lykke.SettingsReader;
 using Lykke.Snow.Mdm.Contracts.Api;
+using MarginTrading.AssetService.Contracts.ClientProfiles;
+using MarginTrading.AssetService.Contracts.ClientProfileSettings;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Repositories;
@@ -198,12 +200,10 @@ namespace MarginTrading.CommissionService.Modules
                 .SingleInstance();
 
             builder.RegisterType<ClientProfileCache>()
-                .As<IStartable>()
                 .As<IClientProfileCache>()
                 .SingleInstance();
 
             builder.RegisterType<ClientProfileSettingsCache>()
-                .As<IStartable>()
                 .As<IClientProfileSettingsCache>()
                 .SingleInstance();
 
