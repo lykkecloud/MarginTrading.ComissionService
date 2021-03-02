@@ -4,14 +4,16 @@ using MarginTrading.CommissionService.SqlRepositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace MarginTrading.CommissionService.SqlRepositories.Migrations
 {
     [DbContext(typeof(CommissionDbContext))]
-    partial class CommissionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210302070630_KidScenarioOptional")]
+    partial class KidScenarioOptional
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
