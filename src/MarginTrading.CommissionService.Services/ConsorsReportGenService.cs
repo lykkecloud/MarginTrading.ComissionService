@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using iTextSharp.text.pdf;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
@@ -28,7 +29,7 @@ namespace MarginTrading.CommissionService.Services
             _timeZonePartOfTheName = timeZonePartOfTheName;
         }
 
-        public byte[] GenerateBafinCncReport(IEnumerable<CostsAndChargesCalculation> calculations)
+        public async Task<byte[]> GenerateBafinCncReport(IEnumerable<CostsAndChargesCalculation> calculations)
         {
             var reportsQueue = new Queue<byte[]>(calculations.Select(GenerateBafinCncForOneCalc));
 

@@ -152,7 +152,7 @@ namespace MarginTrading.CommissionService.Controllers
         {
             var calculation = await _costsAndChargesRepository.GetByIds(accountId, ids);
 
-            return calculation.Select(ConvertToFileContract).ToArray();;
+            return await Task.WhenAll(calculation.Select(async x => await ConvertToFileContract(x)).ToArray());;
         }
 
         [Route("pdf-by-day")]
@@ -162,12 +162,12 @@ namespace MarginTrading.CommissionService.Controllers
         public async Task<PaginatedResponseContract<FileContract>> GetByDay(DateTime? date, int? skip, int? take)
         {
             var response = await _costsAndChargesRepository.GetAllByDay(date ?? _systemClock.UtcNow.Date, skip, take);
-            var pdfs = response.Contents.Select(ConvertToFileContract).ToArray();
+            var pdfs = await  Task.WhenAll(response.Contents.Select(async x => await ConvertToFileContract(x)));
 
             return new PaginatedResponseContract<FileContract>(pdfs, response.Start, response.Size, response.TotalSize);
         }
 
-        private FileContract ConvertToFileContract(CostsAndChargesCalculation calculation)
+        private async Task<FileContract> ConvertToFileContract(CostsAndChargesCalculation calculation)
         {
             var accountPrefix = !string.IsNullOrEmpty(calculation.AccountId) ? calculation.AccountId + "_" : "";
             
@@ -175,7 +175,7 @@ namespace MarginTrading.CommissionService.Controllers
             {
                 Name = $"{accountPrefix}{calculation.Instrument}_{calculation.Direction.ToString()}_{calculation.Timestamp:yyyyMMddHHmmssfff}",
                 Extension = ".pdf",
-                Content = _reportGenService.GenerateBafinCncReport(new[] { calculation })
+                Content = await _reportGenService.GenerateBafinCncReport(new[] { calculation })
             };
         }
 
