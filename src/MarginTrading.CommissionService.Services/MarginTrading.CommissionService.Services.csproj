@@ -13,6 +13,7 @@
     <NoWarn>1701;1702;1705;CA2007;0612;0618;1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="jsreport.Client" Version="3.1.0" />
     <PackageReference Include="Lykke.Common" Version="7.5.0" />
     <PackageReference Include="Lykke.Logs" Version="7.4.0" />
     <PackageReference Include="Lykke.MarginTrading.AssetService.Contracts" Version="8.0.0" />
