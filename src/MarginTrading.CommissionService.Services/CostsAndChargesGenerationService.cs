@@ -15,7 +15,7 @@ using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Services
 {
-    public class CostsAndChargesGenerationService : ICostsAndChargesGenerationService
+    public abstract class CostsAndChargesGenerationService : ICostsAndChargesGenerationService
     {
         private readonly IQuoteCacheService _quoteCacheService;
         private readonly ISystemClock _systemClock;
@@ -35,7 +35,8 @@ namespace MarginTrading.CommissionService.Services
         private readonly IAssetsCache _assetsCache;
         private readonly OrderExecutionSettings _defaultOrderExecutionRateSettings;
 
-        private const decimal DefaultCcVolume = 5000;
+        protected decimal DefaultCcVolume;
+        protected decimal DonationShare;
 
         public CostsAndChargesGenerationService(IQuoteCacheService quoteCacheService,
             ISystemClock systemClock,
@@ -150,8 +151,12 @@ namespace MarginTrading.CommissionService.Services
             var assetPair = _assetPairsCache.GetAssetPairById(instrument);
             var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(assetPair.MarketId,
                 _systemClock.UtcNow.UtcDateTime);
+
+            var donation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
+                           overnightFeeDays * DonationShare;
+            
             var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
-                overnightFeeDays / 2; //same
+                overnightFeeDays - donation;
             var directionMultiplier = direction == OrderDirection.Sell ? -1 : 1;
 
             var referenceRateAmount = 0m;

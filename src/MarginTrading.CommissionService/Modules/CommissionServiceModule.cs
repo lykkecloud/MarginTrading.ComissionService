@@ -42,7 +42,8 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterInstance(_settings.CurrentValue.CommissionService).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.RequestLoggerSettings).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.CostsAndChargesDefaults).SingleInstance();
-            builder.RegisterInstance(_settings.CurrentValue.CommissionService.DefaultRateSettings.DefaultOrderExecutionSettings).SingleInstance();
+            builder.RegisterInstance(_settings.CurrentValue.CommissionService.DefaultRateSettings
+                .DefaultOrderExecutionSettings).SingleInstance();
             builder.RegisterInstance(_log).As<ILog>().SingleInstance();
             builder.RegisterType<SystemClock>().As<ISystemClock>().SingleInstance();
 
@@ -98,12 +99,20 @@ namespace MarginTrading.CommissionService.Modules
                         "./Fonts/",
                         _settings.CurrentValue.CommissionService.ReportSettings.TimeZonePartOfTheName))
                 .SingleInstance();
+
+            builder.RegisterType<ConsorsCostsAndChargesGenerationService>()
+                .As<ICostsAndChargesGenerationService>()
+                .SingleInstance();
         }
 
         private void RegisterBBVAServices(ContainerBuilder builder)
         {
             builder.RegisterType<BbvaReportGenService>()
                 .As<IReportGenService>()
+                .SingleInstance();
+
+            builder.RegisterType<BBVACostsAndChargesGenerationService>()
+                .As<ICostsAndChargesGenerationService>()
                 .SingleInstance();
         }
 
@@ -178,10 +187,6 @@ namespace MarginTrading.CommissionService.Modules
                 .As<IAccountRedisCache>()
                 .SingleInstance();
 
-            builder.RegisterType<CostsAndChargesGenerationService>()
-                .As<ICostsAndChargesGenerationService>()
-                .SingleInstance();
-
             builder.RegisterType<TradingInstrumentsCache>()
                 .As<ITradingInstrumentsCache>()
                 .SingleInstance();
@@ -234,11 +239,11 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<OrderDetailsSpanishLocalizationService>()
                 .AsImplementedInterfaces()
                 .SingleInstance();
-            
+
             builder.RegisterType<OrderDetailsDataSourceBuilder>()
                 .AsImplementedInterfaces()
                 .SingleInstance();
-            
+
             builder.RegisterType<OrderDetailsPdfGenerator>()
                 .AsImplementedInterfaces()
                 .SingleInstance();
@@ -284,9 +289,9 @@ namespace MarginTrading.CommissionService.Modules
                 .SingleInstance();
 
             builder.Register(provider =>
-                new CommissionHistoryRepository(_settings.CurrentValue.CommissionService.Db.StateConnString))
+                    new CommissionHistoryRepository(_settings.CurrentValue.CommissionService.Db.StateConnString))
                 .AsImplementedInterfaces();
-            
+
             builder.RegisterMsSql(_settings.CurrentValue.CommissionService.Db.StateConnString,
                 connString => new CommissionDbContext(connString, false),
                 dbConn => new CommissionDbContext((dbConn)));
@@ -300,7 +305,7 @@ namespace MarginTrading.CommissionService.Modules
         {
             var redis = ConnectionMultiplexer.Connect(
                 _settings.CurrentValue.CommissionService.RedisSettings.Configuration);
-            
+
             builder.RegisterInstance(redis)
                 .As<IConnectionMultiplexer>()
                 .SingleInstance();
