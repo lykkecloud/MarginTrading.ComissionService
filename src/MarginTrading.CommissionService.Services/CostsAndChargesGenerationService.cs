@@ -15,7 +15,7 @@ using Microsoft.Extensions.Internal;
 
 namespace MarginTrading.CommissionService.Services
 {
-    public class CostsAndChargesGenerationService : ICostsAndChargesGenerationService
+    public abstract class CostsAndChargesGenerationService : ICostsAndChargesGenerationService
     {
         private readonly IQuoteCacheService _quoteCacheService;
         private readonly ISystemClock _systemClock;
@@ -33,7 +33,8 @@ namespace MarginTrading.CommissionService.Services
         private readonly CostsAndChargesDefaultSettings _defaultSettings;
         private readonly CommissionServiceSettings _settings;
 
-        private const decimal DefaultCcVolume = 5000;
+        private readonly decimal _defaultCcVolume;
+        private readonly decimal _donationShare;
 
         public CostsAndChargesGenerationService(IQuoteCacheService quoteCacheService,
             ISystemClock systemClock,
@@ -49,7 +50,9 @@ namespace MarginTrading.CommissionService.Services
             ITradingDaysInfoProvider tradingDaysInfoProvider,
             IBrokerSettingsService brokerSettingsService,
             CostsAndChargesDefaultSettings defaultSettings,
-            CommissionServiceSettings settings)
+            CommissionServiceSettings settings,
+            decimal defaultCcVolume,
+            decimal donationShare)
         {
             _quoteCacheService = quoteCacheService;
             _systemClock = systemClock;
@@ -66,6 +69,9 @@ namespace MarginTrading.CommissionService.Services
             _defaultSettings = defaultSettings;
             _settings = settings;
             _sharedRepository = sharedRepository;
+
+            _defaultCcVolume = defaultCcVolume;
+            _donationShare = donationShare;
         }
 
         public async Task<CostsAndChargesCalculation> GenerateSingle(string accountId, string instrument,
@@ -124,7 +130,7 @@ namespace MarginTrading.CommissionService.Services
             var fxRate = 1 / _cfdCalculatorService.GetFxRateForAssetPair(baseAssetId, instrument, legalEntity);
             var commissionRate = (await _rateSettingsService.GetOrderExecutionRates(new[] {instrument})).Single();
             var overnightSwapRate = await _rateSettingsService.GetOvernightSwapRate(instrument);
-            var units = DefaultCcVolume / executionPrice * fxRate;
+            var units = _defaultCcVolume / executionPrice * fxRate;
             var transactionVolume = units * executionPrice;
             var spread = currentBestPrice.Ask - currentBestPrice.Bid;
 
@@ -143,8 +149,12 @@ namespace MarginTrading.CommissionService.Services
             var assetPair = _assetPairsCache.GetAssetPairById(instrument);
             var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(assetPair.MarketId,
                 _systemClock.UtcNow.UtcDateTime);
+
+            var donation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
+                           overnightFeeDays * _donationShare;
+            
             var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
-                overnightFeeDays / 2; //same
+                overnightFeeDays - donation;
             var directionMultiplier = direction == OrderDirection.Sell ? -1 : 1;
 
             var referenceRateAmount = 0m;
