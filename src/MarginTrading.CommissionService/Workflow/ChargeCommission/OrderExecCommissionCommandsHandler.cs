@@ -73,7 +73,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                     command.Volume * command.OrderExecutionPrice,
                     exchangeRate,
                     1,
-                    command.Direction);
+                    command.Direction,
+                    command.TradingConditionId);
                 
                 await _commissionHistoryRepository.AddAsync(new CommissionHistory()
                 {

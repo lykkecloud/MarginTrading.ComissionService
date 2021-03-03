@@ -62,7 +62,8 @@ namespace MarginTrading.CommissionService.Services
                     tradingDay: order.ModifiedTimestamp,
                     orderExecutionPrice: order.ExecutionPrice.RequiredNotNull(nameof(order.ExecutionPrice)),
                     orderExecutionFxRate: order.FxRate.RequiredNotEqualsTo(default, nameof(order.FxRate)),  
-                    (OrderDirection)order.Direction)
+                    (OrderDirection)order.Direction,
+                    order.TradingConditionId)
                 )
             };
             

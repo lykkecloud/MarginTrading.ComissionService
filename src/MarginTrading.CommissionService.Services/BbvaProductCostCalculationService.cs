@@ -79,10 +79,10 @@ namespace MarginTrading.CommissionService.Services
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
-            OrderDirection direction)
+            OrderDirection direction, 
+            string tradingConditionId)
         {
-            // TODO: get trading condition
-            var overnightSwapRate = await _rateSettingsCache.GetOvernightSwapRate(productId, null);
+            var overnightSwapRate = await _rateSettingsCache.GetOvernightSwapRate(productId, tradingConditionId);
 
             var runningOvernightCostInEUR =
                 RunningOvernightCostInEUR(overnightSwapRate, transactionVolume, fxRate, overnightFeeDays);
@@ -98,12 +98,13 @@ namespace MarginTrading.CommissionService.Services
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
-            OrderDirection direction)
+            OrderDirection direction,
+            string tradingConditionId)
         {
             var currentBestPrice = _quoteCacheService.GetBidAskPair(productId);
             var entryCost = EntryCost(currentBestPrice.Ask, currentBestPrice.Bid, transactionVolume, fxRate);
             var runningCost =
-                await RunningProductCost(productId, transactionVolume, fxRate, overnightFeeDays, direction);
+                await RunningProductCost(productId, transactionVolume, fxRate, overnightFeeDays, direction, tradingConditionId);
 
             var exitCost = ExitCost(currentBestPrice.Ask, currentBestPrice.Bid, transactionVolume, fxRate);
 

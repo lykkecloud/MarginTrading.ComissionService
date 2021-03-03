@@ -34,12 +34,14 @@ namespace MarginTrading.CommissionService.Core.Services
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
-            OrderDirection direction);
+            OrderDirection direction, 
+            string tradingConditionId);
 
         Task<decimal> ProductCost(string productId,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
-            OrderDirection direction);
+            OrderDirection direction, 
+            string tradingConditionId);
     }
 }
