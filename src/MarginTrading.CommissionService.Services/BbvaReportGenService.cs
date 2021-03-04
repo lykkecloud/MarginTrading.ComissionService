@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Autofac.Features.AttributeFilters;
 using Common;
@@ -27,8 +28,10 @@ namespace MarginTrading.CommissionService.Services
         private readonly CommissionServiceSettings _serviceSettings;
 
         private string _assetsPath = Path.Combine("ReportAssets", "CostsAndCharges");
+        private string _content;
+        private string _layout;
 
-        public BbvaReportGenService(IHostingEnvironment environment, 
+        public BbvaReportGenService(IHostingEnvironment environment,
             IKidScenariosService kidScenariosService,
             IAssetsCache assetsCache,
             CommissionServiceSettings serviceSettings)
@@ -37,6 +40,29 @@ namespace MarginTrading.CommissionService.Services
             _kidScenariosService = kidScenariosService;
             _assetsCache = assetsCache;
             _serviceSettings = serviceSettings;
+
+            var reportAssets = new Dictionary<string, string>()
+            {
+                {"benton-font", GetBase64Asset("BentonSansBBVA-Light.woff2")},
+                {"bbva-logo", GetBase64Asset("bbva_logo.png")},
+                {"bell", GetBase64Asset("bell.png")},
+                {"contact", GetBase64Asset("contact.jpeg")},
+            };
+
+            _content = InjectAssets(GetAssetText("content.html"), reportAssets);
+            _layout = InjectAssets(GetAssetText("layout.html"), reportAssets);
+        }
+
+        private string InjectAssets(string template, Dictionary<string, string> assets)
+        {
+            var sb = new StringBuilder(template);
+
+            foreach (var asset in assets)
+            {
+                sb.Replace($"[[{asset.Key}]]", asset.Value);
+            }
+
+            return sb.ToString();
         }
 
         public async Task<byte[]> GenerateBafinCncReport(IEnumerable<CostsAndChargesCalculation> calculations)
@@ -61,7 +87,7 @@ namespace MarginTrading.CommissionService.Services
             {
                 Template = new Template()
                 {
-                    Content = GetAssetText("content.html"),
+                    Content = _content,
                     Engine = Engine.Handlebars,
                     Recipe = Recipe.ChromePdf,
                     Chrome = new Chrome
@@ -78,7 +104,7 @@ namespace MarginTrading.CommissionService.Services
                             Type = PdfOperationType.Merge,
                             Template = new Template
                             {
-                                Content = GetAssetText("layout.html"),
+                                Content = _layout,
                                 Engine = Engine.Handlebars,
                                 Recipe = Recipe.ChromePdf,
                                 Helpers = GetAssetText("layout-helpers.js"),
@@ -110,8 +136,8 @@ namespace MarginTrading.CommissionService.Services
                     $"KID scenario not found or null for isin {isin} and calculation {costsAndChargesCalculation.Id}");
 
             var theoreticalNetReturn = kidScenario.Value.KidModerateScenario.Value +
-                                   costsAndChargesCalculation.TotalCosts.ValueInEur;
-            
+                                       costsAndChargesCalculation.TotalCosts.ValueInEur;
+
             return new
             {
                 Data = costsAndChargesCalculation,
@@ -126,13 +152,18 @@ namespace MarginTrading.CommissionService.Services
                     costsAndChargesCalculation.ExitCost.ValueInPercent),
                 KidScenario = new CostsAndChargesValue(kidScenario.Value.KidModerateScenario.Value,
                     kidScenario.Value.KidModerateScenarioAvreturn.Value),
-                TheoreticalNetReturn = new CostsAndChargesValue(Math.Round(theoreticalNetReturn, 2), Math.Round(theoreticalNetReturn / costsAndChargesCalculation.Volume, 2))
+                TheoreticalNetReturn = new CostsAndChargesValue(Math.Round(theoreticalNetReturn, 2),
+                    Math.Round(theoreticalNetReturn / costsAndChargesCalculation.Volume, 2))
             };
         }
 
-        private string GetAsset(string asset)
+        private string GetBase64Asset(string asset)
         {
-            return Path.Combine(_environment.ContentRootPath, _assetsPath, asset);
+            var path = Path.Combine(_environment.ContentRootPath, _assetsPath, asset);
+            var bytes = File.ReadAllBytes(path);
+            var base64 = Convert.ToBase64String(bytes);
+
+            return base64;
         }
 
         private string GetAssetText(string asset)
