@@ -19,6 +19,8 @@ namespace MarginTrading.CommissionService.Core.Domain
         public string Id { get; }
         public string Name { get; }
         public int Accuracy { get; }
+        public string IsinLong { get; set; }
+        public string IsinShort { get; set; }
         public List<ClientProfile> AvailableClientProfiles { get; }
     }
 }

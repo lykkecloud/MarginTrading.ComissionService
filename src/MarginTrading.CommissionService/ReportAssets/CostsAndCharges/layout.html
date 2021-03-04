@@ -54,9 +54,9 @@
         <img class="logo" src="{#asset /bbva/bbva_logo.png @encoding=dataURI}" />
       </header>
       <footer class="footer">
-        <div>Documento costes y gastos_BBVATrader_FutIbex_1220</div>
+        <div>Documento costes y gastos_BBVATrader_{{Instrument}}</div>        
         <div>
-          Página {{getPageNumber @index}} de {{getTotalPages ../$pdf.pages}}
+         Página {{getPageNumber @index}} de {{getTotalPages ../$pdf.pages}}
         </div>
       </footer>
     </main>

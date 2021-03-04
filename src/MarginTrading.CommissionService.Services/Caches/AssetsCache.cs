@@ -72,6 +72,22 @@ namespace MarginTrading.CommissionService.Services.Caches
                 _lock.ExitReadLock();
             }
         }
+        
+        public Asset GetAsset(string id)
+        {
+            _lock.EnterReadLock();
+
+            try
+            {
+                return id != null && _cache.TryGetValue(id, out var result)
+                    ? result
+                    : null;
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
 
         public ClientProfile GetClientProfile(string assetId, string clientProfileId)
         {

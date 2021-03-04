@@ -16,5 +16,6 @@ namespace MarginTrading.CommissionService.Core.Caches
         string GetName(string id);
 
         ClientProfile GetClientProfile(string assetId, string clientProfileId);
+        Asset GetAsset(string id);
     }
 }

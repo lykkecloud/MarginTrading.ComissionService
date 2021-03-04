@@ -151,12 +151,9 @@ namespace MarginTrading.CommissionService.Services
             var assetPair = _assetPairsCache.GetAssetPairById(instrument);
             var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(assetPair.MarketId,
                 _systemClock.UtcNow.UtcDateTime);
-
-            var donation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
-                           overnightFeeDays * DonationShare;
-            
+           
             var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
-                overnightFeeDays - donation;
+                overnightFeeDays * DonationShare;
             var directionMultiplier = direction == OrderDirection.Sell ? -1 : 1;
 
             var referenceRateAmount = 0m;
@@ -236,6 +233,7 @@ namespace MarginTrading.CommissionService.Services
                 ProductsReturnForeignCurrencyCosts = new CostsAndChargesValue(0, 0),
                 TotalCosts = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
                 OneTag = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
+                OnBehalfFee = clientProfileSettings?.OnBehalfFee,
             };
             calculation.RoundValues(2);
 
