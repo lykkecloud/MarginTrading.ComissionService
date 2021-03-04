@@ -5,8 +5,8 @@ namespace MarginTrading.CommissionService.Contracts.Models.KidScenarios
 {
     public class UpdateKidScenarioRequest
     {
-        public decimal KidModerateScenario { get; set; }
+        public decimal? KidModerateScenario { get; set; }
         
-        public decimal KidModerateScenarioAvreturn { get; set; }
+        public decimal? KidModerateScenarioAvreturn { get; set; }
     }
 }
