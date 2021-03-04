@@ -6,8 +6,7 @@
           box-sizing: border-box;
           @font-face {
           font-family: 'BentonSansBBVA-Light';
-          src: url({#asset /BentonSansBBVA-Light.woff2 @encoding=dataURI});
-          format('woff2');
+          src: url(data:font/woff2;charset=utf-8;base64,[[benton-font]]) format('woff2');
         }
       }
 
@@ -190,7 +189,7 @@
 
       <div class="warning">
         <div class="logo">
-          <img src="{#asset /bbva/bell.png @encoding=dataURI}" />
+          <img src="data:image/png;base64, [[bell]]" />
         </div>
         <div class="text">
           Si una vez leído este documento no comprende los términos del mismo,
@@ -595,7 +594,7 @@
       </div>
 
       <img
-        src="{#asset /bbva/contact.jpeg @encoding=dataURI}"
+        src="data:image/jpeg;base64, [[contact]]"
         style="width: 100%"
       />
     </main>

@@ -6,8 +6,7 @@
           box-sizing: border-box;
           @font-face {
           font-family: 'BentonSansBBVA-Light';
-          src: url({#asset /BentonSansBBVA-Light.woff2 @encoding=dataURI});
-          format('woff2');
+          src: url(data:font/woff2;charset=utf-8;base64,[[benton-font]]) format('woff2');
         }
       }
 
@@ -51,7 +50,7 @@
     {{/if}}
     <main class="main">
       <header class="header">
-        <img class="logo" src="{#asset /bbva/bbva_logo.png @encoding=dataURI}" />
+        <img class="logo" src="data:image/png;base64, [[bbva-logo]]" />
       </header>
       <footer class="footer">
         <div>Documento costes y gastos_BBVATrader_{{Instrument}}</div>        
