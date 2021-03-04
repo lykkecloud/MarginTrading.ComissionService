@@ -173,7 +173,7 @@
     <main class="main">
       <div class="header">
         Documento de información complementaria al instrumento financiero:
-        <b>{{instrument}}</b>
+        <b>{{Instrument}}</b>
       </div>
       <br />
       <div class="text">
@@ -305,8 +305,8 @@
             <td class="tg-0pky">Servicios de inversión y</td>
             <td class="tg-0pky"></td>
             <td class="tg-0lax">Compra</td>
-            <td class="tg-0pky"></td>
-            <td class="tg-0lax"></td>
+            <td class="tg-0pky">{{Data.EntryCommission.ValueInEur}}</td>
+            <td class="tg-0lax">{{Data.EntryCommission.ValueInPercent}}%</td>
           </tr>
           <tr>
             <td class="tg-0pky">auxiliares prestados por BBVA</td>
@@ -314,13 +314,13 @@
               only packages without a prefix will be processed
             </td>
             <td class="tg-0lax">Venta</td>
-            <td class="tg-0pky"></td>
-            <td class="tg-0lax"></td>
+            <td class="tg-0pky">{{Data.ExitCommission.ValueInEur}}</td>
+            <td class="tg-0lax">{{Data.ExitCommission.ValueInPercent}}%</td>
           </tr>
           <tr>
             <td class="tg-aqvq" colspan="3">Total coste de los servicios</td>
-            <td class="tg-aqvq"></td>
-            <td class="tg-aqvq"></td>
+            <td class="tg-aqvq">{{EntryExitCommission.ValueInEur}}</td>
+            <td class="tg-aqvq">{{EntryExitCommission.ValueInPercent}}%</td>
           </tr>
         </tbody>
       </table>
@@ -335,7 +335,7 @@
 
       <div class="text para">
         Las órdenes tramitadas por el canal telefónico llevarán un suplemento
-        adicional de XX€ que se sumará a la tarifa aplicable a la operación.
+        adicional de {{Data.OnBehalfFee}}€ que se sumará a la tarifa aplicable a la operación.
       </div>
 
       <div class="subheader">
@@ -370,23 +370,23 @@
           <tr>
             <td class="tg-0pky">Coste spread oferta-demanda</td>
             <td class="tg-0pky" colspan="2">Entrada y salida</td>
-            <td class="tg-0pky"></td>
-            <td class="tg-0lax"></td>
+            <td class="tg-0pky">{{EntryExitCost.ValueInEur}}</td>
+            <td class="tg-0lax">{{EntryExitCost.ValueInPercent}}%</td>
           </tr>
           <tr>
             <td class="tg-0pky">Coste de financiación (1)</td>
             <td class="tg-0pky" colspan="2">
               Por día hasta próximo dia de negociación
             </td>
-            <td class="tg-0pky"></td>
-            <td class="tg-0lax"></td>
+            <td class="tg-0pky">{{Data.RunningCostsProductReturnsSum.ValueInEur}}</td>
+            <td class="tg-0lax">{{Data.RunningCostsProductReturnsSum.ValueInPercent}}%</td>
           </tr>
           <tr>
             <td class="tg-aqvq" colspan="3">
               Total costes del instrumento financiero
             </td>
-            <td class="tg-aqvq"></td>
-            <td class="tg-aqvq"></td>
+            <td class="tg-aqvq">{{Data.ProductsReturn.ValueInEur}}</td>
+            <td class="tg-aqvq">{{Data.ProductsReturn.ValueInPercent}}%</td>
           </tr>
         </tbody>
       </table>
@@ -404,42 +404,38 @@
       <table class="tg">
         <thead>
           <tr>
-            <th class="tg-6i7w" colspan="3">Concepto del coste o gasto</th>
+            <th class="tg-6i7w">Concepto del coste o gasto</th>
             <th class="tg-6i7w" colspan="2">Importe en el ejemplo</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td class="tg-0pky" colspan="3">
+            <td class="tg-0pky">
               Importe nocional de la inversión:
             </td>
             <td class="tg-0pky" colspan="2">10.000 euros</td>
           </tr>
           <tr>
-            <td class="tg-0lax" colspan="3"></td>
+            <td class="tg-0lax" ></td>
             <td class="tg-0lax">Euros</td>
             <td class="tg-0lax">%</td>
           </tr>
           <tr>
-            <td class="tg-0pky">Coste spread oferta-demanda</td>
-            <td class="tg-0pky" colspan="2">Entrada y salida</td>
-            <td class="tg-0pky"></td>
-            <td class="tg-0lax"></td>
+            <td class="tg-0pky">Total costes del servicio</td>
+            <td class="tg-0pky">{{EntryExitCommission.ValueInEur}}</td>
+            <td class="tg-0lax">{{EntryExitCommission.ValueInPercent}}%</td>
           </tr>
           <tr>
-            <td class="tg-0pky">Coste de financiación (1)</td>
-            <td class="tg-0pky" colspan="2">
-              Por día hasta próximo dia de negociación
-            </td>
-            <td class="tg-0pky"></td>
-            <td class="tg-0lax"></td>
+            <td class="tg-0pky">Total costes del instrumento</td>
+            <td class="tg-0pky">{{Data.ProductsReturn.ValueInEur}}</td>
+            <td class="tg-0lax">{{Data.ProductsReturn.ValueInPercent}}%</td>
           </tr>
           <tr>
-            <td class="tg-aqvq" colspan="3">
-              Total costes del instrumento financiero
+            <td class="tg-aqvq" >
+              Total costes y gastos del instrumento financiero y el servicio
             </td>
-            <td class="tg-aqvq"></td>
-            <td class="tg-aqvq"></td>
+            <td class="tg-aqvq">{{Data.TotalCosts.ValueInEur}}</td>
+            <td class="tg-aqvq">{{Data.TotalCosts.ValueInPercent}}%</td>
           </tr>
         </tbody>
       </table>
@@ -483,8 +479,8 @@
             <td class="tg-0pky">
               Escenario moderado <br />(rendimiento medio a 1 mes)
             </td>
-            <td class="tg-0pky">-0,98%</td>
-            <td class="tg-0pky">-98</td>
+            <td class="tg-0pky">{{KidScenario.ValueInPercent}}%</td>
+            <td class="tg-0pky">{{KidScenario.ValueInEur}}</td>
           </tr>       
         </tbody>
       </table>
@@ -539,20 +535,20 @@
           </tr>
           <tr>
             <td class="tg-0pky">Rendimiento bruto<br /></td>
-            <td class="tg-0pky">-0,98%</td>
-            <td class="tg-0pky">-98</td>
+            <td class="tg-0pky">{{KidScenario.ValueInPercent}}%</td>
+            <td class="tg-0pky">{{KidScenario.ValueInEur}}</td>
           </tr>
           <tr>
             <td class="tg-0pky">
               Total de costes y gastos del servicio y del instrumento
             </td>
-            <td class="tg-0pky">0,00%</td>
-            <td class="tg-0pky"></td>
+            <td class="tg-0pky">{{Data.TotalCosts.ValueInPercent}}%</td>
+            <td class="tg-0pky">{{Data.TotalCosts.ValueInEur}}</td>
           </tr>
           <tr>
-            <td class="tg-x9y3">Rendimiento neto teórico</td>
-            <td class="tg-x9y3"></td>
-            <td class="tg-x9y3"></td>
+            <td class="tg-0pky">Rendimiento neto teórico</td>
+            <td class="tg-0pky">{{TheoreticalNetReturn.ValueInPercent}}%</td>
+            <td class="tg-0pky">{{TheoreticalNetReturn.ValueInEur}}</td>
           </tr>
         </tbody>
       </table>
