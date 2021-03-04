@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Autofac.Features.AttributeFilters;
 using Common;
 using iTextSharp.text.pdf;
 using jsreport.Client;
@@ -13,6 +14,7 @@ using jsreport.Types;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
+using MarginTrading.CommissionService.Core.Settings;
 using Microsoft.AspNetCore.Hosting;
 
 namespace MarginTrading.CommissionService.Services
@@ -22,14 +24,19 @@ namespace MarginTrading.CommissionService.Services
         private readonly IHostingEnvironment _environment;
         private readonly IKidScenariosService _kidScenariosService;
         private readonly IAssetsCache _assetsCache;
+        private readonly CommissionServiceSettings _serviceSettings;
+
         private string _assetsPath = Path.Combine("ReportAssets", "CostsAndCharges");
 
-        public BbvaReportGenService(IHostingEnvironment environment, IKidScenariosService kidScenariosService,
-            IAssetsCache assetsCache)
+        public BbvaReportGenService(IHostingEnvironment environment, 
+            IKidScenariosService kidScenariosService,
+            IAssetsCache assetsCache,
+            CommissionServiceSettings serviceSettings)
         {
             _environment = environment;
             _kidScenariosService = kidScenariosService;
             _assetsCache = assetsCache;
+            _serviceSettings = serviceSettings;
         }
 
         public async Task<byte[]> GenerateBafinCncReport(IEnumerable<CostsAndChargesCalculation> calculations)
@@ -48,7 +55,7 @@ namespace MarginTrading.CommissionService.Services
 
         private async Task<byte[]> GenerateBafinCncForOneCalc(CostsAndChargesCalculation calculation)
         {
-            var rs = new ReportingService("http://localhost:5488");
+            var rs = new ReportingService(_serviceSettings.JSReportUrl);
 
             var report = await rs.RenderAsync(new RenderRequest
             {
