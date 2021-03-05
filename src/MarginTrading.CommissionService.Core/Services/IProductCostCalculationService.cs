@@ -2,7 +2,6 @@
 // See the LICENSE file in the project root for more information.
 
 
-using System.Threading.Tasks;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Rates;
 
@@ -10,17 +9,20 @@ namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IProductCostCalculationService
     {
+        decimal EntryCost(decimal spread, decimal transactionVolume, decimal fxRate);
+        decimal ExitCost(decimal spread, decimal transactionVolume, decimal fxRate);
+
         decimal RunningOvernightCostInEUR(
             OvernightSwapRate overnightSwapRate,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays);
 
-        decimal ReferenceRateAmountInEUR(
-            OvernightSwapRate overnightSwapRate,
-            decimal transactionVolume,
+        decimal ReferenceRateAmountInEUR(decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
+            decimal variableRateBase,
+            decimal variableRateQuote,
             OrderDirection direction);
 
         decimal RepoCostInEUR(
@@ -30,18 +32,21 @@ namespace MarginTrading.CommissionService.Core.Services
             int overnightFeeDays,
             OrderDirection direction);
 
-        Task<decimal> RunningProductCost(string productId,
+        decimal RunningProductCost(OvernightSwapRate overnightSwapRate,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
-            OrderDirection direction, 
-            string tradingConditionId);
+            decimal variableRateBase,
+            decimal variableRateQuote,
+            OrderDirection direction);
 
-        Task<decimal> ProductCost(string productId,
+        decimal ProductCost(decimal spread,
+            OvernightSwapRate swapRate,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
-            OrderDirection direction, 
-            string tradingConditionId);
+            decimal variableRateBase,
+            decimal variableRateQuote,
+            OrderDirection direction);
     }
 }

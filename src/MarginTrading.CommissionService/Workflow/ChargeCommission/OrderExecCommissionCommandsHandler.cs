@@ -4,6 +4,7 @@
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Lykke.Cqrs;
+using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
@@ -18,20 +19,26 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         public const string OperationName = "ExecutedOrderCommission";
         private readonly ICommissionCalcService _commissionCalcService;
         private readonly IProductCostCalculationService _productCostCalculationService;
+        private readonly IInterestRatesCacheService _interestRatesCacheService;
         private readonly IOperationExecutionInfoRepository _executionInfoRepository;
         private readonly ICommissionHistoryRepository _commissionHistoryRepository;
+        private readonly IRateSettingsCache _rateSettingsCache;
         private readonly ISystemClock _systemClock;
 
         public OrderExecCommissionCommandsHandler(ICommissionCalcService commissionCalcService,
             IProductCostCalculationService productCostCalculationService,
+            IInterestRatesCacheService interestRatesCacheService,
             IOperationExecutionInfoRepository executionInfoRepository,
             ICommissionHistoryRepository commissionHistoryRepository,
+            IRateSettingsCache rateSettingsCache,
             ISystemClock systemClock)
         {
             _commissionCalcService = commissionCalcService;
             _productCostCalculationService = productCostCalculationService;
+            _interestRatesCacheService = interestRatesCacheService;
             _executionInfoRepository = executionInfoRepository;
             _commissionHistoryRepository = commissionHistoryRepository;
+            _rateSettingsCache = rateSettingsCache;
             _systemClock = systemClock;
         }
 
@@ -66,21 +73,21 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                 var commissionAmount = await _commissionCalcService.CalculateOrderExecutionCommission(
                   command.AccountId, command.Instrument,command.Volume, 
                   command.OrderExecutionPrice, command.OrderExecutionFxRate);
-
-                // todo: move fxrate / volume calculation to service
-                var exchangeRate = command.OrderExecutionFxRate == 0 ? 1 : 1 / command.OrderExecutionFxRate;
-                var productCost = await _productCostCalculationService.ProductCost(command.Instrument,
-                    command.Volume * command.OrderExecutionPrice,
-                    exchangeRate,
-                    1,
-                    command.Direction,
-                    command.TradingConditionId);
+                
+                var overnightSwapRate = await _rateSettingsCache.GetOvernightSwapRate(command.Instrument, command.TradingConditionId);
+                var variableRateBase = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateBase);
+                var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);
                 
                 await _commissionHistoryRepository.AddAsync(new CommissionHistory()
                 {
                     OrderId = command.OrderId,
                     Commission = commissionAmount,
-                    ProductCost = productCost,
+                    ProductCostCalculationData = new ProductCostCalculationData()
+                    {
+                        OvernightSwapRate = overnightSwapRate,
+                        VariableRateBase = variableRateBase,
+                        VariableRateQuote = variableRateQuote,
+                    },
                 });
 
                 //no failure handling.. so operation will be retried on fail

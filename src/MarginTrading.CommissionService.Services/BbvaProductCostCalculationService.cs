@@ -1,8 +1,6 @@
 // Copyright (c) 2019 Lykke Corp.
 // See the LICENSE file in the project root for more information.
 
-using System.Threading.Tasks;
-using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Rates;
 using MarginTrading.CommissionService.Core.Services;
@@ -11,29 +9,13 @@ namespace MarginTrading.CommissionService.Services
 {
     public class BbvaProductCostCalculationService : IProductCostCalculationService
     {
-        private readonly IRateSettingsCache _rateSettingsCache;
-        private readonly IInterestRatesCacheService _interestRatesCacheService;
-        private readonly IQuoteCacheService _quoteCacheService;
-
-        public BbvaProductCostCalculationService(IRateSettingsCache
-                rateSettingsCache,
-            IInterestRatesCacheService interestRatesCacheService,
-            IQuoteCacheService quoteCacheService)
+        public decimal EntryCost(decimal spread, decimal transactionVolume, decimal fxRate)
         {
-            _rateSettingsCache = rateSettingsCache;
-            _interestRatesCacheService = interestRatesCacheService;
-            _quoteCacheService = quoteCacheService;
-        }
-
-        public decimal EntryCost(decimal ask, decimal bid, decimal transactionVolume, decimal fxRate)
-        {
-            var spread = ask - bid;
             return -spread * transactionVolume / 2 / fxRate;
         }
 
-        public decimal ExitCost(decimal ask, decimal bid, decimal transactionVolume, decimal fxRate)
+        public decimal ExitCost(decimal spread, decimal transactionVolume, decimal fxRate)
         {
-            var spread = ask - bid;
             return -spread * transactionVolume / 2 / fxRate;
         }
 
@@ -47,17 +29,14 @@ namespace MarginTrading.CommissionService.Services
                    overnightFeeDays;
         }
 
-        public decimal ReferenceRateAmountInEUR(
-            OvernightSwapRate overnightSwapRate,
-            decimal transactionVolume,
+        public decimal ReferenceRateAmountInEUR(decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
+            decimal variableRateBase,
+            decimal variableRateQuote,
             OrderDirection direction)
         {
             var directionMultiplier = direction == OrderDirection.Sell ? -1 : 1;
-
-            var variableRateBase = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateBase);
-            var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);
 
             return directionMultiplier * (variableRateBase - variableRateQuote) *
                 transactionVolume / fxRate / 365 * overnightFeeDays;
@@ -75,38 +54,47 @@ namespace MarginTrading.CommissionService.Services
                 : 0;
         }
 
-        public async Task<decimal> RunningProductCost(string productId,
+        public decimal RunningProductCost(OvernightSwapRate overnightSwapRate,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
-            OrderDirection direction, 
-            string tradingConditionId)
+            decimal variableRateBase,
+            decimal variableRateQuote,
+            OrderDirection direction)
         {
-            var overnightSwapRate = await _rateSettingsCache.GetOvernightSwapRate(productId, tradingConditionId);
-
             var runningOvernightCostInEUR =
                 RunningOvernightCostInEUR(overnightSwapRate, transactionVolume, fxRate, overnightFeeDays);
-            var referenceRateAmountInEUR = ReferenceRateAmountInEUR(overnightSwapRate, transactionVolume, fxRate,
-                overnightFeeDays, direction);
+            var referenceRateAmountInEUR = ReferenceRateAmountInEUR(transactionVolume,
+                fxRate,
+                overnightFeeDays,
+                variableRateBase,
+                variableRateQuote,
+                direction);
             var repoCostInEUR = RepoCostInEUR(overnightSwapRate, transactionVolume, fxRate,
                 overnightFeeDays, direction);
 
             return runningOvernightCostInEUR + referenceRateAmountInEUR + repoCostInEUR;
         }
 
-        public async Task<decimal> ProductCost(string productId,
+        public decimal ProductCost(decimal spread,
+            OvernightSwapRate swapRate,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
-            OrderDirection direction,
-            string tradingConditionId)
+            decimal variableRateBase,
+            decimal variableRateQuote,
+            OrderDirection direction)
         {
-            var currentBestPrice = _quoteCacheService.GetBidAskPair(productId);
-            var entryCost = EntryCost(currentBestPrice.Ask, currentBestPrice.Bid, transactionVolume, fxRate);
-            var runningCost =
-                await RunningProductCost(productId, transactionVolume, fxRate, overnightFeeDays, direction, tradingConditionId);
+            var entryCost = EntryCost(spread, transactionVolume, fxRate);
+            var runningCost = RunningProductCost(swapRate,
+                transactionVolume,
+                fxRate,
+                overnightFeeDays,
+                variableRateBase,
+                variableRateQuote,
+                direction);
 
-            var exitCost = ExitCost(currentBestPrice.Ask, currentBestPrice.Bid, transactionVolume, fxRate);
+            var exitCost = ExitCost(spread, transactionVolume, fxRate);
 
             return entryCost + runningCost + exitCost;
         }
