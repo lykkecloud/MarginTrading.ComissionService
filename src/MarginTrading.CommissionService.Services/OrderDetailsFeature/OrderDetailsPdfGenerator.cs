@@ -1,7 +1,9 @@
 // Copyright (c) 2019 Lykke Corp.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using iTextSharp.text;
 using MarginTrading.CommissionService.Core.Domain.OrderDetailFeature;
@@ -149,7 +151,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                             AddHtml(args.PdfDoc, args.PdfFont, GetAssetText("heading.html"), HorizontalAlignment.Center,
                                 props.OrderId);
                             AddHtml(args.PdfDoc, args.PdfFont, GetAssetText("account.html"), HorizontalAlignment.Left,
-                                props.AccountName);
+                                props.AccountName, DateTime.UtcNow.ToString("dd/MM/yyyy hh:mm:ss", new CultureInfo("es-ES")));
                         });
 
 

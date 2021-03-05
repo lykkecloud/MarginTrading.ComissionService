@@ -3,9 +3,11 @@
 
 using System;
 using System.Threading.Tasks;
+using Common;
 using Lykke.Snow.Common;
 using Lykke.Snow.Common.Model;
 using MarginTrading.CommissionService.Core.Domain;
+using MarginTrading.CommissionService.Core.Domain.Rates;
 using MarginTrading.CommissionService.Core.Repositories;
 using Microsoft.Data.SqlClient;
 
@@ -39,6 +41,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
                 new SqlParameter("@orderId", commissionHistory.OrderId),
                 new SqlParameter("@commission", commissionHistory.Commission),
                 new SqlParameter("@productCost", commissionHistory.ProductCost),
+                new SqlParameter("@overnightSwapRate", commissionHistory.ProductCostCalculationData.ToJson()),
             });
         }
 
@@ -50,11 +53,14 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
 
         private CommissionHistory Map(SqlDataReader reader)
         {
+            var swapRate = reader[nameof(CommissionHistory.Commission)] as string;
+
             return new CommissionHistory()
             {
                 OrderId = reader[nameof(CommissionHistory.OrderId)] as string,
                 Commission = reader[nameof(CommissionHistory.Commission)] as decimal?,
                 ProductCost = reader[nameof(CommissionHistory.Commission)] as decimal?,
+                ProductCostCalculationData = string.IsNullOrEmpty(swapRate) ? null : swapRate.DeserializeJson<ProductCostCalculationData>(),
             };
         }
 
