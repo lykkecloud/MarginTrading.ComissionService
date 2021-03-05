@@ -76,6 +76,13 @@ namespace MarginTrading.CommissionService.Core.Domain
 
         public decimal? OnBehalfFee { get; set; }
 
+        public CostsAndChargesValue EntryExitCommission { get; set; }
+
+        public CostsAndChargesValue EntryExitCost { get; set; }
+
+        public CostsAndChargesValue KidScenario { get; set; }
+
+        public CostsAndChargesValue TheoreticalNetReturn { get; set; }
 
         public void RoundValues(int accuracy)
         {

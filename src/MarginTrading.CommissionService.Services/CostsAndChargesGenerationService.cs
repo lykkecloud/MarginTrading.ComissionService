@@ -69,7 +69,6 @@ namespace MarginTrading.CommissionService.Services
             _defaultSettings = defaultSettings;
             _settings = settings;
             _sharedRepository = sharedRepository;
-
             _defaultCcVolume = defaultCcVolume;
             _donationShare = donationShare;
         }
@@ -109,7 +108,7 @@ namespace MarginTrading.CommissionService.Services
             return result;
         }
 
-        private async Task<CostsAndChargesCalculation> GetCalculationAsync(string instrument, OrderDirection direction,
+        protected virtual async Task<CostsAndChargesCalculation> GetCalculationAsync(string instrument, OrderDirection direction,
             string baseAssetId, string tradingConditionId, string legalEntity,
             decimal? anticipatedExecutionPrice = null)
         {
@@ -236,6 +235,10 @@ namespace MarginTrading.CommissionService.Services
                 TotalCosts = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
                 OneTag = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
                 OnBehalfFee = _rateSettingsService.GetOnBehalfRate(assetPair.AssetType).Commission,
+                EntryExitCommission = new CostsAndChargesValue(entryCommission + exitCommission, 
+                    (entryCommission + exitCommission) * percentCoef),
+                EntryExitCost = new CostsAndChargesValue(entryCost + exitCost, 
+                    (entryCost + exitCost) * percentCoef),
             };
             calculation.RoundValues(2);
 

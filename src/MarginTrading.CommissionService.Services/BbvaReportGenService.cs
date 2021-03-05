@@ -7,12 +7,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Autofac.Features.AttributeFilters;
 using Common;
 using iTextSharp.text.pdf;
 using jsreport.Client;
 using jsreport.Types;
-using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Settings;
@@ -23,21 +21,15 @@ namespace MarginTrading.CommissionService.Services
     public class BbvaReportGenService : IReportGenService
     {
         private readonly IHostingEnvironment _environment;
-        private readonly IKidScenariosService _kidScenariosService;
-        private readonly IProductsCache _productsCache;
         private readonly CommissionServiceSettings _serviceSettings;
         private string _assetsPath = Path.Combine("ReportAssets", "CostsAndCharges");
         private string _content;
         private string _layout;
 
         public BbvaReportGenService(IHostingEnvironment environment,
-            IKidScenariosService kidScenariosService,
-            IProductsCache productsCache,
             CommissionServiceSettings serviceSettings)
         {
             _environment = environment;
-            _kidScenariosService = kidScenariosService;
-            _productsCache = productsCache;
             _serviceSettings = serviceSettings;
 
             var reportAssets = new Dictionary<string, string>()
@@ -125,35 +117,7 @@ namespace MarginTrading.CommissionService.Services
 
         private async Task<object> GetData(CostsAndChargesCalculation costsAndChargesCalculation)
         {
-            var product = _productsCache.GetById(costsAndChargesCalculation.Instrument);
-            var isin = costsAndChargesCalculation.Direction == OrderDirection.Buy ? product.IsinLong : product.IsinShort;
-            var kidScenario = await _kidScenariosService.GetByIdAsync(isin);
-            if (kidScenario.IsFailed
-                || !kidScenario.Value.KidModerateScenario.HasValue
-                || !kidScenario.Value.KidModerateScenarioAvreturn.HasValue)
-                throw new Exception(
-                    $"KID scenario not found or null for isin {isin} and calculation {costsAndChargesCalculation.Id}");
-
-            var theoreticalNetReturn = kidScenario.Value.KidModerateScenario.Value +
-                                       costsAndChargesCalculation.TotalCosts.ValueInEur;
-
-            return new
-            {
-                Data = costsAndChargesCalculation,
-                EntryExitCommission = new CostsAndChargesValue(
-                    costsAndChargesCalculation.EntryCommission.ValueInEur +
-                    costsAndChargesCalculation.ExitCommission.ValueInEur,
-                    costsAndChargesCalculation.EntryCommission.ValueInPercent +
-                    costsAndChargesCalculation.ExitCommission.ValueInPercent),
-                EntryExitCost = new CostsAndChargesValue(
-                    costsAndChargesCalculation.EntryCost.ValueInEur + costsAndChargesCalculation.ExitCost.ValueInEur,
-                    costsAndChargesCalculation.EntryCost.ValueInPercent +
-                    costsAndChargesCalculation.ExitCost.ValueInPercent),
-                KidScenario = new CostsAndChargesValue(kidScenario.Value.KidModerateScenario.Value,
-                    kidScenario.Value.KidModerateScenarioAvreturn.Value),
-                TheoreticalNetReturn = new CostsAndChargesValue(Math.Round(theoreticalNetReturn, 2),
-                    Math.Round(theoreticalNetReturn / costsAndChargesCalculation.Volume, 2))
-            };
+            return costsAndChargesCalculation;
         }
 
         private string GetBase64Asset(string asset)
