@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -162,7 +163,14 @@ namespace MarginTrading.CommissionService.Controllers
         public async Task<PaginatedResponseContract<FileContract>> GetByDay(DateTime? date, int? skip, int? take)
         {
             var response = await _costsAndChargesRepository.GetAllByDay(date ?? _systemClock.UtcNow.Date, skip, take);
-            var pdfs = await  Task.WhenAll(response.Contents.Select(async x => await ConvertToFileContract(x)));
+            var tasks = response.Contents.Select(async x => await ConvertToFileContract(x));
+
+            var pdfs = new List<FileContract>();
+            foreach (var task in tasks)
+            {
+                var pdf = await task;
+                pdfs.Add(pdf);
+            }
 
             return new PaginatedResponseContract<FileContract>(pdfs, response.Start, response.Size, response.TotalSize);
         }
@@ -175,7 +183,7 @@ namespace MarginTrading.CommissionService.Controllers
             {
                 Name = $"{accountPrefix}{calculation.Instrument}_{calculation.Direction.ToString()}_{calculation.Timestamp:yyyyMMddHHmmssfff}",
                 Extension = ".pdf",
-                Content = await _reportGenService.GenerateBafinCncReport(new[] { calculation })
+                Content = await _reportGenService.GenerateBafinCncReport(calculation)
             };
         }
 

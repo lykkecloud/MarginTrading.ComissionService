@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Common;
@@ -56,18 +55,9 @@ namespace MarginTrading.CommissionService.Services
             return sb.ToString();
         }
 
-        public async Task<byte[]> GenerateBafinCncReport(IEnumerable<CostsAndChargesCalculation> calculations)
+        public async Task<byte[]> GenerateBafinCncReport(CostsAndChargesCalculation calculation)
         {
-            var pdfs = await Task.WhenAll(calculations.Select(async c => await GenerateBafinCncForOneCalc(c)));
-            var reportsQueue = new Queue<byte[]>(pdfs);
-
-            var result = reportsQueue.Dequeue();
-            while (reportsQueue.Count > 0)
-            {
-                result = MergeTwoPdfs(result, reportsQueue.Dequeue());
-            }
-
-            return result;
+            return await GenerateBafinCncForOneCalc(calculation);
         }
 
         private async Task<byte[]> GenerateBafinCncForOneCalc(CostsAndChargesCalculation calculation)

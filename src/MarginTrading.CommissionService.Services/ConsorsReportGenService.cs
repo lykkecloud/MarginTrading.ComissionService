@@ -29,17 +29,9 @@ namespace MarginTrading.CommissionService.Services
             _timeZonePartOfTheName = timeZonePartOfTheName;
         }
 
-        public async Task<byte[]> GenerateBafinCncReport(IEnumerable<CostsAndChargesCalculation> calculations)
+        public async Task<byte[]> GenerateBafinCncReport(CostsAndChargesCalculation calculation)
         {
-            var reportsQueue = new Queue<byte[]>(calculations.Select(GenerateBafinCncForOneCalc));
-
-            var result = reportsQueue.Dequeue();
-            while (reportsQueue.Count > 0)
-            {
-                result = MergeTwoPdfs(result, reportsQueue.Dequeue());
-            }
-
-            return result;
+            return GenerateBafinCncForOneCalc(calculation);
         }
 
         public byte[] GenerateBafinCncForOneCalc(CostsAndChargesCalculation calculation)

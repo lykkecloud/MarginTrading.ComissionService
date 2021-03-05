@@ -9,6 +9,6 @@ namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IReportGenService
     {
-        Task<byte[]> GenerateBafinCncReport(IEnumerable<CostsAndChargesCalculation> calculations);
+        Task<byte[]> GenerateBafinCncReport(CostsAndChargesCalculation calculation);
     }
 }
