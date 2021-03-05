@@ -130,7 +130,6 @@ namespace MarginTrading.CommissionService.Modules
             RegisterDailyPnlCommandsHandler(contextRegistration);
             RegisterAssetPairsProjection(contextRegistration);
             RegisterProductProjection(contextRegistration);
-            RegisterClientProfileProjection(contextRegistration);
             RegisterClientProfileSettingsProjection(contextRegistration);
             RegisterMarketSettingsProjection(contextRegistration);
             return contextRegistration;
@@ -281,18 +280,7 @@ namespace MarginTrading.CommissionService.Modules
                 .WithProjection(
                     typeof(ProductProjection), _settings.ContextNames.SettingsService);
         }
-
-        private void RegisterClientProfileProjection(
-            ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
-        {
-            contextRegistration.ListeningEvents(
-                    typeof(ClientProfileChangedEvent))
-                .From(_settings.ContextNames.SettingsService)
-                .On(nameof(ClientProfileChangedEvent))
-                .WithProjection(
-                    typeof(ClientProfileProjection), _settings.ContextNames.SettingsService);
-        }
-
+        
         private void RegisterClientProfileSettingsProjection(
             ProcessingOptionsDescriptor<IBoundedContextRegistration> contextRegistration)
         {

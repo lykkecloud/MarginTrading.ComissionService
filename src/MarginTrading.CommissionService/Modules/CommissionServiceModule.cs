@@ -9,7 +9,6 @@ using Lykke.Common.Chaos;
 using Lykke.Common.MsSql;
 using Lykke.SettingsReader;
 using Lykke.Snow.Mdm.Contracts.Api;
-using MarginTrading.AssetService.Contracts.ClientProfiles;
 using MarginTrading.AssetService.Contracts.ClientProfileSettings;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
@@ -44,7 +43,6 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterInstance(_settings.CurrentValue.CommissionService).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.RequestLoggerSettings).SingleInstance();
             builder.RegisterInstance(_settings.CurrentValue.CommissionService.CostsAndChargesDefaults).SingleInstance();
-            builder.RegisterInstance(_settings.CurrentValue.CommissionService.DefaultRateSettings.DefaultOrderExecutionSettings).SingleInstance();
             builder.RegisterInstance(_log).As<ILog>().SingleInstance();
             builder.RegisterType<SystemClock>().As<ISystemClock>().SingleInstance();
 
@@ -197,10 +195,6 @@ namespace MarginTrading.CommissionService.Modules
 
 
             builder.Register<IFontProvider>(ctx => new FontProvider("./Fonts/"))
-                .SingleInstance();
-
-            builder.RegisterType<ClientProfileCache>()
-                .As<IClientProfileCache>()
                 .SingleInstance();
 
             builder.RegisterType<ClientProfileSettingsCache>()

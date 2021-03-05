@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MarginTrading.AssetService.Contracts.ClientProfileSettings;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
@@ -32,8 +33,7 @@ namespace MarginTrading.CommissionService.Services
         private readonly IBrokerSettingsService _brokerSettingsService;
         private readonly CostsAndChargesDefaultSettings _defaultSettings;
         private readonly CommissionServiceSettings _settings;
-        private readonly IAssetsCache _assetsCache;
-        private readonly OrderExecutionSettings _defaultOrderExecutionRateSettings;
+        private readonly IClientProfileSettingsCache _clientProfileSettingsCache;
 
         private readonly decimal _defaultCcVolume;
         private readonly decimal _donationShare;
@@ -70,8 +70,7 @@ namespace MarginTrading.CommissionService.Services
             _brokerSettingsService = brokerSettingsService;
             _defaultSettings = defaultSettings;
             _settings = settings;
-            _assetsCache = assetsCache;
-            _defaultOrderExecutionRateSettings = defaultOrderExecutionRateSettings;
+            _clientProfileSettingsCache = clientProfileSettingsCache;
             _sharedRepository = sharedRepository;
             _defaultCcVolume = defaultCcVolume;
             _donationShare = donationShare;
@@ -112,8 +111,11 @@ namespace MarginTrading.CommissionService.Services
             return result;
         }
 
-        protected virtual async Task<CostsAndChargesCalculation> GetCalculationAsync(string instrument, OrderDirection direction,
-            string baseAssetId, string tradingConditionId, string legalEntity,
+        protected virtual async Task<CostsAndChargesCalculation> GetCalculationAsync(string instrument,
+            OrderDirection direction,
+            string baseAssetId,
+            string tradingConditionId,
+            string legalEntity,
             decimal? anticipatedExecutionPrice = null)
         {
             if (string.IsNullOrEmpty(instrument))
@@ -141,16 +143,17 @@ namespace MarginTrading.CommissionService.Services
                 spread = tradingInstrument.Spread;
             }
 
+            var assetPair = _assetPairsCache.GetAssetPairById(instrument);
             var entryBrokerDonation = -(1 - tradingInstrument.HedgeCost) * spread * units / fxRate / 2 * _donationShare;
             var entryCost = -spread * units / 2 / fxRate - entryBrokerDonation;
-            var clientProfileSettings = _assetsCache.GetClientProfile(instrument, tradingConditionId);
+            var clientProfileSettings = _clientProfileSettingsCache.GetByIds(tradingConditionId, assetPair.AssetType);
             var commissionBase = -Math.Min(
                 Math.Max(
-                    clientProfileSettings?.ExecutionFeesFloor ?? _defaultOrderExecutionRateSettings.ExecutionFeesFloor,
-                    (clientProfileSettings?.ExecutionFeesRate ?? _defaultOrderExecutionRateSettings.ExecutionFeesRate) * transactionVolume / fxRate),
-                clientProfileSettings?.ExecutionFeesCap ?? _defaultOrderExecutionRateSettings.ExecutionFeesCap);
+                    clientProfileSettings.ExecutionFeesFloor,
+                    clientProfileSettings.ExecutionFeesRate * transactionVolume / fxRate),
+                clientProfileSettings.ExecutionFeesCap);
             var entryCommission = commissionBase + entryBrokerDonation;
-            var assetPair = _assetPairsCache.GetAssetPairById(instrument);
+
             var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(assetPair.MarketId,
                 _systemClock.UtcNow.UtcDateTime);
            

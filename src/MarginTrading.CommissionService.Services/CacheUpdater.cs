@@ -5,6 +5,7 @@ using System.Linq;
 using Autofac;
 using MarginTrading.AssetService.Contracts;
 using MarginTrading.AssetService.Contracts.AssetPair;
+using MarginTrading.AssetService.Contracts.LegacyAsset;
 using MarginTrading.AssetService.Contracts.Scheduling;
 using MarginTrading.AssetService.Contracts.TradingConditions;
 using MarginTrading.CommissionService.Core.Caches;

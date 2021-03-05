@@ -169,10 +169,8 @@ namespace MarginTrading.CommissionService
                 var executedOrdersHandlingService = ApplicationContainer.Resolve<IExecutedOrdersHandlingService>();
                 var accountMarginEventsProjection = ApplicationContainer.Resolve<AccountMarginEventsProjection>();
                 var cqrsEngine = ApplicationContainer.Resolve<ICqrsEngine>();
-                var clientProfilesCache = ApplicationContainer.Resolve<IClientProfileCache>();
                 var clientProfileSettingsCache = ApplicationContainer.Resolve<IClientProfileSettingsCache>();
                 
-                clientProfilesCache.Start();
                 clientProfileSettingsCache.Start();
 
                 rabbitMqService.Subscribe(settings.RabbitMq.Consumers.FxRateRabbitMqSettings, false,

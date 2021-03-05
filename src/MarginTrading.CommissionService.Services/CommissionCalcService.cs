@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
+using MarginTrading.AssetService.Contracts.ClientProfileSettings;
 using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
@@ -30,7 +31,7 @@ namespace MarginTrading.CommissionService.Services
         private readonly ILog _log;
         private readonly IInterestRatesCacheService _interestRatesCacheService;
         private readonly CommissionServiceSettings _settings;
-        private readonly OrderExecutionSettings _defaultOrderExecutionRateSettings;
+        private readonly IClientProfileSettingsCache _clientProfileSettingsCache;
 
         public CommissionCalcService(
             ICfdCalculatorService cfdCalculatorService,
@@ -42,7 +43,7 @@ namespace MarginTrading.CommissionService.Services
             ILog log,
             IInterestRatesCacheService interestRatesCacheService,
             CommissionServiceSettings settings,
-            OrderExecutionSettings defaultOrderExecutionRateSettings)
+            IClientProfileSettingsCache clientProfileSettingsCache)
         {
             _cfdCalculatorService = cfdCalculatorService;
             _assetPairsCache = assetPairsCache;
@@ -53,7 +54,7 @@ namespace MarginTrading.CommissionService.Services
             _log = log;
             _interestRatesCacheService = interestRatesCacheService;
             _settings = settings;
-            _defaultOrderExecutionRateSettings = defaultOrderExecutionRateSettings;
+            _clientProfileSettingsCache = clientProfileSettingsCache;
         }
 
         /// <summary>
@@ -98,18 +99,22 @@ namespace MarginTrading.CommissionService.Services
                 );
         }
 
-        public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument,
-            decimal volume, decimal orderExecutionPrice, decimal orderExecutionFxRate)
+        public async Task<decimal> CalculateOrderExecutionCommission(string accountId,
+            string instrument,
+            decimal volume,
+            decimal orderExecutionPrice,
+            decimal orderExecutionFxRate)
         {
             var account = await _accountRedisCache.GetAccount(accountId);
-            var clientProfileSettings = _assetsCache.GetClientProfile(instrument, account.TradingConditionId);
+            var assetType = _assetPairsCache.GetAssetPairById(instrument).AssetType;
+            var clientProfileSettings = _clientProfileSettingsCache.GetByIds(account.TradingConditionId, assetType);
             var volumeInSettlementCurrency = orderExecutionFxRate * Math.Abs(volume) * orderExecutionPrice;
 
             var commission = Math.Min(
-                clientProfileSettings?.ExecutionFeesCap ?? _defaultOrderExecutionRateSettings.ExecutionFeesCap,
+                clientProfileSettings.ExecutionFeesCap,
                 Math.Max(
-                    clientProfileSettings?.ExecutionFeesFloor ?? _defaultOrderExecutionRateSettings.ExecutionFeesFloor,
-                    (clientProfileSettings?.ExecutionFeesRate ?? _defaultOrderExecutionRateSettings.ExecutionFeesRate) * volumeInSettlementCurrency));
+                    clientProfileSettings.ExecutionFeesFloor,
+                    clientProfileSettings.ExecutionFeesRate * volumeInSettlementCurrency));
 
             return Math.Round(commission, _productsCache.GetAccuracy(account.BaseAssetId));
         }
