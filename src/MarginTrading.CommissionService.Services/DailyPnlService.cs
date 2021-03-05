@@ -32,7 +32,7 @@ namespace MarginTrading.CommissionService.Services
 		
 		private readonly IPositionReceiveService _positionReceiveService;
 		private readonly IAccountRedisCache _accountRedisCache;
-		private readonly IAssetsCache _assetsCache;
+		private readonly IProductsCache _productsCache;
 		private readonly IDailyPnlHistoryRepository _dailyPnlHistoryRepository;
 		private readonly ISystemClock _systemClock;
 		private readonly ILog _log;
@@ -44,7 +44,7 @@ namespace MarginTrading.CommissionService.Services
 		public DailyPnlService(
 			IPositionReceiveService positionReceiveService,
 			IAccountRedisCache accountRedisCache,
-			IAssetsCache assetsCache,
+			IProductsCache productsCache,
 			IDailyPnlHistoryRepository dailyPnlHistoryRepository,
 			ISystemClock systemClock,
 			ILog log,
@@ -55,7 +55,7 @@ namespace MarginTrading.CommissionService.Services
 		{
 			_positionReceiveService = positionReceiveService;
 			_accountRedisCache = accountRedisCache;
-			_assetsCache = assetsCache;
+			_productsCache = productsCache;
 			_dailyPnlHistoryRepository = dailyPnlHistoryRepository;
 			_systemClock = systemClock;
 			_log = log;
@@ -128,7 +128,7 @@ namespace MarginTrading.CommissionService.Services
 							_log.Error(nameof(DailyPnlService), 
 								new Exception($"Account {position.AccountId} does not exist in cache."));
 						}
-						var accuracy = _assetsCache.GetAccuracy(account?.BaseAssetId);
+						var accuracy = _productsCache.GetAccuracy(account?.BaseAssetId);
 						
 						var calculation = ProcessPosition(position, operationId, _systemClock.UtcNow.UtcDateTime, tradingDay, accuracy);
 						

@@ -93,7 +93,7 @@ namespace MarginTrading.CommissionService.Modules
         {
             builder.Register<IReportGenService>(ctx =>
                     new ConsorsReportGenService(
-                        ctx.Resolve<IAssetsCache>(),
+                        ctx.Resolve<IProductsCache>(),
                         "./Fonts/",
                         _settings.CurrentValue.CommissionService.ReportSettings.TimeZonePartOfTheName))
                 .SingleInstance();
@@ -158,11 +158,6 @@ namespace MarginTrading.CommissionService.Modules
                 .As<IInterestRatesCacheService>()
                 .SingleInstance()
                 .OnActivated(args => args.Instance.InitCache());
-
-            builder.RegisterType<AssetsCache>()
-                .As<IAssetsCache>()
-                .AsSelf()
-                .SingleInstance();
 
             builder.RegisterType<AssetPairsCache>()
                 .As<IAssetPairsCache>()

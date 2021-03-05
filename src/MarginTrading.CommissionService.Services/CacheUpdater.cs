@@ -4,7 +4,6 @@
 using System.Linq;
 using Autofac;
 using MarginTrading.AssetService.Contracts;
-using MarginTrading.AssetService.Contracts.Asset;
 using MarginTrading.AssetService.Contracts.AssetPair;
 using MarginTrading.AssetService.Contracts.Scheduling;
 using MarginTrading.AssetService.Contracts.TradingConditions;
@@ -18,7 +17,6 @@ namespace MarginTrading.CommissionService.Services
     public class CacheUpdater : ICacheUpdater, IStartable
     {
         private readonly IAssetPairsCache _assetPairsCache;
-        private readonly IAssetsCache _assetsCache;
         private readonly IAssetPairsApi _assetPairsApi;
         private readonly IAssetsApi _assetsApi;
         private readonly ITradingInstrumentsApi _tradingInstrumentsApi;
@@ -30,7 +28,6 @@ namespace MarginTrading.CommissionService.Services
         private readonly IConvertService _convertService;
 
         public CacheUpdater(IAssetPairsCache assetPairsCache,
-            IAssetsCache assetsCache,
             IAssetPairsApi assetPairsApi,
             IAssetsApi assetsApi,
             ITradingInstrumentsApi tradingInstrumentsApi,
@@ -42,7 +39,6 @@ namespace MarginTrading.CommissionService.Services
             IConvertService convertService)
         {
             _assetPairsCache = assetPairsCache;
-            _assetsCache = assetsCache;
             _assetPairsApi = assetPairsApi;
             _assetsApi = assetsApi;
             _tradingInstrumentsApi = tradingInstrumentsApi;
@@ -56,7 +52,6 @@ namespace MarginTrading.CommissionService.Services
 
         public void Start()
         {
-            InitAssets();
             InitAssetPairs();
             InitProducts();
             InitTradingInstruments();
@@ -71,14 +66,6 @@ namespace MarginTrading.CommissionService.Services
                 .ToDictionary(a => a.Id,
                     s => (IAssetPair) _convertService.Convert<AssetPairContract, AssetPair>(s));
             _assetPairsCache.InitPairsCache(pairs);
-        }
-
-        public void InitAssets()
-        {
-            var assets = _assetsApi.List().GetAwaiter().GetResult()
-                .ToDictionary(x => x.Id,
-                    s => _convertService.Convert<AssetContract, Asset>(s));
-            _assetsCache.Initialize(assets);
         }
 
         private void InitProducts()

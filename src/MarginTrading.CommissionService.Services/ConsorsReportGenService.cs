@@ -18,13 +18,13 @@ namespace MarginTrading.CommissionService.Services
 {
     public class ConsorsReportGenService : IReportGenService
     {
-        private readonly IAssetsCache _assetsCache;
+        private readonly IProductsCache _productsCache;
         private readonly string _fontPath;
         private readonly string _timeZonePartOfTheName;
 
-        public ConsorsReportGenService(IAssetsCache assetsCache, string fontPath, string timeZonePartOfTheName)
+        public ConsorsReportGenService(IProductsCache productsCache, string fontPath, string timeZonePartOfTheName)
         {
-            _assetsCache = assetsCache;
+            _productsCache = productsCache;
             _fontPath = fontPath;
             _timeZonePartOfTheName = timeZonePartOfTheName;
         }
@@ -44,7 +44,7 @@ namespace MarginTrading.CommissionService.Services
 
         public byte[] GenerateBafinCncForOneCalc(CostsAndChargesCalculation calculation)
         {
-            var assetName = _assetsCache.GetName(calculation.Instrument);
+            var assetName = _productsCache.GetName(calculation.Instrument);
             var time = ConvertToReportTimeZone(calculation.Timestamp);
             var accountPrefix = !string.IsNullOrEmpty(calculation.AccountId) ? calculation.AccountId + " - " : "";
 

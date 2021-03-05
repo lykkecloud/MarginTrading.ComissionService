@@ -67,5 +67,15 @@ namespace MarginTrading.CommissionService.Services.Caches
         {
             _cache.TryRemove(product.ProductId, out _);
         }
+
+        public int GetAccuracy(string accountBaseAssetId)
+        {
+            return 2;
+        }
+
+        public string GetName(string productId)
+        {
+            return GetById(productId).Name;
+        }
     }
 }

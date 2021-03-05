@@ -21,7 +21,8 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
     {
         private readonly IOrderEventsApi _orderEventsApi;
         private readonly ICommissionHistoryRepository _commissionHistoryRepository;
-        private readonly IAssetsCache _assetsCache;
+        private readonly IProductsCache _productsCache;
+
         private readonly IAccountRedisCache _accountsCache;
         private readonly IBrokerSettingsService _brokerSettingsService;
         private readonly IConvertService _convertService;
@@ -36,14 +37,14 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
 
         public OrderDetailsCalculationService(IOrderEventsApi orderEventsApi,
             ICommissionHistoryRepository commissionHistoryRepository,
-            IAssetsCache assetsCache,
+            IProductsCache productsCache,
             IAccountRedisCache accountsCache,
             IBrokerSettingsService brokerSettingsService,
             IConvertService convertService)
         {
             _orderEventsApi = orderEventsApi;
             _commissionHistoryRepository = commissionHistoryRepository;
-            _assetsCache = assetsCache;
+            _productsCache = productsCache;
             _accountsCache = accountsCache;
             _brokerSettingsService = brokerSettingsService;
             _convertService = convertService;
@@ -86,7 +87,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             if (string.IsNullOrEmpty(accountName))
                 accountName = accountId;
 
-            result.Instrument = _assetsCache.GetName(order.AssetPairId);
+            result.Instrument = _productsCache.GetById(order.AssetPairId).Name;
             result.Quantity = order.Volume;
             result.Status = _convertService.Convert<OrderStatusContract, OrderStatus>(order.Status);
             result.OrderType = _convertService.Convert<OrderTypeContract, OrderType>(order.Type);
