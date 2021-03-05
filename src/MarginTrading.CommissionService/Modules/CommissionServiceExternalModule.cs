@@ -51,7 +51,11 @@ namespace MarginTrading.CommissionService.Modules
             RegisterClientWithName<IAssetPairsApi>(builder,
                 "MT Asset",
                 _settings.CurrentValue.CommissionService.Services.SettingsService);
-            
+
+            RegisterClientWithName<IProductsApi>(builder,
+                "MT Asset",
+                _settings.CurrentValue.CommissionService.Services.SettingsService);
+
             RegisterClientWithName<ITradingConditionsApi>(builder,
                 "MT Asset",
                 _settings.CurrentValue.CommissionService.Services.SettingsService);

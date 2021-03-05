@@ -169,6 +169,10 @@ namespace MarginTrading.CommissionService.Modules
                 .AsSelf()
                 .SingleInstance();
 
+            builder.RegisterType<ProductsCache>()
+                .As<IProductsCache>()
+                .SingleInstance();
+
             builder.RegisterType<OvernightSwapListener>()
                 .As<IOvernightSwapListener>()
                 .SingleInstance();

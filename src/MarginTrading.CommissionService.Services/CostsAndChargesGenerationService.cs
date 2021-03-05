@@ -235,7 +235,7 @@ namespace MarginTrading.CommissionService.Services
                 ProductsReturnForeignCurrencyCosts = new CostsAndChargesValue(0, 0),
                 TotalCosts = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
                 OneTag = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
-                OnBehalfFee = clientProfileSettings?.OnBehalfFee,
+                OnBehalfFee = _rateSettingsService.GetOnBehalfRate(assetPair.AssetType).Commission,
             };
             calculation.RoundValues(2);
 

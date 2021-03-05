@@ -21,15 +21,16 @@ namespace MarginTrading.CommissionService.Services
     {
         private readonly IHostingEnvironment _environment;
         private readonly IKidScenariosService _kidScenariosService;
-        private readonly IAssetsCache _assetsCache;
+        private readonly IProductsCache _productsCache;
         private string _assetsPath = Path.Combine("ReportAssets", "CostsAndCharges");
 
         public BbvaReportGenService(IHostingEnvironment environment, IKidScenariosService kidScenariosService,
-            IAssetsCache assetsCache)
+            IProductsCache productsCache
+            )
         {
             _environment = environment;
             _kidScenariosService = kidScenariosService;
-            _assetsCache = assetsCache;
+            _productsCache = productsCache;
         }
 
         public async Task<byte[]> GenerateBafinCncReport(IEnumerable<CostsAndChargesCalculation> calculations)
@@ -93,8 +94,8 @@ namespace MarginTrading.CommissionService.Services
 
         private async Task<object> GetData(CostsAndChargesCalculation costsAndChargesCalculation)
         {
-            var asset = _assetsCache.GetAsset(costsAndChargesCalculation.Instrument);
-            var isin = costsAndChargesCalculation.Direction == OrderDirection.Buy ? asset.IsinLong : asset.IsinShort;
+            var product = _productsCache.GetById(costsAndChargesCalculation.Instrument);
+            var isin = costsAndChargesCalculation.Direction == OrderDirection.Buy ? product.IsinLong : product.IsinShort;
             var kidScenario = await _kidScenariosService.GetByIdAsync(isin);
             if (kidScenario.IsFailed
                 || !kidScenario.Value.KidModerateScenario.HasValue
