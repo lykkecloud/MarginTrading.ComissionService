@@ -88,7 +88,6 @@ namespace MarginTrading.CommissionService.Services
                                 Content = _layout,
                                 Engine = Engine.Handlebars,
                                 Recipe = Recipe.ChromePdf,
-                                Helpers = GetAssetText("layout-helpers.js"),
                                 Chrome = new Chrome
                                 {
                                     MarginLeft = "2cm",
@@ -96,6 +95,7 @@ namespace MarginTrading.CommissionService.Services
                                     MarginBottom = "1cm",
                                 },
                             },
+                            RenderForEveryPage = true,
                         }
                     }
                 },
