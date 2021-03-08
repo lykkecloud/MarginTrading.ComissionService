@@ -90,6 +90,7 @@ namespace MarginTrading.CommissionService.Core.Domain
                 .Where(x => x.PropertyType == typeof(CostsAndChargesValue)))
             {
                 var property = (CostsAndChargesValue) propertyInfo.GetValue(this);
+                if(property == null) continue;
                 property.ValueInEur = Math.Round(property.ValueInEur, accuracy);
                 property.ValueInPercent = Math.Round(property.ValueInPercent, accuracy);
             }
