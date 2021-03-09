@@ -45,9 +45,6 @@
     </style>
   </head>
   <body>
-    {{#each $pdf.pages}} {{#if @index}}
-    <div style="page-break-before: always"></div>
-    {{/if}}
     <main class="main">
       <header class="header">
         <img class="logo" src="data:image/png;base64, [[bbva-logo]]" />
@@ -59,6 +56,5 @@
         </div>
       </footer>
     </main>
-    {{/each}}
   </body>
 </html>
