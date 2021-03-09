@@ -41,7 +41,7 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
                 new SqlParameter("@orderId", commissionHistory.OrderId),
                 new SqlParameter("@commission", commissionHistory.Commission),
                 new SqlParameter("@productCost", commissionHistory.ProductCost),
-                new SqlParameter("@overnightSwapRate", commissionHistory.ProductCostCalculationData.ToJson()),
+                new SqlParameter("@productCostCalculationData", commissionHistory.ProductCostCalculationData.ToJson()),
             });
         }
 
