@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -75,7 +76,19 @@ namespace MarginTrading.CommissionService.Services.Caches
 
         public string GetName(string productId)
         {
+            var product = GetById(productId);
+            if (product == null) return productId;
+
             return GetById(productId).Name;
+        }
+
+        public string GetIsin(string productId, bool isLong)
+        {
+            var product = GetById(productId);
+            if (product == null)
+                throw new Exception($"Product with id {productId} not found in cache, cannot get isin");
+
+            return isLong ? product.IsinLong : product.IsinShort;
         }
     }
 }

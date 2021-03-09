@@ -87,7 +87,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             if (string.IsNullOrEmpty(accountName))
                 accountName = accountId;
 
-            result.Instrument = _productsCache.GetById(order.AssetPairId).Name;
+            result.Instrument = _productsCache.GetName(order.AssetPairId);
             result.Quantity = order.Volume;
             result.Status = _convertService.Convert<OrderStatusContract, OrderStatus>(order.Status);
             result.OrderType = _convertService.Convert<OrderTypeContract, OrderType>(order.Type);

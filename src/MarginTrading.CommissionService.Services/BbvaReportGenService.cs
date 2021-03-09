@@ -7,7 +7,6 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Common;
-using iTextSharp.text.pdf;
 using jsreport.Client;
 using jsreport.Types;
 using MarginTrading.CommissionService.Core.Domain;
@@ -122,23 +121,6 @@ namespace MarginTrading.CommissionService.Services
         private string GetAssetText(string asset)
         {
             return File.ReadAllText(Path.Combine(_environment.ContentRootPath, _assetsPath, asset));
-        }
-
-        private byte[] MergeTwoPdfs(byte[] pdf1, byte[] pdf2)
-        {
-            var finalStream = new MemoryStream();
-            var copy = new PdfCopyFields(finalStream);
-
-            var ms1 = new MemoryStream(pdf1) {Position = 0};
-            copy.AddDocument(new PdfReader(ms1));
-            ms1.Dispose();
-
-            var ms2 = new MemoryStream(pdf2) {Position = 0};
-            copy.AddDocument(new PdfReader(ms2));
-            ms2.Dispose();
-            copy.Close();
-
-            return finalStream.GetBuffer();
         }
     }
 }
