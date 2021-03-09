@@ -160,6 +160,13 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
 
                 return (productCost, commissionHistory.Commission, productCost + commissionHistory.Commission);
             }
+            else if (order.Status == OrderStatusContract.Canceled
+                     || order.Status == OrderStatusContract.Rejected
+                     || order.Status == OrderStatusContract.Expired)
+            {
+                // no costs for not executed orders in final status
+                return (null, null, null);
+            }
             else
             {
                 var overnightSwapRate =
