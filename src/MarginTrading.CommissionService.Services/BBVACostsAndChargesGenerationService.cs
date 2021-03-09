@@ -65,8 +65,7 @@ namespace MarginTrading.CommissionService.Services
         {
             var calculation =  await base.GetCalculationAsync(instrument, direction, baseAssetId, tradingConditionId, legalEntity, anticipatedExecutionPrice);
             
-            var product = _productsCache.GetById(instrument);
-            var isin = direction == OrderDirection.Buy ? product.IsinLong : product.IsinShort;
+            var isin = _productsCache.GetIsin(instrument, direction == OrderDirection.Buy);
             var kidScenario = await _kidScenariosService.GetByIdAsync(isin);
             if (kidScenario.IsFailed
                 || !kidScenario.Value.KidModerateScenario.HasValue

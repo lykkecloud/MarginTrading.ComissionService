@@ -15,5 +15,6 @@ namespace MarginTrading.CommissionService.Core.Caches
         void Remove(ProductCacheModel product);
         int GetAccuracy(string productId);
         string GetName(string productId);
+        string GetIsin(string productId, bool isLong);
     }
 }

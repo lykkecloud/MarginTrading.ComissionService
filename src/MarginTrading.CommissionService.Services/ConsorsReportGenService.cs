@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using iTextSharp.text.pdf;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
@@ -176,23 +175,6 @@ namespace MarginTrading.CommissionService.Services
             }
 
             return TimeZoneInfo.ConvertTime(sourceDt, timeZoneFromSettings);
-        }
-
-        private byte[] MergeTwoPdfs(byte[] pdf1, byte[] pdf2)
-        {
-            var finalStream = new MemoryStream();
-            var copy = new PdfCopyFields(finalStream);
-
-            var ms1 = new MemoryStream(pdf1) { Position = 0 };
-            copy.AddDocument(new PdfReader(ms1));
-            ms1.Dispose();
-
-            var ms2 = new MemoryStream(pdf2) { Position = 0 };
-            copy.AddDocument(new PdfReader(ms2));
-            ms2.Dispose();
-            copy.Close();
-
-            return finalStream.GetBuffer();
         }
     }
 }

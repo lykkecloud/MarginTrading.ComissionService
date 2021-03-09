@@ -18,7 +18,6 @@ namespace MarginTrading.CommissionService.Services
     {
         private readonly IAssetPairsCache _assetPairsCache;
         private readonly IAssetPairsApi _assetPairsApi;
-        private readonly IAssetsApi _assetsApi;
         private readonly ITradingInstrumentsApi _tradingInstrumentsApi;
         private readonly ITradingInstrumentsCache _tradingInstrumentsCache;
         private readonly IScheduleSettingsApi _scheduleSettingsApi;
@@ -29,7 +28,6 @@ namespace MarginTrading.CommissionService.Services
 
         public CacheUpdater(IAssetPairsCache assetPairsCache,
             IAssetPairsApi assetPairsApi,
-            IAssetsApi assetsApi,
             ITradingInstrumentsApi tradingInstrumentsApi,
             ITradingInstrumentsCache tradingInstrumentsCache,
             IScheduleSettingsApi scheduleSettingsApi,
@@ -40,7 +38,6 @@ namespace MarginTrading.CommissionService.Services
         {
             _assetPairsCache = assetPairsCache;
             _assetPairsApi = assetPairsApi;
-            _assetsApi = assetsApi;
             _tradingInstrumentsApi = tradingInstrumentsApi;
             _tradingInstrumentsCache = tradingInstrumentsCache;
             _scheduleSettingsApi = scheduleSettingsApi;
