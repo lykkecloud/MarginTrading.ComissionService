@@ -138,7 +138,7 @@ namespace MarginTrading.CommissionService.Services
                 spread = tradingInstrument.Spread;
             }
 
-            var entryConsorsDonation = -(1 - tradingInstrument.HedgeCost) * spread * units / fxRate / 4;
+            var entryConsorsDonation = -(1 - tradingInstrument.HedgeCost) * spread * units / fxRate / 2 * _donationShare;
             var entryCost = -spread * units / 2 / fxRate - entryConsorsDonation;
             var entryCommission =
                 -Math.Min(
@@ -170,7 +170,7 @@ namespace MarginTrading.CommissionService.Services
             var runningCostsProductReturnsSum = runningCostsConsorsDonation + referenceRateAmount + repoCost;
 
             var runningCommission = runningCostsConsorsDonation;
-            var exitConsorsDonation = -(1 - tradingInstrument.HedgeCost) * spread * units / fxRate / 2 / 2;
+            var exitConsorsDonation = -(1 - tradingInstrument.HedgeCost) * spread * units / fxRate / 2 * _donationShare;
             var exitCost = -spread * units / 2 / fxRate - exitConsorsDonation;
             var exitCommission =
                 -Math.Min(
