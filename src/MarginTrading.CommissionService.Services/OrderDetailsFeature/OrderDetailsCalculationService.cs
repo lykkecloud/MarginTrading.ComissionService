@@ -149,7 +149,8 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
 
                 var exchangeRate = order.FxRate == 0 ? 1 : 1 / order.FxRate;
 
-                var productCost = _productCostCalculationService.ProductCost(order.Spread,
+                // spread for executed orders is already calculated with transaction volume
+                var productCost = _productCostCalculationService.ExecutedOrderProductCost(order.Spread,
                     commissionHistory.ProductCostCalculationData.OvernightSwapRate,
                     order.Volume,
                     exchangeRate,
