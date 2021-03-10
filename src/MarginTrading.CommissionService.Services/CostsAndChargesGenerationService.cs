@@ -151,6 +151,9 @@ namespace MarginTrading.CommissionService.Services
            
             var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
                     overnightFeeDays * _donationShare;
+
+            var runningCosts = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
+                               overnightFeeDays - runningCostsConsorsDonation;
             var directionMultiplier = direction == OrderDirection.Sell ? -1 : 1;
 
             var referenceRateAmount = 0m;
@@ -167,7 +170,7 @@ namespace MarginTrading.CommissionService.Services
             var repoCost = direction == OrderDirection.Sell
                 ? -overnightSwapRate.RepoSurchargePercent * transactionVolume / fxRate / 365 * overnightFeeDays
                 : 0;
-            var runningCostsProductReturnsSum = runningCostsConsorsDonation + referenceRateAmount + repoCost;
+            var runningCostsProductReturnsSum = runningCosts + referenceRateAmount + repoCost;
 
             var runningCommission = runningCostsConsorsDonation;
             var exitConsorsDonation = -(1 - tradingInstrument.HedgeCost) * spread * units / fxRate / 2 * _donationShare;
