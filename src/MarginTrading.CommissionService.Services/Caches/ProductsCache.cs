@@ -79,7 +79,7 @@ namespace MarginTrading.CommissionService.Services.Caches
             var product = GetById(productId);
             if (product == null) return productId;
 
-            return GetById(productId).Name;
+            return product.Name;
         }
 
         public string GetIsin(string productId, bool isLong)
