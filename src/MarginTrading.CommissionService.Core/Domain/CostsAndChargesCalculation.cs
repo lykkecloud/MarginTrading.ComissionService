@@ -14,6 +14,8 @@ namespace MarginTrading.CommissionService.Core.Domain
 
         public string Instrument { get; set; }
 
+        public string InstrumentName { get; set; }
+
         public string BaseAssetId { get; set; }
 
         public string TradingConditionId { get; set; }
@@ -90,7 +92,7 @@ namespace MarginTrading.CommissionService.Core.Domain
                 .Where(x => x.PropertyType == typeof(CostsAndChargesValue)))
             {
                 var property = (CostsAndChargesValue) propertyInfo.GetValue(this);
-                if(property == null) continue;
+                if (property == null) continue;
                 property.ValueInEur = Math.Round(property.ValueInEur, accuracy);
                 property.ValueInPercent = Math.Round(property.ValueInPercent, accuracy);
             }
