@@ -19,12 +19,12 @@ namespace MarginTrading.CommissionService.Services
             return -spread * transactionVolume / 2 / fxRate;
         }
 
-        public decimal ExecutedOrderEntryCost(decimal spreadWeight, decimal transactionVolume, decimal fxRate)
+        public decimal ExecutedOrderEntryCost(decimal spreadWeight, decimal fxRate)
         {
             return -spreadWeight / 2 / fxRate;
         }
 
-        public decimal ExecutedOrderExitCost(decimal spreadWeight, decimal transactionVolume, decimal fxRate)
+        public decimal ExecutedOrderExitCost(decimal spreadWeight, decimal fxRate)
         {
             return -spreadWeight / 2 / fxRate;
         }
@@ -118,7 +118,7 @@ namespace MarginTrading.CommissionService.Services
             decimal variableRateQuote,
             OrderDirection direction)
         {
-            var entryCost = EntryCost(spreadWeight, transactionVolume, fxRate);
+            var entryCost = ExecutedOrderEntryCost(spreadWeight, fxRate);
             var runningCost = RunningProductCost(swapRate,
                 transactionVolume,
                 fxRate,
@@ -127,7 +127,7 @@ namespace MarginTrading.CommissionService.Services
                 variableRateQuote,
                 direction);
 
-            var exitCost = ExitCost(spreadWeight, transactionVolume, fxRate);
+            var exitCost = ExecutedOrderExitCost(spreadWeight, fxRate);
 
             return entryCost + runningCost + exitCost;
         }

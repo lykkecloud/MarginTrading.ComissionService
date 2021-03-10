@@ -49,8 +49,8 @@ namespace MarginTrading.CommissionService.Core.Services
             decimal variableRateQuote,
             OrderDirection direction);
 
-        decimal ExecutedOrderEntryCost(decimal spreadWeight, decimal transactionVolume, decimal fxRate);
-        decimal ExecutedOrderExitCost(decimal spreadWeight, decimal transactionVolume, decimal fxRate);
+        decimal ExecutedOrderEntryCost(decimal spreadWeight, decimal fxRate);
+        decimal ExecutedOrderExitCost(decimal spreadWeight, decimal fxRate);
 
         decimal ExecutedOrderProductCost(decimal spreadWeight,
             OvernightSwapRate swapRate,
