@@ -190,6 +190,7 @@ namespace MarginTrading.CommissionService.Services
                 Id = Guid.NewGuid().ToString(),
                 Direction = direction,
                 Instrument = instrument,
+                InstrumentName = assetPair.Name,
                 BaseAssetId = baseAssetId,
                 TradingConditionId = tradingConditionId,
                 LegalEntity = legalEntity,
