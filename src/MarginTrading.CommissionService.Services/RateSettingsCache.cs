@@ -9,6 +9,7 @@ using JetBrains.Annotations;
 using MarginTrading.AssetService.Contracts;
 using MarginTrading.AssetService.Contracts.ClientProfileSettings;
 using MarginTrading.AssetService.Contracts.Rates;
+using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Domain.Rates;
 using MarginTrading.CommissionService.Core.Services;
 using Newtonsoft.Json;
@@ -16,23 +17,22 @@ using StackExchange.Redis;
 
 namespace MarginTrading.CommissionService.Services
 {
-    public class RateSettingsCache : IRateSettingsCache
+public class RateSettingsCache : IRateSettingsCache
     {
         private readonly IDatabase _redisDatabase;
-        private readonly IServer _redisServer;
+        private readonly ILog _log;
+
         private readonly IRateSettingsApi _rateSettingsApi;
         private readonly IClientProfileSettingsCache _clientProfileSettingsCache;
         private readonly IConvertService _convertService;
         private readonly IAccountRedisCache _accountsCache;
-        private readonly ILog _log;
 
         public RateSettingsCache(IDatabase redisDatabase,
             ILog log,
             IRateSettingsApi rateSettingsApi,
             IClientProfileSettingsCache clientProfileSettingsCache,
             IConvertService convertService,
-            IAccountRedisCache accountsCache,
-            IServer redisServer)
+            IAccountRedisCache accountsCache)
         {
             _redisDatabase = redisDatabase;
             _log = log;
@@ -40,24 +40,22 @@ namespace MarginTrading.CommissionService.Services
             _clientProfileSettingsCache = clientProfileSettingsCache;
             _convertService = convertService;
             _accountsCache = accountsCache;
-            _redisServer = redisServer;
         }
 
         #region Overnight Swaps
 
-        public async Task<OvernightSwapRate> GetOvernightSwapRate(string assetPairId, string tradingConditionId)
+        public async Task<OvernightSwapRate> GetOvernightSwapRate(string assetPairId)
         {
             //first we try to grab from Redis
-            var key = GetKey(tradingConditionId);
-            var serializedData = await _redisDatabase.KeyExistsAsync(key)
-                ? await _redisDatabase.HashGetAsync(key, assetPairId)
+            var serializedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OvernightSwapKey))
+                ? await _redisDatabase.HashGetAsync(GetKey(LykkeConstants.OvernightSwapKey), assetPairId)
                 : (RedisValue) string.Empty;
             var cachedData = serializedData.HasValue ? Deserialize<OvernightSwapRate>(serializedData) : null;
 
             //now we try to refresh the cache from repository
             if (cachedData == null)
             {
-                var repoData = await RefreshOvernightSwapRates(tradingConditionId);
+                var repoData = await RefreshOvernightSwapRates();
                 cachedData = repoData?.FirstOrDefault(x => x.AssetPairId == assetPairId);
                 if (cachedData == null)
                 {
@@ -69,30 +67,35 @@ namespace MarginTrading.CommissionService.Services
             return cachedData;
         }
 
-        public async Task ClearOvernightSwapRatesCache()
+        public async Task<IReadOnlyList<OvernightSwapRate>> GetOvernightSwapRatesForApi()
         {
-            var keys = _redisServer.Keys(pattern: GetKey("*")).ToArray();
-            
-            await _redisDatabase.KeyDeleteAsync(keys);
+            var cachedData = await _redisDatabase.KeyExistsAsync(GetKey(LykkeConstants.OvernightSwapKey))
+                ? (await _redisDatabase.HashGetAllAsync(GetKey(LykkeConstants.OvernightSwapKey)))
+                .Select(x => Deserialize<OvernightSwapRate>(x.Value)).ToList()
+                : new List<OvernightSwapRate>();
 
-            await _log.WriteInfoAsync(
-                nameof(RateSettingsCache),
-                nameof(ClearOvernightSwapRatesCache),
-                "Overnight swap rates cached has been cleared.");
+            // Refresh the data from the repo if it is absent in Redis
+            if (cachedData.Count == 0)
+            {
+                cachedData = await RefreshOvernightSwapRates();
+            }
+
+            return cachedData;
         }
 
-        private async Task<List<OvernightSwapRate>> RefreshOvernightSwapRates(string tradingConditionId)
+        public async Task<List<OvernightSwapRate>> RefreshOvernightSwapRates()
         {
-            var response = await _rateSettingsApi.GetOvernightSwapRatesAsync(tradingConditionId);
-            var rates = response?.Select(x => _convertService.Convert<OvernightSwapRateContract, OvernightSwapRate>(x)).ToList();
+            var repoData = (await _rateSettingsApi.GetOvernightSwapRatesAsync())?
+                .Select(rate => _convertService.Convert<OvernightSwapRateContract, OvernightSwapRate>(rate))
+                .ToList();
 
-            if (rates != null && rates.Any())
+            if (repoData != null && repoData.Count != 0)
             {
-                await _redisDatabase.HashSetAsync(GetKey(tradingConditionId),
-                    rates.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());    
+                await _redisDatabase.HashSetAsync(GetKey(LykkeConstants.OvernightSwapKey),
+                    repoData.Select(x => new HashEntry(x.AssetPairId, Serialize(x))).ToArray());
             }
-            
-            return rates;
+
+            return repoData;
         }
 
         #endregion Overnight Swaps
@@ -111,6 +114,7 @@ namespace MarginTrading.CommissionService.Services
                 Commission = clientProfileSettings.OnBehalfFee,
             };
         }
+        
         #endregion On Behalf
 
         private string Serialize<TMessage>(TMessage obj)
@@ -123,9 +127,9 @@ namespace MarginTrading.CommissionService.Services
             return JsonConvert.DeserializeObject<TMessage>(data);
         }
 
-        private string GetKey(string tradingConditionId)
+        private string GetKey(string key)
         {
-            return $"CommissionService:RateSettings:OvernightSwaps:{tradingConditionId}";
+            return $"CommissionService:RateSettings:{key}";
         }
     }
 }

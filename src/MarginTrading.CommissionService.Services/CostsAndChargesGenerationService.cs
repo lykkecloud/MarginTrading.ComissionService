@@ -133,7 +133,7 @@ namespace MarginTrading.CommissionService.Services
 
             var tradingInstrument = _tradingInstrumentsCache.Get(tradingConditionId, instrument);
             var fxRate = 1 / _cfdCalculatorService.GetFxRateForAssetPair(baseAssetId, instrument, legalEntity);
-            var overnightSwapRate = await _rateSettingsCache.GetOvernightSwapRate(instrument, tradingConditionId);
+            var overnightSwapRate = await _rateSettingsCache.GetOvernightSwapRate(instrument);
             var units = _defaultCcVolume / executionPrice * fxRate;
             var transactionVolume = units * executionPrice;
             var spread = currentBestPrice.Ask - currentBestPrice.Bid;
@@ -157,7 +157,7 @@ namespace MarginTrading.CommissionService.Services
             var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(assetPair.MarketId,
                 _systemClock.UtcNow.UtcDateTime);
            
-            var runningCostsConsorsDonation = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
+            var runningCostsConsorsDonation = -1 * clientProfileSettings.FinancingFeesRate * transactionVolume / fxRate / 365 *
                     overnightFeeDays * _donationShare;
 
             var runningCosts = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *

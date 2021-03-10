@@ -6,5 +6,6 @@ namespace MarginTrading.CommissionService.Core
     public class LykkeConstants
     {
         public static string AccountsKey = "Accounts";
+        public static string OvernightSwapKey = "OvernightSwap";
     }
 }

@@ -14,22 +14,19 @@ namespace MarginTrading.CommissionService.Projections
     {
         private readonly ICacheUpdater _cacheUpdater;
         private readonly IClientProfileSettingsCache _clientProfileSettingsCache;
-        private readonly IRateSettingsCache _rateSettingsCache;
 
         public ClientProfileSettingsProjection(ICacheUpdater cacheUpdater,
-            IClientProfileSettingsCache clientProfileSettingsCache,
-            IRateSettingsCache rateSettingsCache)
+            IClientProfileSettingsCache clientProfileSettingsCache)
         {
             _cacheUpdater = cacheUpdater;
             _clientProfileSettingsCache = clientProfileSettingsCache;
-            _rateSettingsCache = rateSettingsCache;
         }
 
         [UsedImplicitly]
-        public async Task Handle(ClientProfileSettingsChangedEvent @event)
+        public Task Handle(ClientProfileSettingsChangedEvent @event)
         {
             _cacheUpdater.InitTradingInstruments();
-            await _rateSettingsCache.ClearOvernightSwapRatesCache();
+            _cacheUpdater.InitOvernightSwapRates();
 
             switch (@event.ChangeType)
             {
@@ -45,6 +42,8 @@ namespace MarginTrading.CommissionService.Projections
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+
+            return Task.CompletedTask;
         }
     }
 }

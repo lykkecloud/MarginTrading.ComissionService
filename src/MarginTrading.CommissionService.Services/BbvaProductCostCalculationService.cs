@@ -30,7 +30,7 @@ namespace MarginTrading.CommissionService.Services
         }
 
         public decimal RunningOvernightCostInEUR(
-            OvernightSwapRate overnightSwapRate,
+            decimal financingFeeRate,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays)
@@ -65,6 +65,7 @@ namespace MarginTrading.CommissionService.Services
         }
 
         public decimal RunningProductCost(OvernightSwapRate overnightSwapRate,
+            decimal financingFeeRate,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
@@ -73,7 +74,7 @@ namespace MarginTrading.CommissionService.Services
             OrderDirection direction)
         {
             var runningOvernightCostInEUR =
-                RunningOvernightCostInEUR(overnightSwapRate, transactionVolume, fxRate, overnightFeeDays);
+                RunningOvernightCostInEUR(financingFeeRate, transactionVolume, fxRate, overnightFeeDays);
             var referenceRateAmountInEUR = ReferenceRateAmountInEUR(transactionVolume,
                 fxRate,
                 overnightFeeDays,

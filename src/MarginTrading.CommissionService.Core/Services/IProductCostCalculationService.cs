@@ -13,7 +13,7 @@ namespace MarginTrading.CommissionService.Core.Services
         decimal ExitCost(decimal spread, decimal quantity, decimal fxRate);
 
         decimal RunningOvernightCostInEUR(
-            OvernightSwapRate overnightSwapRate,
+            decimal financingFeeRate,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays);
@@ -43,6 +43,7 @@ namespace MarginTrading.CommissionService.Core.Services
         decimal ProductCost(decimal spread,
             OvernightSwapRate swapRate,
             decimal quantity,
+            decimal financingFeeRate,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,

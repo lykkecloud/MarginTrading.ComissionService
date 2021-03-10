@@ -27,6 +27,7 @@ namespace MarginTrading.CommissionService.Services
         private readonly IRateSettingsCache _rateSettingsCache;
         private readonly IProductsCache _productsCache;
         private readonly IConvertService _convertService;
+        private readonly IRateSettingsCache _rateSettingsCache;
 
         public CacheUpdater(IAssetPairsCache assetPairsCache,
             IAssetPairsApi assetPairsApi,
@@ -36,7 +37,8 @@ namespace MarginTrading.CommissionService.Services
             ITradingDaysInfoProvider tradingDaysInfoProvider,
             IRateSettingsCache rateSettingsCache,
             IProductsCache productsCache,
-            IConvertService convertService)
+            IConvertService convertService,
+            IRateSettingsCache rateSettingsCache)
         {
             _assetPairsCache = assetPairsCache;
             _assetPairsApi = assetPairsApi;
@@ -47,6 +49,7 @@ namespace MarginTrading.CommissionService.Services
             _rateSettingsCache = rateSettingsCache;
             _productsCache = productsCache;
             _convertService = convertService;
+            _rateSettingsCache = rateSettingsCache;
         }
 
         public void Start()
@@ -54,6 +57,7 @@ namespace MarginTrading.CommissionService.Services
             InitAssetPairs();
             InitProducts();
             InitTradingInstruments();
+            InitOvernightSwapRates();
             InitSchedules();
         }
 
@@ -76,6 +80,11 @@ namespace MarginTrading.CommissionService.Services
                 .GetAwaiter().GetResult()
                 .Select(MapTradingInstrument);
             _tradingInstrumentsCache.InitCache(tradingInstruments);
+        }
+        
+        public void InitOvernightSwapRates()
+        {
+            _rateSettingsCache.RefreshOvernightSwapRates();
         }
 
         public void InitSchedules()

@@ -60,32 +60,42 @@ namespace MarginTrading.CommissionService.Services
         /// <summary>
         /// Value must be charged as it is, without negation
         /// </summary>
-        public async Task<(decimal Swap, string Details)> GetOvernightSwap(string accountId, string instrument,
-            decimal volume, decimal closePrice, decimal fxRate, PositionDirection direction,
-            int numberOfFinancingDays, int financingDaysPerYear)
+        public async Task<(decimal Swap, string Details)> GetOvernightSwap(string accountId,
+            string instrument,
+            decimal volume,
+            decimal closePrice,
+            decimal fxRate,
+            PositionDirection direction,
+            int numberOfFinancingDays,
+            int financingDaysPerYear)
         {
             var account = await _accountRedisCache.GetAccount(accountId);
-            var rateSettings = await _rateSettingsCache.GetOvernightSwapRate(instrument, account.TradingConditionId);
+
+            var assetPair = _assetPairsCache.GetAssetPairById(instrument);
+
+            var clientProfileSettings =
+                _clientProfileSettingsCache.GetByIds(account.TradingConditionId, assetPair.AssetType);
+
+            var overnightSwapRate = await _rateSettingsCache.GetOvernightSwapRate(instrument);
 
             var calculationBasis = fxRate * Math.Abs(volume) * closePrice;
 
-            var financingRate = -rateSettings.FixRate
+            var financingRate = -clientProfileSettings.FinancingFeesRate
                                 - (direction == PositionDirection.Short
-                                    ? rateSettings.RepoSurchargePercent
+                                    ? overnightSwapRate.RepoSurchargePercent
                                     : 0);
-            
-            var assetPair = _assetPairsCache.GetAssetPairById(instrument);
 
             if (!_settings.AssetTypesWithZeroInterestRates.Contains(assetPair.AssetType))
             {
-                var variableRateBase = _interestRatesCacheService.GetRate(rateSettings.VariableRateBase);
-                var variableRateQuote = _interestRatesCacheService.GetRate(rateSettings.VariableRateQuote);
+                var variableRateBase = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateBase);
+                var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);
 
                 financingRate += (variableRateBase - variableRateQuote)
                                  * (direction == PositionDirection.Long ? 1 : -1);
             }
-            
+
             var dayFactor = (decimal) numberOfFinancingDays / financingDaysPerYear;
+
 
             return (Math.Round(calculationBasis * financingRate * dayFactor,
                         _productsCache.GetAccuracy(account.BaseAssetId)),
@@ -94,7 +104,7 @@ namespace MarginTrading.CommissionService.Services
                         CalculationBasis = calculationBasis,
                         FinancingRate = financingRate,
                         DayFactor = dayFactor,
-                        FixRate = rateSettings.FixRate
+                        FixRate = clientProfileSettings.FinancingFeesRate
                     }.ToJson()
                 );
         }
@@ -120,12 +130,18 @@ namespace MarginTrading.CommissionService.Services
         }
 
         public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId,
-            string accountAssetId, string assetPairId, string accountId)
+            string accountAssetId,
+            string assetPairId,
+            string accountId)
         {
             var events = await ApiHelpers
                 .RefitRetryPolicy<List<OrderEventWithAdditionalContract>>(
                     r => r.Any(oec =>
-                        new[] { OrderUpdateTypeContract.Executed, OrderUpdateTypeContract.Reject, OrderUpdateTypeContract.Cancel }
+                        new[]
+                            {
+                                OrderUpdateTypeContract.Executed, OrderUpdateTypeContract.Reject,
+                                OrderUpdateTypeContract.Cancel
+                            }
                             .Contains(oec.UpdateType)),
                     3, 1000)
                 .ExecuteAsync(async ct =>
@@ -159,12 +175,11 @@ namespace MarginTrading.CommissionService.Services
             var actionsNum = changeEventsCount + placeEventCharged;
 
             var assetPair = _assetPairsCache.GetAssetPairById(assetPairId);
-            
-            var rateSettings = await _rateSettingsCache.GetOnBehalfRate(accountId, assetPair.AssetType); 
-            
-            var commission = Math.Round(actionsNum * rateSettings.Commission, 
+
+            var rateSettings = await _rateSettingsCache.GetOnBehalfRate(accountId, assetPair.AssetType);
+
+            var commission = Math.Round(actionsNum * rateSettings.Commission,
                 _productsCache.GetAccuracy(accountAssetId));
-            
             //calculate commission
             return (actionsNum, commission);
 

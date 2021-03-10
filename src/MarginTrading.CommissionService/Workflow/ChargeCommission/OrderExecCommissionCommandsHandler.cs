@@ -71,7 +71,8 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                   command.AccountId, command.Instrument,command.Volume, 
                   command.OrderExecutionPrice, command.OrderExecutionFxRate);
                 
-                var overnightSwapRate = await _rateSettingsService.GetOvernightSwapRate(command.Instrument);
+                var overnightSwapRate = await _rateSettingsService.GetOvernightSwapRate(command.AccountId, 
+                    command.Instrument);
                 var variableRateBase = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateBase);
                 var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);
                 

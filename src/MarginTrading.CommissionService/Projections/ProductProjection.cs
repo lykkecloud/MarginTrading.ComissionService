@@ -56,7 +56,7 @@ namespace MarginTrading.CommissionService.Projections
 
             _cacheUpdater.InitAssetPairs();
             _cacheUpdater.InitTradingInstruments();
-            await _rateSettingsCache.ClearOvernightSwapRatesCache();
+            _cacheUpdater.InitOvernightSwapRates();
         }
     }
 }
