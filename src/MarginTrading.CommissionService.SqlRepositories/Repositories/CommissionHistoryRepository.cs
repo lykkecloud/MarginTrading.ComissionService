@@ -52,14 +52,14 @@ namespace MarginTrading.CommissionService.SqlRepositories.Repositories
 
         private CommissionHistory Map(SqlDataReader reader)
         {
-            var swapRate = reader[nameof(CommissionHistory.Commission)] as string;
+            var data = reader[nameof(CommissionHistory.ProductCostCalculationData)] as string;
 
             return new CommissionHistory()
             {
                 OrderId = reader[nameof(CommissionHistory.OrderId)] as string,
                 Commission = reader[nameof(CommissionHistory.Commission)] as decimal?,
-                ProductCost = reader[nameof(CommissionHistory.Commission)] as decimal?,
-                ProductCostCalculationData = string.IsNullOrEmpty(swapRate) ? null : swapRate.DeserializeJson<ProductCostCalculationData>(),
+                ProductCost = reader[nameof(CommissionHistory.ProductCost)] as decimal?,
+                ProductCostCalculationData = string.IsNullOrEmpty(data) ? null : data.DeserializeJson<ProductCostCalculationData>(),
             };
         }
 
