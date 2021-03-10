@@ -35,7 +35,9 @@ namespace MarginTrading.CommissionService.Services
 
         public byte[] GenerateBafinCncForOneCalc(CostsAndChargesCalculation calculation)
         {
-            var assetName = _productsCache.GetName(calculation.Instrument);
+            var assetName = !string.IsNullOrEmpty(calculation.InstrumentName) 
+                ? calculation.InstrumentName 
+                : _productsCache.GetName(calculation.Instrument);
             var time = ConvertToReportTimeZone(calculation.Timestamp);
             var accountPrefix = !string.IsNullOrEmpty(calculation.AccountId) ? calculation.AccountId + " - " : "";
 
