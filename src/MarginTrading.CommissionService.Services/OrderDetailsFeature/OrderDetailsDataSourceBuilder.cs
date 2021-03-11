@@ -69,7 +69,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                 _localizationService.LocalizeField(nameof(OrderDetailsData.OrderType)),
                 _localizationService.LocalizeOrderType(data.OrderType),
                 _localizationService.LocalizeField(nameof(OrderDetailsData.OrderId)),
-                data.OrderId
+                $"ORD{data.OrderId}"
             );
 
             var row4 = new OrderDetailsReportRow(
