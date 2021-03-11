@@ -186,7 +186,7 @@ namespace MarginTrading.CommissionService.Services
                 entryConsorsDonation + runningCostsConsorsDonation + exitConsorsDonation;
             var totalCosts = productsReturn + serviceCost + 0;
 
-            var percentCoef = 1 / transactionVolume / fxRate * 100;
+            var percentCoef = 1 / (transactionVolume / fxRate) * 100;
 
             var calculation = new CostsAndChargesCalculation
             {
