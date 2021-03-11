@@ -237,7 +237,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                 return false;
 
             // order is executed from "close position" button on FE
-            if (order.Comment.Contains("Close positions"))
+            if (!string.IsNullOrEmpty(order.Comment) && order.Comment.Contains("Close positions"))
                 return false;
 
             return true;
