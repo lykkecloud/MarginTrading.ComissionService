@@ -148,11 +148,12 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                     throw new Exception($"Commission has not been calculated yet for executed order {order.Id}");
 
                 var exchangeRate = order.FxRate == 0 ? 1 : 1 / order.FxRate;
+                var transactionVolume = order.FxRate * Math.Abs(order.Volume) * order.ExecutionPrice.Value;
 
                 // spread for executed orders is already calculated with transaction volume
                 var productCost = _productCostCalculationService.ExecutedOrderProductCost(order.Spread,
                     commissionHistory.ProductCostCalculationData.OvernightSwapRate,
-                    order.Volume,
+                    transactionVolume,
                     exchangeRate,
                     OvernightFeeDays,
                     commissionHistory.ProductCostCalculationData.VariableRateBase,
@@ -193,9 +194,11 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                     fxRate
                 );
 
+                var transactionVolume = fxRate * Math.Abs(order.Volume) * price;
+
                 var productCost = _productCostCalculationService.ProductCost(spread,
                     overnightSwapRate,
-                    order.Volume,
+                    transactionVolume,
                     exchangeRate,
                     1,
                     variableRateBase,
