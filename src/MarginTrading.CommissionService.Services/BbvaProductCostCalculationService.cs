@@ -9,14 +9,14 @@ namespace MarginTrading.CommissionService.Services
 {
     public class BbvaProductCostCalculationService : IProductCostCalculationService
     {
-        public decimal EntryCost(decimal spread, decimal transactionVolume, decimal fxRate)
+        public decimal EntryCost(decimal spread, decimal quantity, decimal fxRate)
         {
-            return -spread * transactionVolume / 2 / fxRate;
+            return -spread * quantity / 2 / fxRate;
         }
 
-        public decimal ExitCost(decimal spread, decimal transactionVolume, decimal fxRate)
+        public decimal ExitCost(decimal spread, decimal quantity, decimal fxRate)
         {
-            return -spread * transactionVolume / 2 / fxRate;
+            return -spread * quantity / 2 / fxRate;
         }
 
         public decimal ExecutedOrderEntryCost(decimal spreadWeight, decimal fxRate)
@@ -88,6 +88,7 @@ namespace MarginTrading.CommissionService.Services
 
         public decimal ProductCost(decimal spread,
             OvernightSwapRate swapRate,
+            decimal quantity,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
@@ -95,7 +96,7 @@ namespace MarginTrading.CommissionService.Services
             decimal variableRateQuote,
             OrderDirection direction)
         {
-            var entryCost = EntryCost(spread, transactionVolume, fxRate);
+            var entryCost = EntryCost(spread, quantity, fxRate);
             var runningCost = RunningProductCost(swapRate,
                 transactionVolume,
                 fxRate,
@@ -104,7 +105,7 @@ namespace MarginTrading.CommissionService.Services
                 variableRateQuote,
                 direction);
 
-            var exitCost = ExitCost(spread, transactionVolume, fxRate);
+            var exitCost = ExitCost(spread, quantity, fxRate);
 
             return entryCost + runningCost + exitCost;
         }

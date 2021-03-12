@@ -211,6 +211,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
 
                 var productCost = _productCostCalculationService.ProductCost(spread,
                     overnightSwapRate,
+                    order.Volume,
                     transactionVolume,
                     exchangeRate,
                     overnightFeeDays,
