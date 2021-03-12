@@ -160,7 +160,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                     commissionHistory.ProductCostCalculationData.VariableRateQuote,
                     (OrderDirection) order.Direction);
 
-                return (productCost, commissionHistory.Commission, productCost + commissionHistory.Commission);
+                return (productCost, -commissionHistory.Commission, productCost + commissionHistory.Commission);
             }
             else if (order.Status == OrderStatusContract.Canceled
                      || order.Status == OrderStatusContract.Rejected
@@ -187,12 +187,14 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                         order.LegalEntity);
                 var exchangeRate = 1 / fxRate;
 
-                var commission = await _commissionCalcService.CalculateOrderExecutionCommission(account.Id,
+                var commission = -1 * (await _commissionCalcService.CalculateOrderExecutionCommission(account.Id,
                     order.AssetPairId,
                     order.Volume,
                     price,
                     fxRate
-                );
+                ));
+
+                var entryExitCommission = commission * 2;
 
                 var transactionVolume = fxRate * Math.Abs(order.Volume) * price;
 
@@ -205,7 +207,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                     variableRateQuote,
                     (OrderDirection) order.Direction);
 
-                return (productCost, commission, productCost + commission);
+                return (productCost, entryExitCommission, productCost + entryExitCommission);
             }
         }
 
