@@ -207,11 +207,12 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
 
                 var entryExitCommission = commission * 2;
 
+                var quantity = Math.Abs(order.Volume);
                 var transactionVolume = fxRate * Math.Abs(order.Volume) * price;
 
                 var productCost = _productCostCalculationService.ProductCost(spread,
                     overnightSwapRate,
-                    order.Volume,
+                    quantity,
                     transactionVolume,
                     exchangeRate,
                     overnightFeeDays,
