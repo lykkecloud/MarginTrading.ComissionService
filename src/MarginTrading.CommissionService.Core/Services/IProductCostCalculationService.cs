@@ -9,8 +9,8 @@ namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IProductCostCalculationService
     {
-        decimal EntryCost(decimal spread, decimal transactionVolume, decimal fxRate);
-        decimal ExitCost(decimal spread, decimal transactionVolume, decimal fxRate);
+        decimal EntryCost(decimal spread, decimal quantity, decimal fxRate);
+        decimal ExitCost(decimal spread, decimal quantity, decimal fxRate);
 
         decimal RunningOvernightCostInEUR(
             OvernightSwapRate overnightSwapRate,
@@ -42,6 +42,7 @@ namespace MarginTrading.CommissionService.Core.Services
 
         decimal ProductCost(decimal spread,
             OvernightSwapRate swapRate,
+            decimal quantity,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
