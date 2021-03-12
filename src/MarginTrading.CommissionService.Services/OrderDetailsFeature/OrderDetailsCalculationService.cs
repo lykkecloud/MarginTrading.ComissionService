@@ -13,6 +13,7 @@ using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Services.OrderDetailsFeature;
 using MarginTrading.TradingHistory.Client;
 using MarginTrading.TradingHistory.Client.Models;
+using Microsoft.Extensions.Internal;
 using Newtonsoft.Json;
 
 namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
@@ -30,6 +31,8 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
         private readonly IProductCostCalculationService _productCostCalculationService;
         private readonly ICfdCalculatorService _cfdCalculatorService;
         private readonly ICommissionCalcService _commissionCalcService;
+        private readonly ITradingDaysInfoProvider _tradingDaysInfoProvider;
+        private readonly ISystemClock _systemClock;
         private readonly IConvertService _convertService;
 
         private const int OvernightFeeDays = 1;
@@ -53,6 +56,8 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             IProductCostCalculationService productCostCalculationService,
             ICfdCalculatorService cfdCalculatorService,
             ICommissionCalcService commissionCalcService,
+            ITradingDaysInfoProvider tradingDaysInfoProvider,
+            ISystemClock systemClock,
             IConvertService convertService)
         {
             _orderEventsApi = orderEventsApi;
@@ -66,6 +71,8 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             _productCostCalculationService = productCostCalculationService;
             _cfdCalculatorService = cfdCalculatorService;
             _commissionCalcService = commissionCalcService;
+            _tradingDaysInfoProvider = tradingDaysInfoProvider;
+            _systemClock = systemClock;
             _convertService = convertService;
         }
 
@@ -141,6 +148,10 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
         private async Task<(decimal? ProductCost, decimal? Commission, decimal? TotalCost)> CalculateCosts(
             OrderEventWithAdditionalContract order)
         {
+            var product = _productsCache.GetById(order.AssetPairId);
+            var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(product.Market,
+                _systemClock.UtcNow.UtcDateTime);
+
             if (order.Status == OrderStatusContract.Executed)
             {
                 var commissionHistory = await _commissionHistoryRepository.GetByOrderIdAsync(order.Id);
@@ -155,7 +166,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                     commissionHistory.ProductCostCalculationData.OvernightSwapRate,
                     transactionVolume,
                     exchangeRate,
-                    OvernightFeeDays,
+                    overnightFeeDays,
                     commissionHistory.ProductCostCalculationData.VariableRateBase,
                     commissionHistory.ProductCostCalculationData.VariableRateQuote,
                     (OrderDirection) order.Direction);
@@ -202,7 +213,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                     overnightSwapRate,
                     transactionVolume,
                     exchangeRate,
-                    1,
+                    overnightFeeDays,
                     variableRateBase,
                     variableRateQuote,
                     (OrderDirection) order.Direction);
