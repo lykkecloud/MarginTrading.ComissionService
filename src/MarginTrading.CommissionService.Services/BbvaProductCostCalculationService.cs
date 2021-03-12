@@ -35,7 +35,7 @@ namespace MarginTrading.CommissionService.Services
             decimal fxRate,
             int overnightFeeDays)
         {
-            return -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
+            return -1 * (overnightSwapRate.FixRate * transactionVolume / fxRate / 365) *
                    overnightFeeDays ;
         }
 
