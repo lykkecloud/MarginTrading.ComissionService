@@ -173,7 +173,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                 var overnightSwapRate =
                     await _rateSettingsService.GetOvernightSwapRate(order.AssetPairId);
                 var currentBestPrice = _quoteCacheService.GetBidAskPair(order.AssetPairId);
-                var price = order.Direction == OrderDirectionContract.Buy ? currentBestPrice.Ask : currentBestPrice.Bid;
+                var price = GetPrice(order, currentBestPrice); 
 
                 var spread = currentBestPrice.Ask - currentBestPrice.Bid;
 
@@ -204,6 +204,18 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
 
                 return (productCost, commission, productCost + commission);
             }
+        }
+
+        private decimal GetPrice(OrderEventWithAdditionalContract order, InstrumentBidAskPair currentBestPrice)
+        {
+            if (order.Type == OrderTypeContract.Market)
+            {
+                return order.Direction == OrderDirectionContract.Buy ? currentBestPrice.Ask : currentBestPrice.Bid;
+            }
+
+            if (!order.ExpectedOpenPrice.HasValue)
+                throw new Exception($"Order {order.Id} with type {order.Type} does not have ExpectedOpenPrice");
+            return order.ExpectedOpenPrice.Value;
         }
 
         private async Task<OrderEventWithAdditionalContract> GetOrder(string orderId)
