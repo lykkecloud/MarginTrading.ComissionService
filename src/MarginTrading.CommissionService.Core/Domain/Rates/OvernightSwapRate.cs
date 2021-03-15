@@ -11,8 +11,6 @@ namespace MarginTrading.CommissionService.Core.Domain.Rates
         
         public decimal RepoSurchargePercent { get; set; }
         
-        public decimal FixRate { get; set; }
-        
         [CanBeNull] public string VariableRateBase { get; set; }
         
         [CanBeNull] public string VariableRateQuote { get; set; }

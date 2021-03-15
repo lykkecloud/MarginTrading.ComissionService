@@ -22,9 +22,9 @@ namespace MarginTrading.CommissionService.Services
         private readonly ITradingInstrumentsCache _tradingInstrumentsCache;
         private readonly IScheduleSettingsApi _scheduleSettingsApi;
         private readonly ITradingDaysInfoProvider _tradingDaysInfoProvider;
-        private readonly IRateSettingsCache _rateSettingsCache;
         private readonly IProductsCache _productsCache;
         private readonly IConvertService _convertService;
+        private readonly IRateSettingsCache _rateSettingsCache;
 
         public CacheUpdater(IAssetPairsCache assetPairsCache,
             IAssetPairsApi assetPairsApi,
@@ -45,6 +45,7 @@ namespace MarginTrading.CommissionService.Services
             _rateSettingsCache = rateSettingsCache;
             _productsCache = productsCache;
             _convertService = convertService;
+            _rateSettingsCache = rateSettingsCache;
         }
 
         public void Start()
@@ -52,9 +53,8 @@ namespace MarginTrading.CommissionService.Services
             InitAssetPairs();
             InitProducts();
             InitTradingInstruments();
-            InitSchedules();
-            InitOrderExecutionRates();
             InitOvernightSwapRates();
+            InitSchedules();
         }
 
         public void InitAssetPairs()
@@ -77,6 +77,11 @@ namespace MarginTrading.CommissionService.Services
                 .Select(MapTradingInstrument);
             _tradingInstrumentsCache.InitCache(tradingInstruments);
         }
+        
+        public void InitOvernightSwapRates()
+        {
+            _rateSettingsCache.RefreshOvernightSwapRates();
+        }
 
         public void InitSchedules()
         {
@@ -85,16 +90,6 @@ namespace MarginTrading.CommissionService.Services
                 .GetAwaiter().GetResult()
                 .ToDictionary(k => k.Key, v => MapTradingDayInfo(v.Value));
             _tradingDaysInfoProvider.Initialize(schedules);
-        }
-
-        public void InitOrderExecutionRates()
-        {
-            _rateSettingsCache.RefreshOrderExecutionRates().GetAwaiter().GetResult();
-        }
-
-        public void InitOvernightSwapRates()
-        {
-            _rateSettingsCache.RefreshOvernightSwapRates();
         }
 
         private static TradingInstrument MapTradingInstrument(TradingInstrumentContract tic) =>

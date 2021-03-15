@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
+using MarginTrading.AssetService.Contracts.ClientProfileSettings;
 using MarginTrading.CommissionService.Core;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
@@ -23,65 +24,78 @@ namespace MarginTrading.CommissionService.Services
     {
         private readonly ICfdCalculatorService _cfdCalculatorService;
         private readonly IAssetPairsCache _assetPairsCache;
-        private readonly IRateSettingsService _rateSettingsService;
+        private readonly IRateSettingsCache _rateSettingsCache;
         private readonly IOrderEventsApi _orderEventsApi;
         private readonly IAccountRedisCache _accountRedisCache;
         private readonly IProductsCache _productsCache;
         private readonly ILog _log;
         private readonly IInterestRatesCacheService _interestRatesCacheService;
         private readonly CommissionServiceSettings _settings;
+        private readonly IClientProfileSettingsCache _clientProfileSettingsCache;
 
         public CommissionCalcService(
             ICfdCalculatorService cfdCalculatorService,
             IAssetPairsCache assetPairsCache,
-            IRateSettingsService rateSettingsService,
+            IRateSettingsCache rateSettingsCache,
             IOrderEventsApi orderEventsApi,
             IAccountRedisCache accountRedisCache,
             IProductsCache productsCache,
             ILog log,
             IInterestRatesCacheService interestRatesCacheService,
-            CommissionServiceSettings settings)
+            CommissionServiceSettings settings,
+            IClientProfileSettingsCache clientProfileSettingsCache)
         {
             _cfdCalculatorService = cfdCalculatorService;
             _assetPairsCache = assetPairsCache;
-            _rateSettingsService = rateSettingsService;
+            _rateSettingsCache = rateSettingsCache;
             _orderEventsApi = orderEventsApi;
             _accountRedisCache = accountRedisCache;
             _productsCache = productsCache;
             _log = log;
             _interestRatesCacheService = interestRatesCacheService;
             _settings = settings;
+            _clientProfileSettingsCache = clientProfileSettingsCache;
         }
 
         /// <summary>
         /// Value must be charged as it is, without negation
         /// </summary>
-        public async Task<(decimal Swap, string Details)> GetOvernightSwap(string accountId, string instrument,
-            decimal volume, decimal closePrice, decimal fxRate, PositionDirection direction,
-            int numberOfFinancingDays, int financingDaysPerYear)
+        public async Task<(decimal Swap, string Details)> GetOvernightSwap(string accountId,
+            string instrument,
+            decimal volume,
+            decimal closePrice,
+            decimal fxRate,
+            PositionDirection direction,
+            int numberOfFinancingDays,
+            int financingDaysPerYear)
         {
-            var rateSettings = await _rateSettingsService.GetOvernightSwapRate(instrument);
             var account = await _accountRedisCache.GetAccount(accountId);
+
+            var assetPair = _assetPairsCache.GetAssetPairById(instrument);
+
+            var clientProfileSettings =
+                _clientProfileSettingsCache.GetByIds(account.TradingConditionId, assetPair.AssetType);
+
+            var overnightSwapRate = await _rateSettingsCache.GetOvernightSwapRate(instrument);
 
             var calculationBasis = fxRate * Math.Abs(volume) * closePrice;
 
-            var financingRate = -rateSettings.FixRate
+            var financingRate = -clientProfileSettings.FinancingFeesRate
                                 - (direction == PositionDirection.Short
-                                    ? rateSettings.RepoSurchargePercent
+                                    ? overnightSwapRate.RepoSurchargePercent
                                     : 0);
-            
-            var assetPair = _assetPairsCache.GetAssetPairById(instrument);
 
             if (!_settings.AssetTypesWithZeroInterestRates.Contains(assetPair.AssetType))
             {
-                var variableRateBase = _interestRatesCacheService.GetRate(rateSettings.VariableRateBase);
-                var variableRateQuote = _interestRatesCacheService.GetRate(rateSettings.VariableRateQuote);
+                var variableRateBase = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateBase);
+                var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);
 
                 financingRate += (variableRateBase - variableRateQuote)
                                  * (direction == PositionDirection.Long ? 1 : -1);
             }
-            
+
             var dayFactor = (decimal) numberOfFinancingDays / financingDaysPerYear;
+
 
             return (Math.Round(calculationBasis * financingRate * dayFactor,
                         _productsCache.GetAccuracy(account.BaseAssetId)),
@@ -90,35 +104,44 @@ namespace MarginTrading.CommissionService.Services
                         CalculationBasis = calculationBasis,
                         FinancingRate = financingRate,
                         DayFactor = dayFactor,
-                        FixRate = rateSettings.FixRate
+                        FixRate = clientProfileSettings.FinancingFeesRate
                     }.ToJson()
                 );
         }
 
-        public async Task<decimal> CalculateOrderExecutionCommission(string accountId, string instrument,
-            decimal volume, decimal orderExecutionPrice, decimal orderExecutionFxRate)
+        public async Task<decimal> CalculateOrderExecutionCommission(string accountId,
+            string instrument,
+            decimal volume,
+            decimal orderExecutionPrice,
+            decimal orderExecutionFxRate)
         {
-            var rateSettings = (await _rateSettingsService.GetOrderExecutionRates(new[] {instrument})).Single();
             var account = await _accountRedisCache.GetAccount(accountId);
-
+            var assetType = _assetPairsCache.GetAssetPairById(instrument).AssetType;
+            var clientProfileSettings = _clientProfileSettingsCache.GetByIds(account.TradingConditionId, assetType);
             var volumeInSettlementCurrency = orderExecutionFxRate * Math.Abs(volume) * orderExecutionPrice;
 
             var commission = Math.Min(
-                rateSettings.CommissionCap,
+                clientProfileSettings.ExecutionFeesCap,
                 Math.Max(
-                    rateSettings.CommissionFloor,
-                    rateSettings.CommissionRate * volumeInSettlementCurrency));
+                    clientProfileSettings.ExecutionFeesFloor,
+                    clientProfileSettings.ExecutionFeesRate * volumeInSettlementCurrency));
 
             return Math.Round(commission, _productsCache.GetAccuracy(account.BaseAssetId));
         }
 
         public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId,
-            string accountAssetId, string assetPairId)
+            string accountAssetId,
+            string assetPairId,
+            string accountId)
         {
             var events = await ApiHelpers
                 .RefitRetryPolicy<List<OrderEventWithAdditionalContract>>(
                     r => r.Any(oec =>
-                        new[] { OrderUpdateTypeContract.Executed, OrderUpdateTypeContract.Reject, OrderUpdateTypeContract.Cancel }
+                        new[]
+                            {
+                                OrderUpdateTypeContract.Executed, OrderUpdateTypeContract.Reject,
+                                OrderUpdateTypeContract.Cancel
+                            }
                             .Contains(oec.UpdateType)),
                     3, 1000)
                 .ExecuteAsync(async ct =>
@@ -152,12 +175,11 @@ namespace MarginTrading.CommissionService.Services
             var actionsNum = changeEventsCount + placeEventCharged;
 
             var assetPair = _assetPairsCache.GetAssetPairById(assetPairId);
-            
-            var rateSettings = _rateSettingsService.GetOnBehalfRate(assetPair.AssetType); 
-            
-            var commission = Math.Round(actionsNum * rateSettings.Commission, 
+
+            var rateSettings = await _rateSettingsCache.GetOnBehalfRate(accountId, assetPair.AssetType);
+
+            var commission = Math.Round(actionsNum * rateSettings.Commission,
                 _productsCache.GetAccuracy(accountAssetId));
-            
             //calculate commission
             return (actionsNum, commission);
 

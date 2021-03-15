@@ -10,5 +10,6 @@ namespace MarginTrading.CommissionService.Core.Domain.CacheModels
         public string IsinShort { get; set; }
         public string Name { get; set; }
         public string Market { get; set; }
+        public string AssetType { get; set; }
     }
 }

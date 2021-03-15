@@ -18,9 +18,11 @@ namespace MarginTrading.CommissionService.Projections
         }
 
         [UsedImplicitly]
-        public async Task Handle(CurrencyChangedEvent @event)
+        public Task Handle(CurrencyChangedEvent @event)
         {
             _cacheUpdater.InitOvernightSwapRates();
+            
+            return Task.CompletedTask;
         }
     }
 }

@@ -21,21 +21,21 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
         private readonly IInterestRatesCacheService _interestRatesCacheService;
         private readonly IOperationExecutionInfoRepository _executionInfoRepository;
         private readonly ICommissionHistoryRepository _commissionHistoryRepository;
-        private readonly IRateSettingsService _rateSettingsService;
+        private readonly IRateSettingsCache _rateSettingsCache;
         private readonly ISystemClock _systemClock;
 
         public OrderExecCommissionCommandsHandler(ICommissionCalcService commissionCalcService,
             IInterestRatesCacheService interestRatesCacheService,
             IOperationExecutionInfoRepository executionInfoRepository,
             ICommissionHistoryRepository commissionHistoryRepository,
-            IRateSettingsService rateSettingsService,
+            IRateSettingsCache rateSettingsCache,
             ISystemClock systemClock)
         {
             _commissionCalcService = commissionCalcService;
             _interestRatesCacheService = interestRatesCacheService;
             _executionInfoRepository = executionInfoRepository;
             _commissionHistoryRepository = commissionHistoryRepository;
-            _rateSettingsService = rateSettingsService;
+            _rateSettingsCache = rateSettingsCache;
             _systemClock = systemClock;
         }
 
@@ -71,7 +71,7 @@ namespace MarginTrading.CommissionService.Workflow.ChargeCommission
                   command.AccountId, command.Instrument,command.Volume, 
                   command.OrderExecutionPrice, command.OrderExecutionFxRate);
                 
-                var overnightSwapRate = await _rateSettingsService.GetOvernightSwapRate(command.Instrument);
+                var overnightSwapRate = await _rateSettingsCache.GetOvernightSwapRate(command.Instrument);
                 var variableRateBase = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateBase);
                 var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);
                 

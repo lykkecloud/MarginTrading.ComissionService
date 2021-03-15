@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MarginTrading.AssetService.Contracts.ClientProfileSettings;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.OrderDetailFeature;
@@ -25,7 +26,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
         private readonly IProductsCache _productsCache;
         private readonly IAccountRedisCache _accountsCache;
         private readonly IBrokerSettingsService _brokerSettingsService;
-        private readonly IRateSettingsService _rateSettingsService;
+        private readonly IRateSettingsCache _rateSettingsCache;
         private readonly IQuoteCacheService _quoteCacheService;
         private readonly IInterestRatesCacheService _interestRatesCacheService;
         private readonly IProductCostCalculationService _productCostCalculationService;
@@ -34,8 +35,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
         private readonly ITradingDaysInfoProvider _tradingDaysInfoProvider;
         private readonly ISystemClock _systemClock;
         private readonly IConvertService _convertService;
-
-        private const int OvernightFeeDays = 1;
+        private readonly IClientProfileSettingsCache _clientProfileSettingsCache;
 
         private List<OrderStatusContract> _finalStatuses = new List<OrderStatusContract>()
         {
@@ -50,7 +50,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             IProductsCache productsCache,
             IAccountRedisCache accountsCache,
             IBrokerSettingsService brokerSettingsService,
-            IRateSettingsService rateSettingsService,
+            IRateSettingsCache rateSettingsCache,
             IQuoteCacheService quoteCacheService,
             IInterestRatesCacheService interestRatesCacheService,
             IProductCostCalculationService productCostCalculationService,
@@ -58,14 +58,15 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             ICommissionCalcService commissionCalcService,
             ITradingDaysInfoProvider tradingDaysInfoProvider,
             ISystemClock systemClock,
-            IConvertService convertService)
+            IConvertService convertService,
+            IClientProfileSettingsCache clientProfileSettingsCache)
         {
             _orderEventsApi = orderEventsApi;
             _commissionHistoryRepository = commissionHistoryRepository;
             _productsCache = productsCache;
             _accountsCache = accountsCache;
             _brokerSettingsService = brokerSettingsService;
-            _rateSettingsService = rateSettingsService;
+            _rateSettingsCache = rateSettingsCache;
             _quoteCacheService = quoteCacheService;
             _interestRatesCacheService = interestRatesCacheService;
             _productCostCalculationService = productCostCalculationService;
@@ -74,6 +75,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             _tradingDaysInfoProvider = tradingDaysInfoProvider;
             _systemClock = systemClock;
             _convertService = convertService;
+            _clientProfileSettingsCache = clientProfileSettingsCache;
         }
 
         public async Task<OrderDetailsData> Calculate(string orderId, string accountId)
@@ -102,12 +104,9 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                 notionalEUR = notional / exchangeRate;
             }
 
-            var accountName = (await _accountsCache.GetAccount(order.AccountId))?.AccountName;
-
-            if (string.IsNullOrEmpty(accountName))
-                accountName = accountId;
-
-            var (productCost, commission, totalCost) = await CalculateCosts(order);
+            var account = await _accountsCache.GetAccount(order.AccountId);
+            var accountName = account?.AccountName ?? accountId;
+            var (productCost, commission, totalCost) = await CalculateCosts(order, account.TradingConditionId);
 
             result.Instrument = _productsCache.GetName(order.AssetPairId);
             result.Quantity = order.Volume;
@@ -146,11 +145,12 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
         }
 
         private async Task<(decimal? ProductCost, decimal? Commission, decimal? TotalCost)> CalculateCosts(
-            OrderEventWithAdditionalContract order)
+            OrderEventWithAdditionalContract order, string tradingConditionId)
         {
             var product = _productsCache.GetById(order.AssetPairId);
             var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(product.Market,
                 _systemClock.UtcNow.UtcDateTime);
+            var clientProfileSettings = _clientProfileSettingsCache.GetByIds(tradingConditionId, product.AssetType);
 
             if (order.Status == OrderStatusContract.Executed)
             {
@@ -164,6 +164,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                 // spread for executed orders is already calculated with transaction volume
                 var productCost = _productCostCalculationService.ExecutedOrderProductCost(order.Spread,
                     commissionHistory.ProductCostCalculationData.OvernightSwapRate,
+                    clientProfileSettings.FinancingFeesRate,
                     transactionVolume,
                     exchangeRate,
                     overnightFeeDays,
@@ -182,8 +183,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             }
             else
             {
-                var overnightSwapRate =
-                    await _rateSettingsService.GetOvernightSwapRate(order.AssetPairId);
+                var overnightSwapRate = await _rateSettingsCache.GetOvernightSwapRate(order.AssetPairId);
                 var currentBestPrice = _quoteCacheService.GetBidAskPair(order.AssetPairId);
                 var price = GetPrice(order, currentBestPrice); 
 
@@ -193,9 +193,10 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                 var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);
 
                 var account = await _accountsCache.GetAccount(order.AccountId);
-                var fxRate =
-                    _cfdCalculatorService.GetFxRateForAssetPair(account.BaseAssetId, order.AssetPairId,
-                        order.LegalEntity);
+                var fxRate = _cfdCalculatorService.GetFxRateForAssetPair(
+                    account.BaseAssetId,
+                    order.AssetPairId,
+                    order.LegalEntity);
                 var exchangeRate = 1 / fxRate;
 
                 var commission = -1 * (await _commissionCalcService.CalculateOrderExecutionCommission(account.Id,
@@ -213,6 +214,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                 var productCost = _productCostCalculationService.ProductCost(spread,
                     overnightSwapRate,
                     quantity,
+                    clientProfileSettings.FinancingFeesRate,
                     transactionVolume,
                     exchangeRate,
                     overnightFeeDays,

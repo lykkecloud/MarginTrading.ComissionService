@@ -16,10 +16,12 @@ namespace MarginTrading.CommissionService.Services.Handlers
             _cacheUpdater = cacheUpdater;
         }
         
-        public async Task Handle(UnderlyingChangedEvent @event)
+        public Task Handle(UnderlyingChangedEvent @event)
         {
             _cacheUpdater.InitTradingInstruments();
             _cacheUpdater.InitOvernightSwapRates();
+            
+            return Task.CompletedTask;
         }
     }
 }

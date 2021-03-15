@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
+using MarginTrading.AssetService.Contracts.ClientProfileSettings;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Repositories;
@@ -25,7 +26,7 @@ namespace MarginTrading.CommissionService.Services
             ITradingInstrumentsCache tradingInstrumentsCache,
             ICfdCalculatorService cfdCalculatorService,
             IAccountRedisCache accountRedisCache,
-            IRateSettingsService rateSettingsCache,
+            IRateSettingsCache rateSettingsCache,
             IInterestRatesCacheService interestRatesCacheService,
             IAssetPairsCache assetPairsCache,
             ITradingDaysInfoProvider tradingDaysInfoProvider,
@@ -33,7 +34,8 @@ namespace MarginTrading.CommissionService.Services
             CostsAndChargesDefaultSettings defaultSettings,
             CommissionServiceSettings settings,
             IProductsCache productsCache,
-            IKidScenariosService kidScenariosService)
+            IKidScenariosService kidScenariosService,
+            IClientProfileSettingsCache clientProfileSettingsCache)
             : base(quoteCacheService,
                 systemClock,
                 repository,
@@ -49,6 +51,7 @@ namespace MarginTrading.CommissionService.Services
                 brokerSettingsService,
                 defaultSettings,
                 settings,
+                clientProfileSettingsCache,
                 10000,
                 0)
         {

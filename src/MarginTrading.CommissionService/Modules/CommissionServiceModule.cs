@@ -9,6 +9,7 @@ using Lykke.Common.Chaos;
 using Lykke.Common.MsSql;
 using Lykke.SettingsReader;
 using Lykke.Snow.Mdm.Contracts.Api;
+using MarginTrading.AssetService.Contracts.ClientProfileSettings;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Repositories;
@@ -176,8 +177,7 @@ namespace MarginTrading.CommissionService.Modules
                 .As<IDailyPnlListener>()
                 .SingleInstance();
 
-            builder.RegisterType<RateSettingsService>()
-                .As<IRateSettingsService>()
+            builder.RegisterType<RateSettingsCache>()
                 .As<IRateSettingsCache>()
                 .SingleInstance();
 
@@ -197,13 +197,7 @@ namespace MarginTrading.CommissionService.Modules
             builder.Register<IFontProvider>(ctx => new FontProvider("./Fonts/"))
                 .SingleInstance();
 
-            builder.RegisterType<ClientProfileCache>()
-                .As<IStartable>()
-                .As<IClientProfileCache>()
-                .SingleInstance();
-
             builder.RegisterType<ClientProfileSettingsCache>()
-                .As<IStartable>()
                 .As<IClientProfileSettingsCache>()
                 .SingleInstance();
 
@@ -301,13 +295,18 @@ namespace MarginTrading.CommissionService.Modules
 
         private void RegisterRedis(ContainerBuilder builder)
         {
-            builder.Register(c => ConnectionMultiplexer.Connect(
-                    _settings.CurrentValue.CommissionService.RedisSettings.Configuration))
+            var redis = ConnectionMultiplexer.Connect(
+                _settings.CurrentValue.CommissionService.RedisSettings.Configuration);
+            
+            builder.RegisterInstance(redis)
                 .As<IConnectionMultiplexer>()
                 .SingleInstance();
 
             builder.Register(c => c.Resolve<IConnectionMultiplexer>().GetDatabase())
                 .As<IDatabase>();
+
+            builder.Register(c => c.Resolve<IConnectionMultiplexer>().GetServer(redis.GetEndPoints()[0]))
+                .As<IServer>();
         }
     }
 }

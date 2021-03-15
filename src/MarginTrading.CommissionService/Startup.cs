@@ -19,6 +19,8 @@ using Lykke.Snow.Common.Startup;
 using Lykke.Snow.Common.Startup.ApiKey;
 using Lykke.Snow.Common.Startup.Hosting;
 using Lykke.Snow.Common.Startup.Log;
+using MarginTrading.AssetService.Contracts.ClientProfiles;
+using MarginTrading.AssetService.Contracts.ClientProfileSettings;
 using MarginTrading.Backend.Contracts.Events;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
@@ -167,6 +169,9 @@ namespace MarginTrading.CommissionService
                 var executedOrdersHandlingService = ApplicationContainer.Resolve<IExecutedOrdersHandlingService>();
                 var accountMarginEventsProjection = ApplicationContainer.Resolve<AccountMarginEventsProjection>();
                 var cqrsEngine = ApplicationContainer.Resolve<ICqrsEngine>();
+                var clientProfileSettingsCache = ApplicationContainer.Resolve<IClientProfileSettingsCache>();
+                
+                clientProfileSettingsCache.Start();
 
                 rabbitMqService.Subscribe(settings.RabbitMq.Consumers.FxRateRabbitMqSettings, false,
                     fxRateCacheService.SetQuote,
@@ -185,7 +190,7 @@ namespace MarginTrading.CommissionService
 
                 cqrsEngine.StartSubscribers();
                 cqrsEngine.StartProcesses();
-
+                
                 Program.AppHost.WriteLogs(Environment, LogLocator.CommonLog);
 
                 Log?.WriteMonitorAsync("", "", "Started").Wait();

@@ -3,14 +3,17 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using MarginTrading.CommissionService.Core.Domain.Rates;
+
 
 namespace MarginTrading.CommissionService.Core.Services
 {
     public interface IRateSettingsCache
     {
-        Task<List<OrderExecutionRate>> RefreshOrderExecutionRates();
-
+        Task<OvernightSwapRate> GetOvernightSwapRate([NotNull] string assetPair);
+        Task<IReadOnlyList<OvernightSwapRate>> GetOvernightSwapRatesForApi();
         Task<List<OvernightSwapRate>> RefreshOvernightSwapRates();
+        Task<OnBehalfRate> GetOnBehalfRate(string accountId, string assetType);
     }
 }
