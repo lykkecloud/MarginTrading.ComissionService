@@ -4,7 +4,6 @@
 using System.Linq;
 using Autofac;
 using MarginTrading.AssetService.Contracts;
-using MarginTrading.AssetService.Contracts.Asset;
 using MarginTrading.AssetService.Contracts.AssetPair;
 using MarginTrading.AssetService.Contracts.Scheduling;
 using MarginTrading.AssetService.Contracts.TradingConditions;
@@ -18,43 +17,40 @@ namespace MarginTrading.CommissionService.Services
     public class CacheUpdater : ICacheUpdater, IStartable
     {
         private readonly IAssetPairsCache _assetPairsCache;
-        private readonly IAssetsCache _assetsCache;
         private readonly IAssetPairsApi _assetPairsApi;
-        private readonly IAssetsApi _assetsApi;
         private readonly ITradingInstrumentsApi _tradingInstrumentsApi;
         private readonly ITradingInstrumentsCache _tradingInstrumentsCache;
         private readonly IScheduleSettingsApi _scheduleSettingsApi;
         private readonly ITradingDaysInfoProvider _tradingDaysInfoProvider;
         private readonly IRateSettingsCache _rateSettingsCache;
+        private readonly IProductsCache _productsCache;
         private readonly IConvertService _convertService;
 
         public CacheUpdater(IAssetPairsCache assetPairsCache,
-            IAssetsCache assetsCache,
             IAssetPairsApi assetPairsApi,
-            IAssetsApi assetsApi,
             ITradingInstrumentsApi tradingInstrumentsApi,
             ITradingInstrumentsCache tradingInstrumentsCache,
             IScheduleSettingsApi scheduleSettingsApi,
             ITradingDaysInfoProvider tradingDaysInfoProvider,
             IRateSettingsCache rateSettingsCache,
+            IProductsCache productsCache,
             IConvertService convertService)
         {
             _assetPairsCache = assetPairsCache;
-            _assetsCache = assetsCache;
             _assetPairsApi = assetPairsApi;
-            _assetsApi = assetsApi;
             _tradingInstrumentsApi = tradingInstrumentsApi;
             _tradingInstrumentsCache = tradingInstrumentsCache;
             _scheduleSettingsApi = scheduleSettingsApi;
             _tradingDaysInfoProvider = tradingDaysInfoProvider;
             _rateSettingsCache = rateSettingsCache;
+            _productsCache = productsCache;
             _convertService = convertService;
         }
 
         public void Start()
         {
-            InitAssets();
             InitAssetPairs();
+            InitProducts();
             InitTradingInstruments();
             InitSchedules();
             InitOrderExecutionRates();
@@ -69,12 +65,9 @@ namespace MarginTrading.CommissionService.Services
             _assetPairsCache.InitPairsCache(pairs);
         }
 
-        public void InitAssets()
+        private void InitProducts()
         {
-            var assets = _assetsApi.List().GetAwaiter().GetResult()
-                .ToDictionary(x => x.Id,
-                    s => _convertService.Convert<AssetContract, Asset>(s));
-            _assetsCache.Initialize(assets);
+            _productsCache.Initialize();
         }
 
         public void InitTradingInstruments()

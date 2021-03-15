@@ -6,6 +6,7 @@ using Autofac;
 using Common.Log;
 using Lykke.Common;
 using Lykke.Common.Chaos;
+using Lykke.Common.MsSql;
 using Lykke.SettingsReader;
 using Lykke.Snow.Mdm.Contracts.Api;
 using MarginTrading.CommissionService.Core.Caches;
@@ -17,6 +18,7 @@ using MarginTrading.CommissionService.Services;
 using MarginTrading.CommissionService.Services.Caches;
 using MarginTrading.CommissionService.Services.Handlers;
 using MarginTrading.CommissionService.Services.OrderDetailsFeature;
+using MarginTrading.CommissionService.SqlRepositories;
 using MarginTrading.CommissionService.SqlRepositories.Repositories;
 using Microsoft.Extensions.Internal;
 using StackExchange.Redis;
@@ -91,9 +93,13 @@ namespace MarginTrading.CommissionService.Modules
         {
             builder.Register<IReportGenService>(ctx =>
                     new ConsorsReportGenService(
-                        ctx.Resolve<IAssetsCache>(),
+                        ctx.Resolve<IProductsCache>(),
                         "./Fonts/",
                         _settings.CurrentValue.CommissionService.ReportSettings.TimeZonePartOfTheName))
+                .SingleInstance();
+
+            builder.RegisterType<ConsorsCostsAndChargesGenerationService>()
+                .As<ICostsAndChargesGenerationService>()
                 .SingleInstance();
         }
 
@@ -101,6 +107,10 @@ namespace MarginTrading.CommissionService.Modules
         {
             builder.RegisterType<BbvaReportGenService>()
                 .As<IReportGenService>()
+                .SingleInstance();
+
+            builder.RegisterType<BBVACostsAndChargesGenerationService>()
+                .As<ICostsAndChargesGenerationService>()
                 .SingleInstance();
         }
 
@@ -149,14 +159,13 @@ namespace MarginTrading.CommissionService.Modules
                 .SingleInstance()
                 .OnActivated(args => args.Instance.InitCache());
 
-            builder.RegisterType<AssetsCache>()
-                .As<IAssetsCache>()
-                .AsSelf()
-                .SingleInstance();
-
             builder.RegisterType<AssetPairsCache>()
                 .As<IAssetPairsCache>()
                 .AsSelf()
+                .SingleInstance();
+
+            builder.RegisterType<ProductsCache>()
+                .As<IProductsCache>()
                 .SingleInstance();
 
             builder.RegisterType<OvernightSwapListener>()
@@ -174,10 +183,6 @@ namespace MarginTrading.CommissionService.Modules
 
             builder.RegisterType<AccountRedisCache>()
                 .As<IAccountRedisCache>()
-                .SingleInstance();
-
-            builder.RegisterType<CostsAndChargesGenerationService>()
-                .As<ICostsAndChargesGenerationService>()
                 .SingleInstance();
 
             builder.RegisterType<TradingInstrumentsCache>()
@@ -232,13 +237,17 @@ namespace MarginTrading.CommissionService.Modules
             builder.RegisterType<OrderDetailsSpanishLocalizationService>()
                 .AsImplementedInterfaces()
                 .SingleInstance();
-            
+
             builder.RegisterType<OrderDetailsDataSourceBuilder>()
                 .AsImplementedInterfaces()
                 .SingleInstance();
-            
+
             builder.RegisterType<OrderDetailsPdfGenerator>()
                 .AsImplementedInterfaces()
+                .SingleInstance();
+
+            builder.RegisterType<KidScenariosService>()
+                .As<IKidScenariosService>()
                 .SingleInstance();
         }
 
@@ -278,9 +287,16 @@ namespace MarginTrading.CommissionService.Modules
                 .SingleInstance();
 
             builder.Register(provider =>
-                new CommissionHistoryRepository(_settings.CurrentValue.CommissionService.Db.StateConnString))
+                    new CommissionHistoryRepository(_settings.CurrentValue.CommissionService.Db.StateConnString))
                 .AsImplementedInterfaces();
-            
+
+            builder.RegisterMsSql(_settings.CurrentValue.CommissionService.Db.StateConnString,
+                connString => new CommissionDbContext(connString, false),
+                dbConn => new CommissionDbContext((dbConn)));
+
+            builder.RegisterType<KidScenariosRepository>()
+                .As<IKidScenariosRepository>()
+                .SingleInstance();
         }
 
         private void RegisterRedis(ContainerBuilder builder)

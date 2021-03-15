@@ -6,7 +6,6 @@ namespace MarginTrading.CommissionService.Core.Services
     public interface ICacheUpdater
     {
         void InitAssetPairs();
-        void InitAssets();
         void InitTradingInstruments();
         void InitOrderExecutionRates();
         void InitOvernightSwapRates();

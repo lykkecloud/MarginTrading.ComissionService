@@ -6,17 +6,29 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using MarginTrading.AssetService.Contracts.Enums;
 using MarginTrading.AssetService.Contracts.Products;
+using MarginTrading.CommissionService.Core.Caches;
+using MarginTrading.CommissionService.Core.Domain.CacheModels;
 using MarginTrading.CommissionService.Core.Services;
+using Microsoft.Extensions.Logging;
 
 namespace MarginTrading.CommissionService.Projections
 {
     public class ProductProjection
     {
         private readonly ICacheUpdater _cacheUpdater;
+        private readonly IConvertService _convertService;
+        private readonly IProductsCache _productsCache;
+        private readonly ILogger<ProductProjection> _logger;
 
-        public ProductProjection(ICacheUpdater cacheUpdater)
+        public ProductProjection(ICacheUpdater cacheUpdater,
+            IConvertService convertService,
+            IProductsCache productsCache,
+            ILogger<ProductProjection> logger)
         {
             _cacheUpdater = cacheUpdater;
+            _convertService = convertService;
+            _productsCache = productsCache;
+            _logger = logger;
         }
 
         [UsedImplicitly]
@@ -27,16 +39,19 @@ namespace MarginTrading.CommissionService.Projections
                 case ChangeType.Creation:
                 case ChangeType.Edition:
                     if (!@event.NewValue.IsStarted) return;
+                    _logger.LogInformation(
+                        $"ProductChangedEvent received for productId: {@event.NewValue.ProductId}, upserting it in the product cache.");
+                    _productsCache.AddOrUpdate(_convertService.Convert<ProductContract, ProductCacheModel>(@event.NewValue));
                     break;
                 case ChangeType.Deletion:
                     if (!@event.OldValue.IsStarted) return;
+                    _productsCache.Remove(_convertService.Convert<ProductContract, ProductCacheModel>(@event.OldValue));
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            
+
             _cacheUpdater.InitAssetPairs();
-            _cacheUpdater.InitAssets();
             _cacheUpdater.InitTradingInstruments();
             _cacheUpdater.InitOrderExecutionRates();
             _cacheUpdater.InitOvernightSwapRates();

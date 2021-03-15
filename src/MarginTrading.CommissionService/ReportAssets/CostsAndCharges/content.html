@@ -1,0 +1,607 @@
+<html>
+  <head>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+    <style>
+      * {
+          box-sizing: border-box;
+          @font-face {
+          font-family: 'BentonSansBBVA-Light';
+          src: url(data:font/woff2;charset=utf-8;base64,[[benton-font]]) format('woff2');
+        }
+      }
+
+      html, body {
+          margin: 0px;
+          padding: 0px;
+      }
+
+      .main {
+          width: 100%;
+          height: 100%;
+      }
+
+      .header {
+        font-family: BentonSansBBVA-Light;
+        font-size: 22pt;
+        color: rgb(2, 165, 165)
+      }
+
+      .subheader {
+        font-family: BentonSansBBVA-Light;
+        font-weight: 700;
+        font-size: 14pt;
+        color: rgb(0, 32, 96);
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+
+      h3 {
+        font-family: BentonSansBBVA-Light;
+        font-weight: 700;
+        font-size: 12pt;
+        color: rgb(0, 32, 96);
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+
+      .text {
+        font-family: BentonSansBBVA-Light;
+        font-size: 12pt;
+        color: rgb(128, 128, 128)
+      }
+
+      .warning {
+          display: flex;
+          min-height: 80px;
+          min-width: 0;
+          background-color: rgb(0, 32, 96);
+          margin-bottom: 10px;
+      }
+
+      .warning .logo {
+        flex: 0 0 80px;
+        margin: 10px;
+      }
+
+      .warning .text {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 12pt;
+        color: white;
+        margin-top: 20px;
+      }
+
+      img { width: 100%; height: auto; }
+
+      .para {
+          margin-left: 20px;
+          margin-bottom: 10px;
+      }
+
+      .para .intro {
+          color: rgb(0, 32, 96);
+          font-weight: 700;
+      }
+
+      .para .black {
+          color: black;
+      }
+    </style>
+
+    <style type="text/css">
+      .tg {
+        border-collapse: collapse;
+        border-spacing: 0;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        width: 100%;
+        page-break-inside: avoid;
+        page-break-before: avoid;
+      }
+      .tg td {
+        border-color: black;
+        border-style: solid;
+        border-width: 1px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        overflow: hidden;
+        padding: 10px 5px;
+        word-break: normal;
+      }
+      .tg th {
+        border-color: black;
+        border-style: solid;
+        border-width: 1px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        font-weight: normal;
+        overflow: hidden;
+        padding: 10px 5px;
+        word-break: normal;
+      }
+      .tg .tg-6i7w {
+        background-color: #1f497d;
+        border-color: inherit;
+        color: #ffffff;
+        text-align: center;
+        vertical-align: top;
+      }
+      .tg .tg-0pky {
+        border-color: inherit;
+        text-align: left;
+        vertical-align: top;
+      }
+      .tg .tg-0lax {
+        border-color: inherit;
+        text-align: left;
+        vertical-align: top;
+      }
+      .tg .tg-aqvq {
+        border-color: inherit;
+        background-color: #daeef3;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .tg .tg-x9y3 {
+        background-color: #daeef3;
+        border-color: inherit;
+        text-align: left;
+        vertical-align: top;
+      }
+      .tg .tg-776x {
+        background-color: #1f497d;
+        color: #ffffff;
+        text-align: left;
+        vertical-align: top;
+      }
+      .tg .tg-qicq {
+        border-color: inherit;
+        background-color: #eeece1;
+        text-align: left;
+        vertical-align: top;
+      }
+      .tg .tg-4ja3 {
+        background-color: #eeece1;
+        border-color: inherit;
+        text-align: left;
+        vertical-align: top;
+      }
+      .tg .tg-cqwb {
+        border-color: white black black white;
+      }
+
+      .tg .tg-0lax {
+        border-color: inherit;
+        text-align: left;
+        vertical-align: top;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="main">
+      <div class="header">
+        Documento de información complementaria al instrumento financiero:
+        <b>{{InstrumentName}}</b>
+      </div>
+      <br />
+      <div class="text">
+        Este documento no es un contrato y por tanto no genera ninguna
+        obligación ni derecho. Tiene como finalidad aportarle información
+        complementaria al documento de datos fundamentales para el inversor y,
+        en su caso, sobre el servicio o servicios que le presta BBVA en relación
+        con el mismo.
+      </div>
+
+      <div class="subheader">
+        Entidad que presta el servicio de inversión y servicios auxiliares
+      </div>
+
+      <div class="warning">
+        <div class="logo">
+          <img src="data:image/png;base64, [[bell]]" />
+        </div>
+        <div class="text">
+          Si una vez leído este documento no comprende los términos del mismo,
+          no dude en consultar con su oficina para que le proporcione cualquier
+          explicación o información adicional, pero no lo contrate sin
+          asegurarse de que ha comprendido su contenido.
+        </div>
+      </div>
+
+      <div class="text para">
+        Vd. debe conocer cierta información de BBVA, en tanto vamos a ser la
+        entidad que le va a prestar los servicios:
+      </div>
+
+      <div class="text para">
+        <span class="intro">Datos sobre BBVA:</span> Estamos registrados en el
+        Registro Mercantil de Vizcaya con CIF A-48265169 y domicilio social en
+        Bilbao en la Plaza de San Nicolás nº4 (www.bbva.es).
+      </div>
+
+      <div class="text para">
+        <span class="intro">Entidades supervisoras:</span> Figuramos en el
+        Registro de Entidades de Banco de España con el nº 0182 y estamos
+        habilitados para prestar servicios de inversión bajo la supervisión del
+        Banco de España (calle Alcalá, 48 Madrid - www.bde.es) y de la Comisión
+        Nacional del Mercado de Valores (calle Edison, 4 Madrid - www.cnmv.es).
+      </div>
+
+      <div class="text para">
+        <span class="intro">Cómo nos vamos a comunicar:</span> Las
+        comunicaciones y el envío de información entre nosotros será en el mismo
+        idioma en el que se suscriba el contrato del servicio que se preste y
+        por cualquier medio cuya seguridad y confidencialidad esté probada y
+        permita reproducir la información en soporte papel. Podremos facilitar
+        las comunicaciones por correo electrónico a la dirección de correo que
+        tengamos validada en cada momento, a dispositivos móviles o a través de
+        la web www.bbva.es, o por correo postal.
+      </div>
+
+      <div class="text para">
+        <span class="intro">Conflictos de interés:</span> En BBVA somos
+        transparentes con nuestros conflictos de interés y tenemos una política
+        en la que:
+      </div>
+
+      <div class="text para">
+        <ul>
+          <li>los identificamos y</li>
+          <li>
+            los tratamos con medidas de prevención, de gestión y con
+            procedimientos de actuación para su resolución.
+          </li>
+        </ul>
+      </div>
+
+      <div class="text para">
+        En último término, si las medidas adoptadas para gestionar un conflicto
+        concreto no son suficientes para garantizar, con razonable certeza, que
+        se prevendrán los riesgos, le revelaremos la naturaleza o el origen del
+        conflicto antes de actuar por su cuenta, de modo que pueda tomar la
+        decisión que estime más conveniente respecto al servicio que se le
+        preste u ofrezca.
+      </div>
+
+      <div class="text para">
+        Tiene a su disposición el detalle sobre esta política en nuestra web
+        www.bbva.es
+      </div>
+
+      <div class="text para">
+        <span class="intro">Salvaguarda de activos:</span> Conforme a la
+        política de salvaguarda de activos y fondos de clientes, BBVA aplica
+        medidas que aseguran la debida separación entre los activos de nuestros
+        clientes y los propios de la Entidad. Además mantenemos registros que
+        aseguran la correspondencia de los activos y sus titulares, así como
+        otras medidas organizativas adecuadas destinadas a la protección de los
+        activos de nuestros clientes.
+      </div>
+
+      <div class="subheader">Relación de costes y gastos del servicio</div>
+
+      <div class="text para">
+        La contratación de un instrumento financiero implica la prestación de
+        varios servicios. Aquí le explicamos, a través de un ejemplo, sobre la
+        base de una <b>inversión de 10.000 €</b> los costes de los servicios en
+        relación con este instrumento financiero y asumiendo tanto
+        <span class="black">los costes de entrada, como los de salida</span> de
+        la inversión.
+      </div>
+
+      <table class="tg">
+        <thead>
+          <tr>
+            <th class="tg-6i7w" colspan="3">Concepto del coste o gasto</th>
+            <th class="tg-6i7w" colspan="2">Importe en el ejemplo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tg-0pky" colspan="3">
+              Importe nocional de la inversión:
+            </td>
+            <td class="tg-0pky" colspan="2">10.000 euros</td>
+          </tr>
+          <tr>
+            <td class="tg-0lax" colspan="2"></td>
+            <td class="tg-0lax"></td>
+            <td class="tg-0lax">Euros</td>
+            <td class="tg-0lax">%</td>
+          </tr>
+          <tr>
+            <td class="tg-0pky" colspan="2">Servicios de inversión y</td>
+            <td class="tg-0lax">Compra</td>
+            <td class="tg-0pky">{{EntryCommission.ValueInEur}}</td>
+            <td class="tg-0lax">{{EntryCommission.ValueInPercent}}%</td>
+          </tr>
+          <tr>
+            <td class="tg-0pky" colspan="2">auxiliares prestados por BBVA</td>
+            <td class="tg-0lax">Venta</td>
+            <td class="tg-0pky">{{ExitCommission.ValueInEur}}</td>
+            <td class="tg-0lax">{{ExitCommission.ValueInPercent}}%</td>
+          </tr>
+          <tr>
+            <td class="tg-aqvq" colspan="3">Total coste de los servicios</td>
+            <td class="tg-aqvq">{{EntryExitCommission.ValueInEur}}</td>
+            <td class="tg-aqvq">{{EntryExitCommission.ValueInPercent}}%</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="text para">
+        En todo caso, cuando tramite una orden específica, se le informará de
+        los costes concretos, ajustados a las condiciones de la misma y a la
+        tarifa que le sea de aplicación en ese momento. Tiene más información
+        sobre el funcionamiento de las tarifas de BBVA Trader en
+        www.bbvatrader.com.
+      </div>
+
+      <div class="text para">
+        Las órdenes tramitadas por el canal telefónico llevarán un suplemento
+        adicional de {{OnBehalfFee}}€ que se sumará a la tarifa aplicable a la operación.
+      </div>
+
+      <div class="subheader">
+        Relación de costes y gastos del instrumento financiero
+      </div>
+
+      <div class="text para">
+        Este apartado le mostramos un desglose de los costes y gastos aplicados
+        al instrumento financiero a lo largo de su inversión, basado en el mismo
+        ejemplo de la inversión de 10.000€ en el instrumento financiero.
+      </div>
+
+      <table class="tg">
+        <thead>
+          <tr>
+            <th class="tg-6i7w" colspan="3">Concepto del coste o gasto</th>
+            <th class="tg-6i7w" colspan="2">Importe en el ejemplo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tg-0pky" colspan="3">
+              Importe nocional de la inversión:
+            </td>
+            <td class="tg-0pky" colspan="2">10.000 euros</td>
+          </tr>
+          <tr>
+            <td class="tg-0lax" colspan="3"></td>
+            <td class="tg-0lax">Euros</td>
+            <td class="tg-0lax">%</td>
+          </tr>
+          <tr>
+            <td class="tg-0pky">Coste spread oferta-demanda</td>
+            <td class="tg-0pky" colspan="2">Entrada y salida</td>
+            <td class="tg-0pky">{{EntryExitCost.ValueInEur}}</td>
+            <td class="tg-0lax">{{EntryExitCost.ValueInPercent}}%</td>
+          </tr>
+          <tr>
+            <td class="tg-0pky">Coste de financiación (1)</td>
+            <td class="tg-0pky" colspan="2">
+              Por día hasta próximo dia de negociación
+            </td>
+            <td class="tg-0pky">{{RunningCostsProductReturnsSum.ValueInEur}}</td>
+            <td class="tg-0lax">{{RunningCostsProductReturnsSum.ValueInPercent}}%</td>
+          </tr>
+          <tr>
+            <td class="tg-aqvq" colspan="3">
+              Total costes del instrumento financiero
+            </td>
+            <td class="tg-aqvq">{{ProductsReturn.ValueInEur}}</td>
+            <td class="tg-aqvq">{{ProductsReturn.ValueInPercent}}%</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="text pre">
+        (1) Se cobra diariamente en caso de mantener la posición abierta hasta
+        el siguiente día de negociación del instrumento.
+      </div>
+
+      <div class="subheader">
+        Detalle agregado de los costes y gastos totales, del instrumento
+        financiero y del servicio
+      </div>
+
+      <table class="tg">
+        <thead>
+          <tr>
+            <th class="tg-6i7w">Concepto del coste o gasto</th>
+            <th class="tg-6i7w" colspan="2">Importe en el ejemplo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tg-0pky">
+              Importe nocional de la inversión:
+            </td>
+            <td class="tg-0pky" colspan="2">10.000 euros</td>
+          </tr>
+          <tr>
+            <td class="tg-0lax" ></td>
+            <td class="tg-0lax">Euros</td>
+            <td class="tg-0lax">%</td>
+          </tr>
+          <tr>
+            <td class="tg-0pky">Total costes del servicio</td>
+            <td class="tg-0pky">{{EntryExitCommission.ValueInEur}}</td>
+            <td class="tg-0lax">{{EntryExitCommission.ValueInPercent}}%</td>
+          </tr>
+          <tr>
+            <td class="tg-0pky">Total costes del instrumento</td>
+            <td class="tg-0pky">{{ProductsReturn.ValueInEur}}</td>
+            <td class="tg-0lax">{{ProductsReturn.ValueInPercent}}%</td>
+          </tr>
+          <tr>
+            <td class="tg-aqvq" >
+              Total costes y gastos del instrumento financiero y el servicio
+            </td>
+            <td class="tg-aqvq">{{TotalCosts.ValueInEur}}</td>
+            <td class="tg-aqvq">{{TotalCosts.ValueInPercent}}%</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="subheader">Resultados del instrumento financiero</div>
+
+      <div class="text para">
+        En este apartado y en el siguiente le proporcionaremos información
+        específica sobre el instrumento financiero y que completa, entre otros,
+        la del documento de datos fundamentales para el inversor.
+      </div>
+
+      <div class="text para">
+        A continuación le mostramos el rendimiento que usted podría obtener en
+        una inversión en el citado instrumento, tomando como ejemplo ilustrativo
+        el rendimiento de este (puede consultar la evolución del instrumento en
+        bbvatrader.com). Tenga en cuenta que este rendimiento se corresponde a
+        <b
+          >rendimientos pasados y no es, en ningún caso, indicativo de
+          rendimientos futuros.</b
+        >
+      </div>
+
+      <h3>Supuesto sobre una inversión en el instrumento financiero:</h3>
+
+      <table class="tg">
+        <thead>
+          <tr>
+            <th class="tg-6i7w">Evolución del instrumento en 1 mes</th>
+            <th class="tg-6i7w">Rendimiento % (2)</th>
+            <th class="tg-6i7w">Rendimiento euros (3)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tg-4ja3">Importe nocional de la inversión:</td>
+            <td class="tg-qicq"></td>
+            <td class="tg-4ja3">10.000 euros</td>
+          </tr>
+          <tr>
+            <td class="tg-0pky">
+              Escenario moderado <br />(rendimiento medio a 1 mes)
+            </td>
+            <td class="tg-0pky">{{KidScenario.ValueInPercent}}%</td>
+            <td class="tg-0pky">{{KidScenario.ValueInEur}}</td>
+          </tr>       
+        </tbody>
+      </table>
+
+      <div class="text para">
+        (2) El dato de rendimiento en porcentaje corresponde al subyacente del
+        instrumento financiero.
+      </div>
+
+      <div class="text para">
+        (3) El rendimiento en euros está calculado sobre el valor
+        nominal/nocional de 10.000 € de inversión en el instrumento financiero.
+      </div>
+
+      <div class="text para">
+        Los datos que se han tomado en consideración para determinar estos
+        escenarios son del último mes. El rendimiento medio es la media
+        aritmética de los rendimientos anuales para ese periodo (1 mes). Estos
+        rendimientos son pasados y no representan un indicador fiable de
+        resultados futuros.
+      </div>
+
+      <div class="subheader">
+        Impacto de los costes y gastos totales sobre la rentabilidad de la
+        inversión
+      </div>
+
+      <div class="text para">
+        Partiendo de la base de una inversión de 10.000 € en el instrumento
+        financiero, y tomando datos de rentabilidades históricas del subyacente,
+        en un <b>escenario moderado</b>, el
+        <b>efecto acumulado de los costes sobre la rentabilidad</b> sería el
+        siguiente:
+      </div>
+
+      <table class="tg">
+        <thead>
+          <tr>
+            <th class="tg-cqwb"></th>
+            <th class="tg-6i7w" colspan="2">Producto</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tg-4ja3">Importe nocional de la inversión:</td>
+            <td class="tg-4ja3" colspan="2">10.000 euros</td>
+          </tr>
+          <tr>
+            <td class="tg-0pky"></td>
+            <td class="tg-0pky">Porcentaje</td>
+            <td class="tg-0pky">Euros</td>
+          </tr>
+          <tr>
+            <td class="tg-0pky">Rendimiento bruto<br /></td>
+            <td class="tg-0pky">{{KidScenario.ValueInPercent}}%</td>
+            <td class="tg-0pky">{{KidScenario.ValueInEur}}</td>
+          </tr>
+          <tr>
+            <td class="tg-0pky">
+              Total de costes y gastos del servicio y del instrumento
+            </td>
+            <td class="tg-0pky">{{TotalCosts.ValueInPercent}}%</td>
+            <td class="tg-0pky">{{TotalCosts.ValueInEur}}</td>
+          </tr>
+          <tr>
+            <td class="tg-0pky">Rendimiento neto teórico</td>
+            <td class="tg-0pky">{{TheoreticalNetReturn.ValueInPercent}}%</td>
+            <td class="tg-0pky">{{TheoreticalNetReturn.ValueInEur}}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="text para">
+        El <b>rendimiento bruto</b> del instrumento financiero es la
+        rentabilidad teórica en caso de que no soportar ningún tipo de coste.
+      </div>
+
+      <div class="text para">
+        El total de
+        <b>costes y gastos del servicio y del instrumento financiero</b>
+        representa la suma de los conceptos que le hemos proporcionado en el
+        apartado “Detalle agregado de costes y gastos totales del instrumento
+        financiero y del servicio”.
+      </div>
+
+      <div class="text para">
+        El <b>rendimiento neto teórico</b> del instrumento financiero se calcula
+        como el rendimiento bruto del instrumento menos los costes del servicio
+        e instrumento, y representa la rentabilidad teórica de su inversión.
+      </div>
+
+      <div class="text para">
+        Tenga en cuenta que estas estimaciones se basan en hipótesis y pueden
+        diferir de los costes y gastos que se soportarán finalmente, así como de
+        los rendimientos obtenidos. Rendimientos pasados no presuponen ni
+        garantizan rendimientos futuros.
+      </div>
+
+      <h3>Otra información relevante</h3>
+
+      <div class="text para">
+        Este instrumento financiero está diseñado para inversores en general
+        (clientes minoristas y profesionales, así como para contrapartes
+        elegibles). Un CFD es un producto para clientes con un amplio
+        conocimiento y/o experiencia en productos financieros derivados. Las
+        pérdidas que pueden llegar a soportarse son ilimitadas.
+      </div>
+
+      <div class="text para">
+        Le indicamos que no vamos a verificar que usted sea compatible con el
+        mercado objetivo definido para este producto.
+      </div>
+
+      <img
+        src="data:image/jpeg;base64, [[contact]]"
+        style="width: 100%"
+      />
+    </main>
+  </body>
+</html>

@@ -22,32 +22,32 @@ namespace MarginTrading.CommissionService.Services
     public class CommissionCalcService : ICommissionCalcService
     {
         private readonly ICfdCalculatorService _cfdCalculatorService;
-        private readonly IAssetsCache _assetsCache;
         private readonly IAssetPairsCache _assetPairsCache;
         private readonly IRateSettingsService _rateSettingsService;
         private readonly IOrderEventsApi _orderEventsApi;
         private readonly IAccountRedisCache _accountRedisCache;
+        private readonly IProductsCache _productsCache;
         private readonly ILog _log;
         private readonly IInterestRatesCacheService _interestRatesCacheService;
         private readonly CommissionServiceSettings _settings;
 
         public CommissionCalcService(
             ICfdCalculatorService cfdCalculatorService,
-            IAssetsCache assetsCache,
             IAssetPairsCache assetPairsCache,
             IRateSettingsService rateSettingsService,
             IOrderEventsApi orderEventsApi,
             IAccountRedisCache accountRedisCache,
+            IProductsCache productsCache,
             ILog log,
             IInterestRatesCacheService interestRatesCacheService,
             CommissionServiceSettings settings)
         {
             _cfdCalculatorService = cfdCalculatorService;
-            _assetsCache = assetsCache;
             _assetPairsCache = assetPairsCache;
             _rateSettingsService = rateSettingsService;
             _orderEventsApi = orderEventsApi;
             _accountRedisCache = accountRedisCache;
+            _productsCache = productsCache;
             _log = log;
             _interestRatesCacheService = interestRatesCacheService;
             _settings = settings;
@@ -84,7 +84,7 @@ namespace MarginTrading.CommissionService.Services
             var dayFactor = (decimal) numberOfFinancingDays / financingDaysPerYear;
 
             return (Math.Round(calculationBasis * financingRate * dayFactor,
-                        _assetsCache.GetAccuracy(account.BaseAssetId)),
+                        _productsCache.GetAccuracy(account.BaseAssetId)),
                     new
                     {
                         CalculationBasis = calculationBasis,
@@ -109,7 +109,7 @@ namespace MarginTrading.CommissionService.Services
                     rateSettings.CommissionFloor,
                     rateSettings.CommissionRate * volumeInSettlementCurrency));
 
-            return Math.Round(commission, _assetsCache.GetAccuracy(account.BaseAssetId));
+            return Math.Round(commission, _productsCache.GetAccuracy(account.BaseAssetId));
         }
 
         public async Task<(int ActionsNum, decimal Commission)> CalculateOnBehalfCommissionAsync(string orderId,
@@ -156,7 +156,7 @@ namespace MarginTrading.CommissionService.Services
             var rateSettings = _rateSettingsService.GetOnBehalfRate(assetPair.AssetType); 
             
             var commission = Math.Round(actionsNum * rateSettings.Commission, 
-                _assetsCache.GetAccuracy(accountAssetId));
+                _productsCache.GetAccuracy(accountAssetId));
             
             //calculate commission
             return (actionsNum, commission);

@@ -1,97 +1,126 @@
 // Copyright (c) 2019 Lykke Corp.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
+using Common;
+using jsreport.Client;
+using jsreport.Types;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
+using MarginTrading.CommissionService.Core.Settings;
+using Microsoft.AspNetCore.Hosting;
 
 namespace MarginTrading.CommissionService.Services
 {
     public class BbvaReportGenService : IReportGenService
     {
-        public byte[] GenerateBafinCncReport(IEnumerable<CostsAndChargesCalculation> calculations)
+        private readonly IHostingEnvironment _environment;
+        private readonly CommissionServiceSettings _serviceSettings;
+        private string _assetsPath = Path.Combine("ReportAssets", "CostsAndCharges");
+        private string _content;
+        private string _layout;
+
+        public BbvaReportGenService(IHostingEnvironment environment,
+            CommissionServiceSettings serviceSettings)
         {
-            var str = @"private string file = @""%PDF-1.3
-1 0 obj
-<< /Type /Catalog
-/Outlines 2 0 R
-/Pages 3 0 R >>
-endobj
-2 0 obj
-<< /Type /Outlines /Count 0 >>
-endobj
-3 0 obj
-<< /Type /Pages
-/Kids [6 0 R
-]
-/Count 1
-/Resources <<
-/ProcSet 4 0 R
-/Font << 
-/F1 8 0 R
->>
->>
-/MediaBox [0.000 0.000 612.000 792.000]
- >>
-endobj
-4 0 obj
-[/PDF /Text ]
-endobj
-5 0 obj
-<<
-/Creator (DOMPDF)
-/CreationDate (D:20210209101107+00'00')
-/ModDate (D:20210209101107+00'00')
-/Title (Ex Ante)
->>
-endobj
-6 0 obj
-<< /Type /Page
-/Parent 3 0 R
-/Contents 7 0 R
->>
-endobj
-7 0 obj
-<<
-/Length 1347 >>
-stream
+            _environment = environment;
+            _serviceSettings = serviceSettings;
 
-0.000 0.000 0.000 rg
-BT 34.016 734.579 Td /F1 12.0 Tf  [(Ex Ante feature is in development)] TJ ET
+            var reportAssets = new Dictionary<string, string>()
+            {
+                {"benton-font", GetBase64Asset("BentonSansBBVA-Light.woff2")},
+                {"bbva-logo", GetBase64Asset("bbva_logo.png")},
+                {"bell", GetBase64Asset("bell.png")},
+                {"contact", GetBase64Asset("contact.jpeg")},
+            };
 
-endstream
-endobj
-8 0 obj
-<< /Type /Font
-/Subtype /Type1
-/Name /F1
-/BaseFont /Times-Roman
-/Encoding /WinAnsiEncoding
->>
-endobj
-xref
-0 9
-0000000000 65535 f 
-0000000008 00000 n 
-0000000073 00000 n 
-0000000119 00000 n 
-0000000273 00000 n 
-0000000302 00000 n 
-0000000435 00000 n 
-0000000498 00000 n 
-0000001897 00000 n 
-trailer
-<<
-/Size 9
-/Root 1 0 R
-/Info 5 0 R
->>
-startxref
-2006
-%%EOF
-";
-            var bytes = System.Text.Encoding.Default.GetBytes(str);
-            return bytes;
+            _content = InjectAssets(GetAssetText("content.html"), reportAssets);
+            _layout = InjectAssets(GetAssetText("layout.html"), reportAssets);
+        }
+
+        private string InjectAssets(string template, Dictionary<string, string> assets)
+        {
+            var sb = new StringBuilder(template);
+
+            foreach (var asset in assets)
+            {
+                sb.Replace($"[[{asset.Key}]]", asset.Value);
+            }
+
+            return sb.ToString();
+        }
+
+        public async Task<byte[]> GenerateBafinCncReport(CostsAndChargesCalculation calculation)
+        {
+            return await GenerateBafinCncForOneCalc(calculation);
+        }
+
+        private async Task<byte[]> GenerateBafinCncForOneCalc(CostsAndChargesCalculation calculation)
+        {
+            var rs = new ReportingService(_serviceSettings.JSReportUrl);
+
+            var report = await rs.RenderAsync(new RenderRequest
+            {
+                Template = new Template()
+                {
+                    Content = _content,
+                    Engine = Engine.Handlebars,
+                    Recipe = Recipe.ChromePdf,
+                    Chrome = new Chrome
+                    {
+                        MarginTop = "3cm",
+                        MarginLeft = "2cm",
+                        MarginRight = "1.5cm",
+                        MarginBottom = "2.5cm",
+                    },
+                    PdfOperations = new List<PdfOperation>()
+                    {
+                        new PdfOperation()
+                        {
+                            Type = PdfOperationType.Merge,
+                            Template = new Template
+                            {
+                                Content = _layout,
+                                Engine = Engine.Handlebars,
+                                Recipe = Recipe.ChromePdf,
+                                Chrome = new Chrome
+                                {
+                                    MarginLeft = "2cm",
+                                    MarginRight = "1.5cm",
+                                    MarginBottom = "1cm",
+                                },
+                            },
+                            RenderForEveryPage = true,
+                        }
+                    }
+                },
+                Data = await GetData(calculation),
+            });
+
+            return await report.Content.ToBytesAsync();
+        }
+
+        private async Task<object> GetData(CostsAndChargesCalculation costsAndChargesCalculation)
+        {
+            return costsAndChargesCalculation;
+        }
+
+        private string GetBase64Asset(string asset)
+        {
+            var path = Path.Combine(_environment.ContentRootPath, _assetsPath, asset);
+            var bytes = File.ReadAllBytes(path);
+            var base64 = Convert.ToBase64String(bytes);
+
+            return base64;
+        }
+
+        private string GetAssetText(string asset)
+        {
+            return File.ReadAllText(Path.Combine(_environment.ContentRootPath, _assetsPath, asset));
         }
     }
 }

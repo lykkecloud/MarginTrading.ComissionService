@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using iTextSharp.text.pdf;
+using System.Threading.Tasks;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Services;
@@ -17,33 +17,27 @@ namespace MarginTrading.CommissionService.Services
 {
     public class ConsorsReportGenService : IReportGenService
     {
-        private readonly IAssetsCache _assetsCache;
+        private readonly IProductsCache _productsCache;
         private readonly string _fontPath;
         private readonly string _timeZonePartOfTheName;
 
-        public ConsorsReportGenService(IAssetsCache assetsCache, string fontPath, string timeZonePartOfTheName)
+        public ConsorsReportGenService(IProductsCache productsCache, string fontPath, string timeZonePartOfTheName)
         {
-            _assetsCache = assetsCache;
+            _productsCache = productsCache;
             _fontPath = fontPath;
             _timeZonePartOfTheName = timeZonePartOfTheName;
         }
 
-        public byte[] GenerateBafinCncReport(IEnumerable<CostsAndChargesCalculation> calculations)
+        public async Task<byte[]> GenerateBafinCncReport(CostsAndChargesCalculation calculation)
         {
-            var reportsQueue = new Queue<byte[]>(calculations.Select(GenerateBafinCncForOneCalc));
-
-            var result = reportsQueue.Dequeue();
-            while (reportsQueue.Count > 0)
-            {
-                result = MergeTwoPdfs(result, reportsQueue.Dequeue());
-            }
-
-            return result;
+            return GenerateBafinCncForOneCalc(calculation);
         }
 
         public byte[] GenerateBafinCncForOneCalc(CostsAndChargesCalculation calculation)
         {
-            var assetName = _assetsCache.GetName(calculation.Instrument);
+            var assetName = !string.IsNullOrEmpty(calculation.InstrumentName) 
+                ? calculation.InstrumentName 
+                : _productsCache.GetName(calculation.Instrument);
             var time = ConvertToReportTimeZone(calculation.Timestamp);
             var accountPrefix = !string.IsNullOrEmpty(calculation.AccountId) ? calculation.AccountId + " - " : "";
 
@@ -183,23 +177,6 @@ namespace MarginTrading.CommissionService.Services
             }
 
             return TimeZoneInfo.ConvertTime(sourceDt, timeZoneFromSettings);
-        }
-
-        private byte[] MergeTwoPdfs(byte[] pdf1, byte[] pdf2)
-        {
-            var finalStream = new MemoryStream();
-            var copy = new PdfCopyFields(finalStream);
-
-            var ms1 = new MemoryStream(pdf1) { Position = 0 };
-            copy.AddDocument(new PdfReader(ms1));
-            ms1.Dispose();
-
-            var ms2 = new MemoryStream(pdf2) { Position = 0 };
-            copy.AddDocument(new PdfReader(ms2));
-            ms2.Dispose();
-            copy.Close();
-
-            return finalStream.GetBuffer();
         }
     }
 }
