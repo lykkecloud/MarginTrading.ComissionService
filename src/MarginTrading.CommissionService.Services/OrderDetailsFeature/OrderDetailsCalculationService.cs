@@ -170,8 +170,9 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
                     commissionHistory.ProductCostCalculationData.VariableRateBase,
                     commissionHistory.ProductCostCalculationData.VariableRateQuote,
                     (OrderDirection) order.Direction);
+                var commission = -1 * commissionHistory.Commission;
 
-                return (productCost, -commissionHistory.Commission, productCost + commissionHistory.Commission);
+                return (productCost, commission, productCost + commission);
             }
             else if (order.Status == OrderStatusContract.Canceled
                      || order.Status == OrderStatusContract.Rejected
