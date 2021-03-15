@@ -5,14 +5,12 @@ using System.Linq;
 using Autofac;
 using MarginTrading.AssetService.Contracts;
 using MarginTrading.AssetService.Contracts.AssetPair;
-using MarginTrading.AssetService.Contracts.LegacyAsset;
 using MarginTrading.AssetService.Contracts.Scheduling;
 using MarginTrading.AssetService.Contracts.TradingConditions;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Domain;
 using MarginTrading.CommissionService.Core.Domain.Abstractions;
 using MarginTrading.CommissionService.Core.Services;
-using Asset = MarginTrading.CommissionService.Core.Domain.Asset;
 
 namespace MarginTrading.CommissionService.Services
 {
@@ -24,7 +22,6 @@ namespace MarginTrading.CommissionService.Services
         private readonly ITradingInstrumentsCache _tradingInstrumentsCache;
         private readonly IScheduleSettingsApi _scheduleSettingsApi;
         private readonly ITradingDaysInfoProvider _tradingDaysInfoProvider;
-        private readonly IRateSettingsCache _rateSettingsCache;
         private readonly IProductsCache _productsCache;
         private readonly IConvertService _convertService;
         private readonly IRateSettingsCache _rateSettingsCache;
@@ -37,8 +34,7 @@ namespace MarginTrading.CommissionService.Services
             ITradingDaysInfoProvider tradingDaysInfoProvider,
             IRateSettingsCache rateSettingsCache,
             IProductsCache productsCache,
-            IConvertService convertService,
-            IRateSettingsCache rateSettingsCache)
+            IConvertService convertService)
         {
             _assetPairsCache = assetPairsCache;
             _assetPairsApi = assetPairsApi;

@@ -35,7 +35,7 @@ namespace MarginTrading.CommissionService.Services
             decimal fxRate,
             int overnightFeeDays)
         {
-            return -1 * (overnightSwapRate.FixRate * transactionVolume / fxRate / 365) *
+            return -1 * (financingFeeRate * transactionVolume / fxRate / 365) *
                    overnightFeeDays ;
         }
 
@@ -90,6 +90,7 @@ namespace MarginTrading.CommissionService.Services
         public decimal ProductCost(decimal spread,
             OvernightSwapRate swapRate,
             decimal quantity,
+            decimal financingFeeRate,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
@@ -99,6 +100,7 @@ namespace MarginTrading.CommissionService.Services
         {
             var entryCost = EntryCost(spread, quantity, fxRate);
             var runningCost = RunningProductCost(swapRate,
+                financingFeeRate,
                 transactionVolume,
                 fxRate,
                 overnightFeeDays,
@@ -113,6 +115,7 @@ namespace MarginTrading.CommissionService.Services
         
         public decimal ExecutedOrderProductCost(decimal spreadWeight,
             OvernightSwapRate swapRate,
+            decimal financingFeeRate,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
@@ -122,6 +125,7 @@ namespace MarginTrading.CommissionService.Services
         {
             var entryCost = ExecutedOrderEntryCost(spreadWeight, fxRate);
             var runningCost = RunningProductCost(swapRate,
+                financingFeeRate,
                 transactionVolume,
                 fxRate,
                 overnightFeeDays,

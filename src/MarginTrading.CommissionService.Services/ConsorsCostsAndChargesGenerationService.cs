@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Lykke Corp.
 // See the LICENSE file in the project root for more information.
 
+using MarginTrading.AssetService.Contracts.ClientProfileSettings;
 using MarginTrading.CommissionService.Core.Caches;
 using MarginTrading.CommissionService.Core.Repositories;
 using MarginTrading.CommissionService.Core.Services;
@@ -19,13 +20,14 @@ namespace MarginTrading.CommissionService.Services
             ITradingInstrumentsCache tradingInstrumentsCache,
             ICfdCalculatorService cfdCalculatorService,
             IAccountRedisCache accountRedisCache,
-            IRateSettingsService rateSettingsCache,
+            IRateSettingsCache rateSettingsCache,
             IInterestRatesCacheService interestRatesCacheService,
             IAssetPairsCache assetPairsCache,
             ITradingDaysInfoProvider tradingDaysInfoProvider,
             IBrokerSettingsService brokerSettingsService,
             CostsAndChargesDefaultSettings defaultSettings,
-            CommissionServiceSettings settings)
+            CommissionServiceSettings settings,
+            IClientProfileSettingsCache clientProfileSettingsCache)
             : base(quoteCacheService,
                 systemClock,
                 repository,
@@ -41,6 +43,7 @@ namespace MarginTrading.CommissionService.Services
                 brokerSettingsService,
                 defaultSettings,
                 settings,
+                clientProfileSettingsCache,
                 5000,
                 0.5m)
         {

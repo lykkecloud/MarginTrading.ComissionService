@@ -53,6 +53,7 @@ namespace MarginTrading.CommissionService.Services
             IBrokerSettingsService brokerSettingsService,
             CostsAndChargesDefaultSettings defaultSettings,
             CommissionServiceSettings settings,
+            IClientProfileSettingsCache clientProfileSettingsCache,
             decimal defaultCcVolume,
             decimal donationShare)
         {
@@ -160,7 +161,7 @@ namespace MarginTrading.CommissionService.Services
             var runningCostsConsorsDonation = -1 * clientProfileSettings.FinancingFeesRate * transactionVolume / fxRate / 365 *
                     overnightFeeDays * _donationShare;
 
-            var runningCosts = -1 * overnightSwapRate.FixRate * transactionVolume / fxRate / 365 *
+            var runningCosts = -1 * clientProfileSettings.FinancingFeesRate * transactionVolume / fxRate / 365 *
                                overnightFeeDays - runningCostsConsorsDonation;
             var directionMultiplier = direction == OrderDirection.Sell ? -1 : 1;
 
@@ -242,7 +243,7 @@ namespace MarginTrading.CommissionService.Services
                 ProductsReturnForeignCurrencyCosts = new CostsAndChargesValue(0, 0),
                 TotalCosts = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
                 OneTag = new CostsAndChargesValue(totalCosts, totalCosts * percentCoef),
-                OnBehalfFee = _rateSettingsService.GetOnBehalfRate(assetPair.AssetType).Commission,
+                OnBehalfFee = clientProfileSettings.OnBehalfFee,
                 EntryExitCommission = new CostsAndChargesValue(entryCommission + exitCommission, 
                     (entryCommission + exitCommission) * percentCoef),
                 EntryExitCost = new CostsAndChargesValue(entryCost + exitCost, 

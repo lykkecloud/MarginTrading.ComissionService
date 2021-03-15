@@ -33,6 +33,7 @@ namespace MarginTrading.CommissionService.Core.Services
             OrderDirection direction);
 
         decimal RunningProductCost(OvernightSwapRate overnightSwapRate,
+            decimal financingFeeRate,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
@@ -56,6 +57,7 @@ namespace MarginTrading.CommissionService.Core.Services
 
         decimal ExecutedOrderProductCost(decimal spreadWeight,
             OvernightSwapRate swapRate,
+            decimal financingFeeRate,
             decimal transactionVolume,
             decimal fxRate,
             int overnightFeeDays,
