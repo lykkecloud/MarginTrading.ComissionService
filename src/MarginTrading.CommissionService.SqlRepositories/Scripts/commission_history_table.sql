@@ -11,3 +11,11 @@ CREATE TABLE [dbo].[CommissionHistory](
     ) ON [PRIMARY]
 END
 
+IF NOT EXISTS (SELECT 1 FROM sys.columns  WHERE object_id = OBJECT_ID(N'[dbo].[CommissionHistory]') and  [name] = 'ProductCostCalculationData')
+BEGIN
+
+    ALTER TABLE [dbo].[CommissionHistory]
+    ADD [ProductCostCalculationData] [nvarchar](2000) NULL;
+
+END
+

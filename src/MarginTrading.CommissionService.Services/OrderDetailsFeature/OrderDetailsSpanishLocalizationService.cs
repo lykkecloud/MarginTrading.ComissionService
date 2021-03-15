@@ -60,7 +60,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             {OrderType.Stop, "Stop"},
             {OrderType.StopLoss, "Stop de pérdidas"},
             {OrderType.TakeProfit, "Toma de beneficios"},
-            {OrderType.TrailingStop, "Stop de pérdidas"},
+            {OrderType.TrailingStop, "Stop dinámico"},
         };
 
         private readonly Dictionary<OrderStatus, string> _orderStatusMap = new Dictionary<OrderStatus, string>()

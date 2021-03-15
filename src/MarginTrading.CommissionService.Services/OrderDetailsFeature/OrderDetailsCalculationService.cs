@@ -13,6 +13,7 @@ using MarginTrading.CommissionService.Core.Services;
 using MarginTrading.CommissionService.Core.Services.OrderDetailsFeature;
 using MarginTrading.TradingHistory.Client;
 using MarginTrading.TradingHistory.Client.Models;
+using Microsoft.Extensions.Internal;
 using Newtonsoft.Json;
 
 namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
@@ -22,10 +23,19 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
         private readonly IOrderEventsApi _orderEventsApi;
         private readonly ICommissionHistoryRepository _commissionHistoryRepository;
         private readonly IProductsCache _productsCache;
-
         private readonly IAccountRedisCache _accountsCache;
         private readonly IBrokerSettingsService _brokerSettingsService;
+        private readonly IRateSettingsService _rateSettingsService;
+        private readonly IQuoteCacheService _quoteCacheService;
+        private readonly IInterestRatesCacheService _interestRatesCacheService;
+        private readonly IProductCostCalculationService _productCostCalculationService;
+        private readonly ICfdCalculatorService _cfdCalculatorService;
+        private readonly ICommissionCalcService _commissionCalcService;
+        private readonly ITradingDaysInfoProvider _tradingDaysInfoProvider;
+        private readonly ISystemClock _systemClock;
         private readonly IConvertService _convertService;
+
+        private const int OvernightFeeDays = 1;
 
         private List<OrderStatusContract> _finalStatuses = new List<OrderStatusContract>()
         {
@@ -40,6 +50,14 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             IProductsCache productsCache,
             IAccountRedisCache accountsCache,
             IBrokerSettingsService brokerSettingsService,
+            IRateSettingsService rateSettingsService,
+            IQuoteCacheService quoteCacheService,
+            IInterestRatesCacheService interestRatesCacheService,
+            IProductCostCalculationService productCostCalculationService,
+            ICfdCalculatorService cfdCalculatorService,
+            ICommissionCalcService commissionCalcService,
+            ITradingDaysInfoProvider tradingDaysInfoProvider,
+            ISystemClock systemClock,
             IConvertService convertService)
         {
             _orderEventsApi = orderEventsApi;
@@ -47,18 +65,20 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             _productsCache = productsCache;
             _accountsCache = accountsCache;
             _brokerSettingsService = brokerSettingsService;
+            _rateSettingsService = rateSettingsService;
+            _quoteCacheService = quoteCacheService;
+            _interestRatesCacheService = interestRatesCacheService;
+            _productCostCalculationService = productCostCalculationService;
+            _cfdCalculatorService = cfdCalculatorService;
+            _commissionCalcService = commissionCalcService;
+            _tradingDaysInfoProvider = tradingDaysInfoProvider;
+            _systemClock = systemClock;
             _convertService = convertService;
         }
 
         public async Task<OrderDetailsData> Calculate(string orderId, string accountId)
         {
-            var orderHistory = await _orderEventsApi.OrderById(orderId);
-            var order = orderHistory
-                            .OrderByDescending(x => x.ModifiedTimestamp)
-                            .FirstOrDefault(x => _finalStatuses.Contains(x.Status))
-                        ?? orderHistory
-                            .OrderByDescending(x => x.ModifiedTimestamp)
-                            .FirstOrDefault(x => x.Status == OrderStatusContract.Placed);
+            var order = await GetOrder(orderId);
 
             if (order == null) throw new Exception($"Cannot find order {orderId}");
 
@@ -87,6 +107,8 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             if (string.IsNullOrEmpty(accountName))
                 accountName = accountId;
 
+            var (productCost, commission, totalCost) = await CalculateCosts(order);
+
             result.Instrument = _productsCache.GetName(order.AssetPairId);
             result.Quantity = order.Volume;
             result.Status = _convertService.Convert<OrderStatusContract, OrderStatus>(order.Status);
@@ -98,7 +120,7 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             result.Notional = notional;
             result.NotionalEUR = notionalEUR;
             result.ExchangeRate = exchangeRate;
-            result.ProductCost = commissionHistory?.ProductCost;
+            result.ProductCost = productCost;
             result.OrderDirection = _convertService.Convert<OrderDirectionContract, OrderDirection>(order.Direction);
             result.Origin = _convertService.Convert<OriginatorTypeContract, OriginatorType>(order.Originator);
             result.OrderId = order.Id;
@@ -107,11 +129,10 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             result.ExecutedTimestamp = order.ExecutedTimestamp;
             result.CanceledTimestamp = order.CanceledTimestamp;
             result.ValidityTime = order.ValidityTime;
-            // todo: check that this is the correct comment
             result.OrderComment = GetFieldAsString(order.AdditionalInfo, "UserComments");
             result.ForceOpen = order.ForceOpen;
-            result.Commission = commissionHistory?.Commission;
-            result.TotalCostsAndCharges = commissionHistory?.Commission + commissionHistory?.ProductCost;
+            result.Commission = commission;
+            result.TotalCostsAndCharges = totalCost;
             result.ProductComplexityConfirmationReceived =
                 GetBoolean(order.AdditionalInfo, "ProductComplexityConfirmationReceived") ?? false;
             result.TotalCostPercent = GetDecimal(order.AdditionalInfo, "TotalCostPercentShownToUser");
@@ -124,6 +145,117 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             return result;
         }
 
+        private async Task<(decimal? ProductCost, decimal? Commission, decimal? TotalCost)> CalculateCosts(
+            OrderEventWithAdditionalContract order)
+        {
+            var product = _productsCache.GetById(order.AssetPairId);
+            var overnightFeeDays = _tradingDaysInfoProvider.GetNumberOfNightsUntilNextTradingDay(product.Market,
+                _systemClock.UtcNow.UtcDateTime);
+
+            if (order.Status == OrderStatusContract.Executed)
+            {
+                var commissionHistory = await _commissionHistoryRepository.GetByOrderIdAsync(order.Id);
+                if (order.Status == OrderStatusContract.Executed && commissionHistory == null)
+                    throw new Exception($"Commission has not been calculated yet for executed order {order.Id}");
+
+                var exchangeRate = order.FxRate == 0 ? 1 : 1 / order.FxRate;
+                var transactionVolume = Math.Abs(order.Volume) * order.ExecutionPrice.Value;
+
+                // spread for executed orders is already calculated with transaction volume
+                var productCost = _productCostCalculationService.ExecutedOrderProductCost(order.Spread,
+                    commissionHistory.ProductCostCalculationData.OvernightSwapRate,
+                    transactionVolume,
+                    exchangeRate,
+                    overnightFeeDays,
+                    commissionHistory.ProductCostCalculationData.VariableRateBase,
+                    commissionHistory.ProductCostCalculationData.VariableRateQuote,
+                    (OrderDirection) order.Direction);
+
+                return (productCost, -commissionHistory.Commission, productCost + commissionHistory.Commission);
+            }
+            else if (order.Status == OrderStatusContract.Canceled
+                     || order.Status == OrderStatusContract.Rejected
+                     || order.Status == OrderStatusContract.Expired)
+            {
+                // no costs for not executed orders in final status
+                return (null, null, null);
+            }
+            else
+            {
+                var overnightSwapRate =
+                    await _rateSettingsService.GetOvernightSwapRate(order.AssetPairId);
+                var currentBestPrice = _quoteCacheService.GetBidAskPair(order.AssetPairId);
+                var price = GetPrice(order, currentBestPrice); 
+
+                var spread = currentBestPrice.Ask - currentBestPrice.Bid;
+
+                var variableRateBase = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateBase);
+                var variableRateQuote = _interestRatesCacheService.GetRate(overnightSwapRate.VariableRateQuote);
+
+                var account = await _accountsCache.GetAccount(order.AccountId);
+                var fxRate =
+                    _cfdCalculatorService.GetFxRateForAssetPair(account.BaseAssetId, order.AssetPairId,
+                        order.LegalEntity);
+                var exchangeRate = 1 / fxRate;
+
+                var commission = -1 * (await _commissionCalcService.CalculateOrderExecutionCommission(account.Id,
+                    order.AssetPairId,
+                    order.Volume,
+                    price,
+                    fxRate
+                ));
+
+                var entryExitCommission = commission * 2;
+
+                var quantity = Math.Abs(order.Volume);
+                var transactionVolume = Math.Abs(order.Volume) * price;
+
+                var productCost = _productCostCalculationService.ProductCost(spread,
+                    overnightSwapRate,
+                    quantity,
+                    transactionVolume,
+                    exchangeRate,
+                    overnightFeeDays,
+                    variableRateBase,
+                    variableRateQuote,
+                    (OrderDirection) order.Direction);
+
+                return (productCost, entryExitCommission, productCost + entryExitCommission);
+            }
+        }
+
+        private decimal GetPrice(OrderEventWithAdditionalContract order, InstrumentBidAskPair currentBestPrice)
+        {
+            if (order.Type == OrderTypeContract.Market)
+            {
+                return order.Direction == OrderDirectionContract.Buy ? currentBestPrice.Ask : currentBestPrice.Bid;
+            }
+
+            if (!order.ExpectedOpenPrice.HasValue)
+                throw new Exception($"Order {order.Id} with type {order.Type} does not have ExpectedOpenPrice");
+            return order.ExpectedOpenPrice.Value;
+        }
+
+        private async Task<OrderEventWithAdditionalContract> GetOrder(string orderId)
+        {
+            var orderHistory = await _orderEventsApi.OrderById(orderId);
+
+            var orderInFinalStatus = orderHistory
+                .OrderByDescending(x => x.ModifiedTimestamp)
+                .FirstOrDefault(x => _finalStatuses.Contains(x.Status));
+
+            var updatedOrder = orderHistory
+                .OrderByDescending(x => x.ModifiedTimestamp)
+                .FirstOrDefault(x => x.UpdateType == OrderUpdateTypeContract.Change);
+
+            var placedOrder = orderHistory
+                .OrderByDescending(x => x.ModifiedTimestamp)
+                .FirstOrDefault(x => x.Status == OrderStatusContract.Placed);
+
+            var order = orderInFinalStatus ?? updatedOrder ?? placedOrder;
+            return order;
+        }
+
         private bool GetAllWarningsFlag(OrderEventWithAdditionalContract order)
         {
             if (order.Type == OrderTypeContract.StopLoss
@@ -134,7 +266,9 @@ namespace MarginTrading.CommissionService.Services.OrderDetailsFeature
             if (order.Originator == OriginatorTypeContract.System)
                 return false;
 
-            // todo: return false when order is executed from "close position" button on FE - how to detect? 
+            // order is executed from "close position" button on FE
+            if (!string.IsNullOrEmpty(order.Comment) && order.Comment.Contains("Close positions"))
+                return false;
 
             return true;
         }
