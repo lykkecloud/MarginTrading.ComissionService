@@ -63,6 +63,7 @@ namespace MarginTrading.CommissionService.Core.Settings
         
         public List<string> AssetTypesWithZeroInterestRates { get; set; } = new List<string>();
 
+        [Optional]
         public string JSReportUrl { get; set; }
     }
 }
